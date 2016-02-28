@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.24720.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Peril.Api", "Peril.Api\Peril.Api.csproj", "{BE560A6B-E037-4244-8BBE-75C001AFD629}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Peril.Api.Tests", "Peril.Api.Tests\Peril.Api.Tests.csproj", "{8B8A1EE6-98B6-4670-AC06-2513E0BC23F4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Peril.Core", "Peril.Core\Peril.Core.csproj", "{69D48885-94FD-4C6B-A893-AD342D3F75E7}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BE560A6B-E037-4244-8BBE-75C001AFD629}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BE560A6B-E037-4244-8BBE-75C001AFD629}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BE560A6B-E037-4244-8BBE-75C001AFD629}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BE560A6B-E037-4244-8BBE-75C001AFD629}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8B8A1EE6-98B6-4670-AC06-2513E0BC23F4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8B8A1EE6-98B6-4670-AC06-2513E0BC23F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8B8A1EE6-98B6-4670-AC06-2513E0BC23F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8B8A1EE6-98B6-4670-AC06-2513E0BC23F4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{69D48885-94FD-4C6B-A893-AD342D3F75E7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{69D48885-94FD-4C6B-A893-AD342D3F75E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{69D48885-94FD-4C6B-A893-AD342D3F75E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{69D48885-94FD-4C6B-A893-AD342D3F75E7}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
