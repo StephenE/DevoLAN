@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Peril.Core
 {
     public interface IPlayer
     {
+        String UserId { get; }
         String Name { get; }
     }
 }

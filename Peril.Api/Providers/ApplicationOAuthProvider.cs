@@ -10,6 +10,7 @@ using Microsoft.Owin.Security;
 using Microsoft.Owin.Security.Cookies;
 using Microsoft.Owin.Security.OAuth;
 using Peril.Api.Models;
+using Peril.Api.Repository;
 
 namespace Peril.Api.Providers
 {

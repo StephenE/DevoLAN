@@ -16,6 +16,7 @@ using Microsoft.Owin.Security.OAuth;
 using Peril.Api.Models;
 using Peril.Api.Providers;
 using Peril.Api.Results;
+using Peril.Api.Repository;
 
 namespace Peril.Api.Controllers
 {

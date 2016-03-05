@@ -8,11 +8,11 @@ namespace Peril.Api.Tests.Repository
     {
         public DummySession()
         {
-            Players = new List<DummyPlayer>();
+            Players = new List<String>();
         }
 
         public Guid GameId { get; set; }
 
-        public List<DummyPlayer> Players { get;set; }
+        public List<String> Players { get;set; }
     }
 }

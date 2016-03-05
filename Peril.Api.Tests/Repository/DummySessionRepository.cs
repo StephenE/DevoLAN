@@ -13,14 +13,15 @@ namespace Peril.Api.Tests.Repository
             Sessions = new List<DummySession>();
         }
 
-        public async Task<Guid> CreateSession()
+        public async Task<Guid> CreateSession(String userId)
         {
             Guid newId = Guid.NewGuid();
             Sessions.Add(new DummySession { GameId = newId });
+            await JoinSession(newId, userId);
             return newId;
         }
 
-        public async Task<IEnumerable<IPlayer>> GetSessionPlayers(Guid sessionId)
+        public async Task<IEnumerable<String>> GetSessionPlayers(Guid sessionId)
         {
             DummySession foundSession = Sessions.Find(session => session.GameId == sessionId);
             if (foundSession != null)
@@ -29,7 +30,7 @@ namespace Peril.Api.Tests.Repository
             }
             else
             {
-                return null;
+                throw new InvalidOperationException("Called GetSessionPlayers with a non-existant GUID");
             }
         }
 
@@ -38,14 +39,22 @@ namespace Peril.Api.Tests.Repository
             return Sessions;
         }
 
-        public async Task<bool> JoinSession(Guid sessionId)
+        public async Task<ISession> GetSession(Guid sessionId)
+        {
+            return Sessions.Find(session => session.GameId == sessionId);
+        }
+
+        public async Task JoinSession(Guid sessionId, String userId)
         {
             DummySession foundSession = Sessions.Find(session => session.GameId == sessionId);
             if(foundSession != null)
             {
-                foundSession.Players.Add(new DummyPlayer());
+                foundSession.Players.Add(userId);
             }
-            return foundSession != null;
+            else
+            {
+                throw new InvalidOperationException("Called JoinSession with a non-existant GUID");
+            }
         }
 
         public List<DummySession> Sessions { get;set; }

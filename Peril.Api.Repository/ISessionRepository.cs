@@ -1,8 +1,6 @@
 ﻿using Peril.Core;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Peril.Api.Repository
@@ -11,10 +9,12 @@ namespace Peril.Api.Repository
     {
         Task<IEnumerable<ISession>> GetSessions();
 
-        Task<IEnumerable<IPlayer>> GetSessionPlayers(Guid session);
+        Task<IEnumerable<String>> GetSessionPlayers(Guid session);
 
-        Task<Guid> CreateSession();
+        Task<Guid> CreateSession(String userId);
 
-        Task<bool> JoinSession(Guid sessionId);
+        Task<ISession> GetSession(Guid sessionId);
+
+        Task JoinSession(Guid sessionId, String userId);
     }
 }

@@ -4,6 +4,7 @@ using Microsoft.AspNet.Identity.EntityFramework;
 using Microsoft.AspNet.Identity.Owin;
 using Microsoft.Owin;
 using Peril.Api.Models;
+using Peril.Api.Repository;
 
 namespace Peril.Api
 {
