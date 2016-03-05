@@ -17,7 +17,7 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestGetSessions_WithNoSessions()
         {
             // Arrange
-            GameController controller = new GameController();
+            GameController controller = new GameController(null);
 
             // Act
             IEnumerable<ISession> result = await controller.GetSessions();
@@ -31,7 +31,7 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestGetSessions_WithOneSession()
         {
             // Arrange
-            GameController controller = new GameController();
+            GameController controller = new GameController(null);
 
             // Act
             IEnumerable<ISession> result = await controller.GetSessions();
@@ -45,7 +45,7 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestStartNewSession()
         {
             // Arrange
-            GameController controller = new GameController();
+            GameController controller = new GameController(null);
 
             // Act
             ISession result = await controller.PostStartNewSession();
@@ -59,7 +59,7 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestJoinSession_WithInvalidGuid()
         {
             // Arrange
-            GameController controller = new GameController();
+            GameController controller = new GameController(null);
 
             // Act
             Guid invalidGuid = new Guid("3286C8E6-B510-4F7F-AAE0-9EF827459E7E");
@@ -81,7 +81,7 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestJoinSession_WithValidGuid()
         {
             // Arrange
-            GameController controller = new GameController();
+            GameController controller = new GameController(null);
 
             // Act
             Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
@@ -95,7 +95,7 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestGetPlayers_WithInvalidGuid()
         {
             // Arrange
-            GameController controller = new GameController();
+            GameController controller = new GameController(null);
 
             // Act
             Guid invalidGuid = new Guid("3286C8E6-B510-4F7F-AAE0-9EF827459E7E");
@@ -117,7 +117,7 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestGetPlayers_WithValidGuidAndOnePlayer()
         {
             // Arrange
-            GameController controller = new GameController();
+            GameController controller = new GameController(null);
 
             // Act
             Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");

@@ -214,6 +214,7 @@
     <Compile Include="Models\AccountBindingModels.cs" />
     <Compile Include="Models\AccountViewModels.cs" />
     <Compile Include="Models\IdentityModels.cs" />
+    <Compile Include="Models\Session.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Providers\ApplicationOAuthProvider.cs" />
     <Compile Include="Results\ChallengeResult.cs" />
@@ -275,6 +276,14 @@
     <Content Include="Views\Shared\_Layout.cshtml" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Peril.Api.Repository.Azure\Peril.Api.Repository.Azure.csproj">
+      <Project>{4a508017-28d8-45b2-babb-33e97b561316}</Project>
+      <Name>Peril.Api.Repository.Azure</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Peril.Api.Repository\Peril.Api.Repository.csproj">
+      <Project>{ec9d446f-aa7d-4741-a0aa-4807f2e9e10c}</Project>
+      <Name>Peril.Api.Repository</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Peril.Core\Peril.Core.csproj">
       <Project>{69d48885-94fd-4c6b-a893-ad342d3f75e7}</Project>
       <Name>Peril.Core</Name>

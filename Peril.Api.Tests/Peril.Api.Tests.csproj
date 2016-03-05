@@ -103,6 +103,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Peril.Api.Repository\Peril.Api.Repository.csproj">
+      <Project>{ec9d446f-aa7d-4741-a0aa-4807f2e9e10c}</Project>
+      <Name>Peril.Api.Repository</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Peril.Api\Peril.Api.csproj">
       <Project>{BE560A6B-E037-4244-8BBE-75C001AFD629}</Project>
       <Name>Peril.Api</Name>
