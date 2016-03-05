@@ -95,6 +95,9 @@
   <ItemGroup>
     <Compile Include="Controllers\GameControllerTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Repository\DummyPlayer.cs" />
+    <Compile Include="Repository\DummySession.cs" />
+    <Compile Include="Repository\DummySessionRepository.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="App.config" />

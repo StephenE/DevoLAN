@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Peril.Api.Controllers.Api;
+using Peril.Api.Tests.Repository;
 using Peril.Core;
 using System;
 using System.Collections.Generic;
@@ -17,7 +18,7 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestGetSessions_WithNoSessions()
         {
             // Arrange
-            GameController controller = new GameController(null);
+            GameController controller = new GameController(new DummySessionRepository());
 
             // Act
             IEnumerable<ISession> result = await controller.GetSessions();
@@ -31,7 +32,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestGetSessions_WithOneSession()
         {
             // Arrange
-            GameController controller = new GameController(null);
+            DummySessionRepository repository = new DummySessionRepository();
+            Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
+            repository.Sessions.Add(new DummySession { GameId = validGuid });
+            GameController controller = new GameController(repository);
 
             // Act
             IEnumerable<ISession> result = await controller.GetSessions();
@@ -39,13 +43,14 @@ namespace Peril.Api.Tests.Controllers
             // Assert
             Assert.IsNotNull(result);
             Assert.AreEqual(1, result.Count());
+            Assert.AreEqual(validGuid, result.First().GameId);
         }
 
         [TestMethod]
         public async Task TestStartNewSession()
         {
             // Arrange
-            GameController controller = new GameController(null);
+            GameController controller = new GameController(new DummySessionRepository());
 
             // Act
             ISession result = await controller.PostStartNewSession();
@@ -59,7 +64,7 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestJoinSession_WithInvalidGuid()
         {
             // Arrange
-            GameController controller = new GameController(null);
+            GameController controller = new GameController(new DummySessionRepository());
 
             // Act
             Guid invalidGuid = new Guid("3286C8E6-B510-4F7F-AAE0-9EF827459E7E");
@@ -81,10 +86,12 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestJoinSession_WithValidGuid()
         {
             // Arrange
-            GameController controller = new GameController(null);
+            DummySessionRepository repository = new DummySessionRepository();
+            Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
+            repository.Sessions.Add(new DummySession { GameId = validGuid });
+            GameController controller = new GameController(repository);
 
             // Act
-            Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
             Task result = controller.PostJoinSession(validGuid);
 
             // Assert
@@ -95,7 +102,7 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestGetPlayers_WithInvalidGuid()
         {
             // Arrange
-            GameController controller = new GameController(null);
+            GameController controller = new GameController(new DummySessionRepository());
 
             // Act
             Guid invalidGuid = new Guid("3286C8E6-B510-4F7F-AAE0-9EF827459E7E");
@@ -117,10 +124,12 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestGetPlayers_WithValidGuidAndOnePlayer()
         {
             // Arrange
-            GameController controller = new GameController(null);
+            DummySessionRepository repository = new DummySessionRepository();
+            Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
+            repository.Sessions.Add(new DummySession { GameId = validGuid, Players = new List<DummyPlayer> { new DummyPlayer() } });
+            GameController controller = new GameController(repository);
 
             // Act
-            Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
             IEnumerable<IPlayer> result = await controller.GetPlayers(validGuid);
 
             // Assert

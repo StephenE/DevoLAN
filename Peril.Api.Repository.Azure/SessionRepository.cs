@@ -7,7 +7,7 @@ using Peril.Core;
 
 namespace Peril.Api.Repository.Azure
 {
-    class SessionRepository : ISessionRepository
+    public class SessionRepository : ISessionRepository
     {
         public Task<Guid> CreateSession()
         {
