@@ -17,6 +17,7 @@ namespace Peril.Api.Tests.Controllers
     {
         [TestMethod]
         [TestCategory("Unit")]
+        [TestCategory("GameController")]
         public async Task TestGetSessions_WithNoSessions()
         {
             // Arrange
@@ -32,6 +33,7 @@ namespace Peril.Api.Tests.Controllers
 
         [TestMethod]
         [TestCategory("Unit")]
+        [TestCategory("GameController")]
         public async Task TestGetSessions_WithOneSession()
         {
             // Arrange
@@ -51,6 +53,7 @@ namespace Peril.Api.Tests.Controllers
 
         [TestMethod]
         [TestCategory("Unit")]
+        [TestCategory("GameController")]
         public async Task TestStartNewSession()
         {
             // Arrange
@@ -68,6 +71,7 @@ namespace Peril.Api.Tests.Controllers
 
         [TestMethod]
         [TestCategory("Unit")]
+        [TestCategory("GameController")]
         public async Task TestJoinSession_WithInvalidGuid()
         {
             // Arrange
@@ -91,6 +95,7 @@ namespace Peril.Api.Tests.Controllers
 
         [TestMethod]
         [TestCategory("Unit")]
+        [TestCategory("GameController")]
         public async Task TestJoinSession_WithValidGuid()
         {
             // Arrange
@@ -109,6 +114,7 @@ namespace Peril.Api.Tests.Controllers
 
         [TestMethod]
         [TestCategory("Unit")]
+        [TestCategory("GameController")]
         public async Task TestJoinSession_WithValidGuid_WithAlreadyInSession()
         {
             // Arrange
@@ -127,6 +133,7 @@ namespace Peril.Api.Tests.Controllers
 
         [TestMethod]
         [TestCategory("Unit")]
+        [TestCategory("GameController")]
         public async Task TestGetPlayers_WithInvalidGuid()
         {
             // Arrange
@@ -150,6 +157,7 @@ namespace Peril.Api.Tests.Controllers
 
         [TestMethod]
         [TestCategory("Unit")]
+        [TestCategory("GameController")]
         public async Task TestGetPlayers_WithValidGuidAndOnePlayer()
         {
             // Arrange

@@ -23,18 +23,31 @@ namespace Peril.Api.Repository.Azure.Tests
                                 ServerTimeout = new TimeSpan(0, 0, 0, 1)
                             });
             }
+            catch(StorageException exception)
+            {
+                if(exception.HResult == -2146233088)
+                {
+                    TryToStartStorageEmulator();
+                }
+            }
             catch (TimeoutException)
             {
-                ProcessStartInfo processStartInfo = new ProcessStartInfo()
-                {
-                    FileName = Path.Combine(@"C:\Program Files\Microsoft SDKs\Windows Azure\Emulator", "csrun.exe"),
-                    Arguments = @"/devstore",
-                };
+                TryToStartStorageEmulator();
+            }
+        }
 
-                using (Process process = Process.Start(processStartInfo))
-                {
-                    process.WaitForExit();
-                }
+        private void TryToStartStorageEmulator()
+        {
+            ProcessStartInfo processStartInfo = new ProcessStartInfo()
+            {
+                FileName = Path.Combine(@"C:\Program Files (x86)\Microsoft SDKs\Azure\Storage Emulator", "AzureStorageEmulator.exe"),
+                Arguments = "start",
+                WorkingDirectory = @"C:\Program Files (x86)\Microsoft SDKs\Azure\Storage Emulator"
+            };
+
+            using (Process process = Process.Start(processStartInfo))
+            {
+                process.WaitForExit();
             }
         }
     }
