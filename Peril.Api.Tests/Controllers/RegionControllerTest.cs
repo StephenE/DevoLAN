@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Security.Principal;
 using System.Threading.Tasks;
 using System.Web.Http;
 
@@ -22,10 +21,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestGetDetails_WithInvalidRegion()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            Task<IRegion> result = controller.GetDetails(InvalidRegionGuid);
+            Task<IRegion> result = primaryUser.RegionController.GetDetails(InvalidRegionGuid);
 
             // Assert
             try
@@ -45,10 +44,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestGetDetails_WithValidRegion()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            IRegion result = await controller.GetDetails(OwnedRegionGuid);
+            IRegion result = await primaryUser.RegionController.GetDetails(OwnedRegionGuid);
 
             // Assert
             Assert.IsNotNull(result);
@@ -63,10 +62,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestPostDeployTroops_WithInvalidRegion()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            Task result = controller.PostDeployTroops(InvalidRegionGuid, 1);
+            Task result = primaryUser.RegionController.PostDeployTroops(InvalidRegionGuid, 1);
 
             // Assert
             try
@@ -86,10 +85,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestPostDeployTroops_WithUnownedRegion()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            Task result = controller.PostDeployTroops(UnownedRegionGuid, 1);
+            Task result = primaryUser.RegionController.PostDeployTroops(UnownedRegionGuid, 1);
 
             // Assert
             try
@@ -109,10 +108,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestPostDeployTroops_WithValidRegion_WithInvalidRound()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            Task result = controller.PostDeployTroops(OwnedRegionGuid, 1);
+            Task result = primaryUser.RegionController.PostDeployTroops(OwnedRegionGuid, 1);
 
             // Assert
             try
@@ -132,10 +131,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestPostDeployTroops_WithValidRegion_WithValidTroops()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            await controller.PostDeployTroops(OwnedRegionGuid, 1);
+            await primaryUser.RegionController.PostDeployTroops(OwnedRegionGuid, 1);
 
             // Assert
         }
@@ -146,10 +145,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestPostDeployTroops_WithValidRegion_WithInvalidTroops()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            Task result = controller.PostDeployTroops(OwnedRegionGuid, 10);
+            Task result = primaryUser.RegionController.PostDeployTroops(OwnedRegionGuid, 10);
 
             // Assert
             try
@@ -171,10 +170,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestPostAttack_WithInvalidRegion()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            Task result = controller.PostAttack(InvalidRegionGuid, 1, InvalidRegionGuid);
+            Task result = primaryUser.RegionController.PostAttack(InvalidRegionGuid, 1, InvalidRegionGuid);
 
             // Assert
             try
@@ -194,10 +193,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestPostAttack_WithValidRegion_WithInvalidTargetRegion()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            Task result = controller.PostAttack(OwnedRegionGuid, 1, InvalidRegionGuid);
+            Task result = primaryUser.RegionController.PostAttack(OwnedRegionGuid, 1, InvalidRegionGuid);
 
             // Assert
             try
@@ -217,10 +216,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestPostAttack_WithValidRegion_WithOwnedTargetRegion()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            Task result = controller.PostAttack(OwnedRegionGuid, 1, OwnedAdjacentRegionGuid);
+            Task result = primaryUser.RegionController.PostAttack(OwnedRegionGuid, 1, OwnedAdjacentRegionGuid);
 
             // Assert
             try
@@ -240,10 +239,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestPostAttack_WithUnownedRegion()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            Task result = controller.PostAttack(UnownedRegionGuid, 1, UnownedAdjacentRegionGuid);
+            Task result = primaryUser.RegionController.PostAttack(UnownedRegionGuid, 1, UnownedAdjacentRegionGuid);
 
             // Assert
             try
@@ -263,10 +262,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestPostAttack_WithValidRegion_WithInvalidRound()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            Task result = controller.PostAttack(OwnedRegionGuid, 1, UnownedAdjacentRegionGuid);
+            Task result = primaryUser.RegionController.PostAttack(OwnedRegionGuid, 1, UnownedAdjacentRegionGuid);
 
             // Assert
             try
@@ -286,10 +285,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestPostAttack_WithValidRegion_WithUnconnectedTarget()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            Task result = controller.PostAttack(OwnedRegionGuid, 1, UnownedRegionGuid);
+            Task result = primaryUser.RegionController.PostAttack(OwnedRegionGuid, 1, UnownedRegionGuid);
 
             // Assert
             try
@@ -309,10 +308,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestPostAttack_WithValidRegion_WithValidTroops()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            await controller.PostAttack(OwnedRegionGuid, 1, UnownedAdjacentRegionGuid);
+            await primaryUser.RegionController.PostAttack(OwnedRegionGuid, 1, UnownedAdjacentRegionGuid);
 
             // Assert
         }
@@ -323,10 +322,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestPostAttack_WithValidRegion_WithInvalidTroops()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            Task result = controller.PostAttack(OwnedRegionGuid, 10, UnownedAdjacentRegionGuid);
+            Task result = primaryUser.RegionController.PostAttack(OwnedRegionGuid, 10, UnownedAdjacentRegionGuid);
 
             // Assert
             try
@@ -348,10 +347,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestGetAttack_WithInvalidRegion()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            Task<IEnumerable<AttackDetails>> result = controller.GetAttack(InvalidRegionGuid);
+            Task<IEnumerable<AttackDetails>> result = primaryUser.RegionController.GetAttack(InvalidRegionGuid);
 
             // Assert
             try
@@ -371,10 +370,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestGetAttack_WithUnownedRegion()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            Task<IEnumerable<AttackDetails>> result = controller.GetAttack(UnownedRegionGuid);
+            Task<IEnumerable<AttackDetails>> result = primaryUser.RegionController.GetAttack(UnownedRegionGuid);
 
             // Assert
             try
@@ -394,10 +393,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestGetAttack_WithValidRegion_WithInvalidRound()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            Task<IEnumerable<AttackDetails>> result = controller.GetAttack(OwnedRegionGuid);
+            Task<IEnumerable<AttackDetails>> result = primaryUser.RegionController.GetAttack(OwnedRegionGuid);
 
             // Assert
             try
@@ -417,10 +416,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestGetAttack_WithValidRegion()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            IEnumerable<AttackDetails> result = await controller.GetAttack(OwnedRegionGuid);
+            IEnumerable<AttackDetails> result = await primaryUser.RegionController.GetAttack(OwnedRegionGuid);
 
             // Assert
             Assert.IsNotNull(result);
@@ -438,10 +437,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestDeleteAttack_WithInvalidRegion()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            Task result = controller.DeleteAttack(InvalidRegionGuid, InvalidRegionGuid);
+            Task result = primaryUser.RegionController.DeleteAttack(InvalidRegionGuid, InvalidRegionGuid);
 
             // Assert
             try
@@ -461,10 +460,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestDeleteAttack_WithValidRegion_WithInvalidTargetRegion()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            Task result = controller.DeleteAttack(OwnedRegionGuid, InvalidRegionGuid);
+            Task result = primaryUser.RegionController.DeleteAttack(OwnedRegionGuid, InvalidRegionGuid);
 
             // Assert
             try
@@ -484,10 +483,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestDeletetAttack_WithUnownedRegion()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            Task result = controller.DeleteAttack(UnownedRegionGuid, UnownedAdjacentRegionGuid);
+            Task result = primaryUser.RegionController.DeleteAttack(UnownedRegionGuid, UnownedAdjacentRegionGuid);
 
             // Assert
             try
@@ -507,10 +506,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestDeleteAttack_WithValidRegion_WithInvalidRound()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            Task result = controller.DeleteAttack(OwnedRegionGuid, UnownedAdjacentRegionGuid);
+            Task result = primaryUser.RegionController.DeleteAttack(OwnedRegionGuid, UnownedAdjacentRegionGuid);
 
             // Assert
             try
@@ -530,10 +529,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestDeleteAttack_WithValidRegion_WithValidAttack()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            await controller.DeleteAttack(OwnedRegionGuid, UnownedAdjacentRegionGuid);
+            await primaryUser.RegionController.DeleteAttack(OwnedRegionGuid, UnownedAdjacentRegionGuid);
 
             // Assert
         }
@@ -544,10 +543,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestDeleteAttack_WithValidRegion_WithInvalidAttack()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            await controller.DeleteAttack(OwnedRegionGuid, UnownedAdjacentRegionGuid);
+            await primaryUser.RegionController.DeleteAttack(OwnedRegionGuid, UnownedAdjacentRegionGuid);
 
             // Assert
         }
@@ -560,10 +559,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestPostRedeploy_WithInvalidRegion()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            Task result = controller.PostRedeployTroops(InvalidRegionGuid, 1, InvalidRegionGuid);
+            Task result = primaryUser.RegionController.PostRedeployTroops(InvalidRegionGuid, 1, InvalidRegionGuid);
 
             // Assert
             try
@@ -583,10 +582,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestPostRedeploy_WithValidRegion_WithInvalidTargetRegion()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            Task result = controller.PostRedeployTroops(OwnedRegionGuid, 1, InvalidRegionGuid);
+            Task result = primaryUser.RegionController.PostRedeployTroops(OwnedRegionGuid, 1, InvalidRegionGuid);
 
             // Assert
             try
@@ -606,10 +605,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestPostRedeploy_WithValidRegion_WithUnownedTargetRegion()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            Task result = controller.PostRedeployTroops(OwnedRegionGuid, 1, UnownedAdjacentRegionGuid);
+            Task result = primaryUser.RegionController.PostRedeployTroops(OwnedRegionGuid, 1, UnownedAdjacentRegionGuid);
 
             // Assert
             try
@@ -629,10 +628,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestPostRedeploy_WithUnownedRegion()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            Task result = controller.PostRedeployTroops(UnownedRegionGuid, 1, OwnedAdjacentRegionGuid);
+            Task result = primaryUser.RegionController.PostRedeployTroops(UnownedRegionGuid, 1, OwnedAdjacentRegionGuid);
 
             // Assert
             try
@@ -652,10 +651,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestPostRedeploy_WithValidRegion_WithInvalidRound()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            Task result = controller.PostRedeployTroops(OwnedRegionGuid, 1, OwnedAdjacentRegionGuid);
+            Task result = primaryUser.RegionController.PostRedeployTroops(OwnedRegionGuid, 1, OwnedAdjacentRegionGuid);
 
             // Assert
             try
@@ -675,10 +674,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestPostRedeploy_WithValidRegion_WithUnconnectedTarget()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            Task result = controller.PostRedeployTroops(OwnedRegionGuid, 1, OwnedNonAdjacentRegionGuid);
+            Task result = primaryUser.RegionController.PostRedeployTroops(OwnedRegionGuid, 1, OwnedNonAdjacentRegionGuid);
 
             // Assert
             try
@@ -698,10 +697,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestPostRedeploy_WithValidRegion_WithValidTroops()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            await controller.PostRedeployTroops(OwnedRegionGuid, 1, OwnedAdjacentRegionGuid);
+            await primaryUser.RegionController.PostRedeployTroops(OwnedRegionGuid, 1, OwnedAdjacentRegionGuid);
 
             // Assert
         }
@@ -712,10 +711,10 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestPostRedeploy_WithValidRegion_WithInvalidTroops()
         {
             // Arrange
-            RegionController controller = CreateRegionController();
+            ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            Task result = controller.PostRedeployTroops(OwnedRegionGuid, 10, OwnedAdjacentRegionGuid);
+            Task result = primaryUser.RegionController.PostRedeployTroops(OwnedRegionGuid, 10, OwnedAdjacentRegionGuid);
 
             // Assert
             try
@@ -729,15 +728,6 @@ namespace Peril.Api.Tests.Controllers
             }
         }
         #endregion
-
-        RegionController CreateRegionController()
-        {
-            RegionController controller = new RegionController();
-            GenericIdentity identity = new GenericIdentity("DummyUser", "Dummy");
-            identity.AddClaim(new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, "DummyUser"));
-            controller.ControllerContext.RequestContext.Principal = new GenericPrincipal(identity, null);
-            return controller;
-        }
 
         Guid InvalidRegionGuid { get { return new Guid("024D1E45-EF34-4AB1-840D-79229CCDE8C3"); } }
         Guid OwnedRegionGuid { get { return new Guid("54901E57-862D-4223-8C57-F2FFB2EBD77C"); } }
