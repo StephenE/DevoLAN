@@ -18,8 +18,7 @@ namespace Peril.Api.Tests.Controllers
             UserRepository = new DummyUserRepository();
             SessionRepository = new DummySessionRepository();
 
-            GameController = CreateGameController(userId);
-            RegionController = CreateRegionController(userId);
+            CreateControllers();
         }
 
         public ControllerMock(String userId, ControllerMock linkedData)
@@ -29,22 +28,30 @@ namespace Peril.Api.Tests.Controllers
             UserRepository = linkedData.UserRepository;
             SessionRepository = linkedData.SessionRepository;
 
-            GameController = CreateGameController(userId);
-            RegionController = CreateRegionController(userId);
+            CreateControllers();
         }
 
         public String OwnerId { get; private set; }
 
         public GameController GameController { get; private set; }
+        public NationController NationController { get; private set; }
         public RegionController RegionController { get; private set; }
+        public WorldController WorldController { get; private set; }
 
         public DummyUserRepository UserRepository { get; private set; }
         public DummySessionRepository SessionRepository { get; private set; }
 
-        private GameController CreateGameController(String userId)
+        public GameController CreateGameController(String userId)
         {
             GameController controller = new GameController(SessionRepository, UserRepository);
             controller.ControllerContext.RequestContext.Principal = UserRepository.GetPrincipal(userId);
+            return controller;
+        }
+
+        public NationController CreateNationController(String userId)
+        {
+            NationController controller = new NationController();
+            controller.ControllerContext.RequestContext.Principal = controller.ControllerContext.RequestContext.Principal = UserRepository.GetPrincipal(userId);
             return controller;
         }
 
@@ -53,6 +60,21 @@ namespace Peril.Api.Tests.Controllers
             RegionController controller = new RegionController();
             controller.ControllerContext.RequestContext.Principal = controller.ControllerContext.RequestContext.Principal = UserRepository.GetPrincipal(userId);
             return controller;
+        }
+
+        public WorldController CreateWorldController(String userId)
+        {
+            WorldController controller = new WorldController();
+            controller.ControllerContext.RequestContext.Principal = controller.ControllerContext.RequestContext.Principal = UserRepository.GetPrincipal(userId);
+            return controller;
+        }
+
+        private void CreateControllers()
+        {
+            GameController = CreateGameController(OwnerId);
+            NationController = CreateNationController(OwnerId);
+            RegionController = CreateRegionController(OwnerId);
+            WorldController = CreateWorldController(OwnerId);
         }
     }
 }

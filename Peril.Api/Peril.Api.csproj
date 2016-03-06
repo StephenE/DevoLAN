@@ -228,7 +228,9 @@
     <Compile Include="Areas\HelpPage\XmlDocumentationProvider.cs" />
     <Compile Include="Controllers\Api\AccountController.cs" />
     <Compile Include="Controllers\Api\GameController.cs" />
+    <Compile Include="Controllers\Api\NationController.cs" />
     <Compile Include="Controllers\Api\RegionController.cs" />
+    <Compile Include="Controllers\Api\WorldController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>

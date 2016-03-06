@@ -29,6 +29,13 @@ namespace Peril.Api.Controllers.Api
             return await SessionRepository.GetSessions();
         }
 
+        // GET /api/Game/Session
+        [Route("Session")]
+        public async Task<Peril.Core.ISession> GetSession(Guid sessionId)
+        {
+            return await SessionRepository.GetSession(sessionId);
+        }
+
         // POST /api/Game/StartNewGame
         [Route("StartNewGame")]
         public async Task<Peril.Core.ISession> PostStartNewSession()
@@ -45,6 +52,10 @@ namespace Peril.Api.Controllers.Api
             if (session == null)
             {
                 throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.NotFound, ReasonPhrase = "No session found with the provided Guid" });
+            }
+            else if(session.PhaseType != SessionPhase.NotStarted)
+            {
+                throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.ExpectationFailed, ReasonPhrase = "The session is no longer in the 'NotStarted' state" });
             }
             else
             {
@@ -74,6 +85,24 @@ namespace Peril.Api.Controllers.Api
                        join user in UserRepository.Users on playerId equals user.Id
                        select new Player { UserId = playerId, Name = user.UserName };
             }
+        }
+
+        // POST /api/Game/PostEndPhase
+        [Route("EndPhase")]
+        public async Task PostEndPhase(Guid roundId)
+        {
+            // Check for concurrent action [Conflict]
+            throw new NotImplementedException("Not done yet");
+        }
+
+        // POST /api/Game/PostAdvanceNextPhase
+        [Route("AdvanceNextPhase")]
+        public async Task PostAdvanceNextPhase(Guid roundId, bool force)
+        {
+            // Check for concurrent action [Conflict]
+            // Only allowed by session owner [Forbidden]
+            // Check all players ready (unless force == true)
+            throw new NotImplementedException("Not done yet");
         }
 
         private ISessionRepository SessionRepository { get; set; }

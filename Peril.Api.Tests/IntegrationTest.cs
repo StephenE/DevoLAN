@@ -31,39 +31,55 @@ namespace Peril.Api.Tests
             Assert.AreEqual(2, playersInSession.Count());
 
             // Start game (with primary user)
+            await primaryUser.GameController.PostAdvanceNextPhase(sessionDetails.PhaseId, true);
 
             // Deploy initial troops
-            await RandomlyDeployReinforcements(primaryUser);
-            await RandomlyDeployReinforcements(secondaryUser);
+            await RandomlyDeployReinforcements(primaryUser, sessionDetails.GameId);
+            await RandomlyDeployReinforcements(secondaryUser, sessionDetails.GameId);
 
-            // Move into combat round (with primary user)
+            // Move into combat phase (with primary user)
+            sessionDetails = await primaryUser.GameController.GetSession(sessionDetails.GameId);
+            await primaryUser.GameController.PostAdvanceNextPhase(sessionDetails.GameId, true);
 
             // Issue random attack orders
-            await RandomlyAttack(primaryUser);
-            await RandomlyAttack(secondaryUser);
+            await RandomlyAttack(primaryUser, sessionDetails.GameId);
+            await RandomlyAttack(secondaryUser, sessionDetails.GameId);
 
-            // Move into resolution round (with primary user)
+            // Move into resolution phase (with primary user)
+            sessionDetails = await primaryUser.GameController.GetSession(sessionDetails.GameId);
+            await primaryUser.GameController.PostAdvanceNextPhase(sessionDetails.GameId, true);
 
             // Resolve combat
-
-            // Move into redeployment round (with primary user)
+            await ResolveAllCombat(primaryUser, sessionDetails.GameId);
 
             // Issue random deployment order
-            await RandomlyRedeployTroops(primaryUser);
-            await RandomlyRedeployTroops(secondaryUser);
+            await RandomlyRedeployTroops(primaryUser, sessionDetails.GameId);
+            await RandomlyRedeployTroops(secondaryUser, sessionDetails.GameId);
 
-            // Move into victory round (with primary user)
+            // Move into victory phase (with primary user)
+            sessionDetails = await primaryUser.GameController.GetSession(sessionDetails.GameId);
+            await primaryUser.GameController.PostAdvanceNextPhase(sessionDetails.GameId, true);
         }
 
-        private async Task RandomlyDeployReinforcements(ControllerMock user)
+        private async Task<IEnumerable<Guid>> GetCurrentlyOwnedRegions(ControllerMock user)
+        {
+            IEnumerable<IRegion> worldRegions = await user.WorldController.GetRegions();
+
+            return from region in worldRegions
+                   where region.OwnerId == user.OwnerId
+                   select region.RegionId;
+        }
+
+        private async Task RandomlyDeployReinforcements(ControllerMock user, Guid sessionId)
         {
             Random rand = new Random();
+            ISession session = await user.GameController.GetSession(sessionId);
 
             // Get owned regions
-            IEnumerable<Guid> ownedRegions = null;
+            IEnumerable<Guid> ownedRegions = await GetCurrentlyOwnedRegions(user);
 
             // Get number of available troops
-            int numberOfAvailableTroops = 0;
+            UInt32 numberOfAvailableTroops = await user.NationController.GetReinforcements();
 
             // Distribute troops over available regions
             while(numberOfAvailableTroops > 0)
@@ -75,12 +91,15 @@ namespace Peril.Api.Tests
             }
 
             // End deployment
+            await user.GameController.PostEndPhase(session.PhaseId);
         }
 
-        private async Task RandomlyAttack(ControllerMock user)
+        private async Task RandomlyAttack(ControllerMock user, Guid sessionId)
         {
+            ISession session = await user.GameController.GetSession(sessionId);
+
             // Get owned regions
-            IEnumerable<Guid> ownedRegions = null;
+            IEnumerable<Guid> ownedRegions = await GetCurrentlyOwnedRegions(user);
             bool hasAttacked = false;
 
             foreach(Guid ownedRegionId in ownedRegions)
@@ -106,13 +125,50 @@ namespace Peril.Api.Tests
                 }
             }
 
-            // End attack round
+            // End attack phase
+            await user.GameController.PostEndPhase(session.PhaseId);
         }
 
-        private async Task RandomlyRedeployTroops(ControllerMock user)
+        private async Task ResolveAllCombat(ControllerMock user, Guid sessionId)
         {
+            bool isInCombatRound = false;
+
+            do
+            {
+                ISession session = await user.GameController.GetSession(sessionId);
+
+                switch (session.PhaseType)
+                {
+                    case SessionPhase.BorderClashes:
+                    case SessionPhase.MassInvasions:
+                    case SessionPhase.Invasions:
+                    case SessionPhase.SpoilsOfWar:
+                        {
+                            isInCombatRound = true;
+                            break;
+                        }
+                    default:
+                        {
+                            isInCombatRound = false;
+                            break;
+                        }
+                }
+
+                // Advance to the next phase
+                if (isInCombatRound)
+                {
+                    await user.GameController.PostAdvanceNextPhase(session.PhaseId, true);
+                }
+            }
+            while (isInCombatRound);
+        }
+
+        private async Task RandomlyRedeployTroops(ControllerMock user, Guid sessionId)
+        {
+            ISession session = await user.GameController.GetSession(sessionId);
+
             // Get owned regions
-            IEnumerable<Guid> ownedRegions = null;
+            IEnumerable<Guid> ownedRegions = await GetCurrentlyOwnedRegions(user);
             bool hasRedeployed = false;
 
             foreach (Guid ownedRegionId in ownedRegions)
@@ -138,6 +194,7 @@ namespace Peril.Api.Tests
             }
 
             // End redeployment
+            await user.GameController.PostEndPhase(session.PhaseId);
         }
     }
 }

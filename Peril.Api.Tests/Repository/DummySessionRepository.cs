@@ -1,4 +1,5 @@
 ﻿using Peril.Api.Repository;
+using Peril.Api.Tests.Controllers;
 using Peril.Core;
 using System;
 using System.Collections.Generic;
@@ -13,6 +14,7 @@ namespace Peril.Api.Tests.Repository
             Sessions = new List<DummySession>();
         }
 
+        #region - ISessionRepository Implementation -
         public async Task<Guid> CreateSession(String userId)
         {
             Guid newId = Guid.NewGuid();
@@ -56,7 +58,31 @@ namespace Peril.Api.Tests.Repository
                 throw new InvalidOperationException("Called JoinSession with a non-existant GUID");
             }
         }
+        #endregion
+
+        #region - Test Setup Helpers -
+        internal DummySession SetupDummySession(Guid sessionId, String ownerId)
+        {
+            DummySession session = new DummySession { GameId = sessionId };
+            session.SetupAddPlayer(ownerId);
+            Sessions.Add(session);
+            return session;
+        }
+        #endregion
 
         public List<DummySession> Sessions { get;set; }
+    }
+
+    static class ControllerMockSessionRepositoryExtensions
+    {
+        static public DummySession SetupDummySession(this ControllerMock controller, Guid sessionId)
+        {
+            return controller.SessionRepository.SetupDummySession(sessionId, controller.OwnerId);
+        }
+
+        static public DummySession SetupDummySession(this ControllerMock controller, Guid sessionId, String ownerId)
+        {
+            return controller.SessionRepository.SetupDummySession(sessionId, ownerId);
+        }
     }
 }

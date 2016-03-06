@@ -40,7 +40,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ICombat.cs" />
+    <Compile Include="ICombatArmy.cs" />
+    <Compile Include="ICombatArmyRoundResult.cs" />
+    <Compile Include="ICombatResult.cs" />
     <Compile Include="ISession.cs" />
+    <Compile Include="ICombatRoundResult.cs" />
     <Compile Include="IPlayer.cs" />
     <Compile Include="IRegion.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

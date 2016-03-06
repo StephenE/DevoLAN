@@ -79,7 +79,7 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <Compile Include="CloudStorageEmulatorShepherd.cs" />
+    <Compile Include="Repository\CloudStorageEmulatorShepherd.cs" />
     <Compile Include="SessionRepositoryIntergrationTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
