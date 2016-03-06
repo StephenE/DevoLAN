@@ -25,8 +25,7 @@ namespace Peril.Api.Repository.Azure
         {
             // Create a new table entry
             Guid newSessionGuid = Guid.NewGuid();
-            SessionTableEntry newSession = new SessionTableEntry(newSessionGuid);
-            newSession.OwnerUserId = userId;
+            SessionTableEntry newSession = new SessionTableEntry(userId, newSessionGuid);
 
             // Kick off the insert operation
             TableOperation insertOperation = TableOperation.Insert(newSession);
@@ -60,9 +59,11 @@ namespace Peril.Api.Repository.Azure
 
         public async Task<ISession> GetSession(Guid sessionId)
         {
-            TableOperation operation = TableOperation.Retrieve<SessionTableEntry>(sessionId.ToString(), sessionId.ToString());
-            TableResult retrievedResult = await SessionTable.ExecuteAsync(operation);
-            return retrievedResult.Result as ISession;
+            TableQuery<SessionTableEntry> query = new TableQuery<SessionTableEntry>()
+                .Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, sessionId.ToString()));
+
+            var results = await SessionTable.ExecuteQuerySegmentedAsync(query, null);
+            return results.FirstOrDefault();
         }
 
         public async Task JoinSession(Guid sessionId, String userId)
@@ -75,9 +76,24 @@ namespace Peril.Api.Repository.Azure
             await SessionPlayersTable.ExecuteAsync(insertOperation);
         }
 
+        public async Task MarkPlayerCompletedPhase(Guid sessionId, String userId, Guid phaseId)
+        {
+            // Fetch existing entry
+            var operation = TableOperation.Retrieve<SessionPlayerTableEntry>(sessionId.ToString(), userId);
+            var result = await SessionPlayersTable.ExecuteAsync(operation);
+
+            // Modify entry
+            SessionPlayerTableEntry playerEntry = result.Result as SessionPlayerTableEntry;
+            playerEntry.CompletedPhase = phaseId;
+
+            // Write entry back (fails on write conflict)
+            TableOperation insertOperation = TableOperation.Replace(playerEntry);
+            await SessionPlayersTable.ExecuteAsync(insertOperation);
+        }
+
         private CloudStorageAccount StorageAccount { get; set; }
         private CloudTableClient TableClient { get; set; }
-        private CloudTable SessionTable { get; set; }
-        private CloudTable SessionPlayersTable { get; set; }
+        public CloudTable SessionTable { get; set; }
+        public CloudTable SessionPlayersTable { get; set; }
     }
 }

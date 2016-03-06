@@ -31,7 +31,7 @@ namespace Peril.Api.Tests
             Assert.AreEqual(2, playersInSession.Count());
 
             // Start game (with primary user)
-            await primaryUser.GameController.PostAdvanceNextPhase(sessionDetails.PhaseId, true);
+            await primaryUser.GameController.PostAdvanceNextPhase(sessionDetails.GameId, sessionDetails.PhaseId, true);
 
             // Deploy initial troops
             await RandomlyDeployReinforcements(primaryUser, sessionDetails.GameId);
@@ -39,7 +39,7 @@ namespace Peril.Api.Tests
 
             // Move into combat phase (with primary user)
             sessionDetails = await primaryUser.GameController.GetSession(sessionDetails.GameId);
-            await primaryUser.GameController.PostAdvanceNextPhase(sessionDetails.GameId, true);
+            await primaryUser.GameController.PostAdvanceNextPhase(sessionDetails.GameId, sessionDetails.GameId, true);
 
             // Issue random attack orders
             await RandomlyAttack(primaryUser, sessionDetails.GameId);
@@ -47,7 +47,7 @@ namespace Peril.Api.Tests
 
             // Move into resolution phase (with primary user)
             sessionDetails = await primaryUser.GameController.GetSession(sessionDetails.GameId);
-            await primaryUser.GameController.PostAdvanceNextPhase(sessionDetails.GameId, true);
+            await primaryUser.GameController.PostAdvanceNextPhase(sessionDetails.GameId, sessionDetails.GameId, true);
 
             // Resolve combat
             await ResolveAllCombat(primaryUser, sessionDetails.GameId);
@@ -58,7 +58,7 @@ namespace Peril.Api.Tests
 
             // Move into victory phase (with primary user)
             sessionDetails = await primaryUser.GameController.GetSession(sessionDetails.GameId);
-            await primaryUser.GameController.PostAdvanceNextPhase(sessionDetails.GameId, true);
+            await primaryUser.GameController.PostAdvanceNextPhase(sessionDetails.GameId, sessionDetails.GameId, true);
         }
 
         private async Task<IEnumerable<Guid>> GetCurrentlyOwnedRegions(ControllerMock user)
@@ -91,7 +91,7 @@ namespace Peril.Api.Tests
             }
 
             // End deployment
-            await user.GameController.PostEndPhase(session.PhaseId);
+            await user.GameController.PostEndPhase(session.GameId, session.PhaseId);
         }
 
         private async Task RandomlyAttack(ControllerMock user, Guid sessionId)
@@ -126,7 +126,7 @@ namespace Peril.Api.Tests
             }
 
             // End attack phase
-            await user.GameController.PostEndPhase(session.PhaseId);
+            await user.GameController.PostEndPhase(session.GameId, session.PhaseId);
         }
 
         private async Task ResolveAllCombat(ControllerMock user, Guid sessionId)
@@ -157,7 +157,7 @@ namespace Peril.Api.Tests
                 // Advance to the next phase
                 if (isInCombatRound)
                 {
-                    await user.GameController.PostAdvanceNextPhase(session.PhaseId, true);
+                    await user.GameController.PostAdvanceNextPhase(session.GameId, session.PhaseId, true);
                 }
             }
             while (isInCombatRound);
@@ -194,7 +194,7 @@ namespace Peril.Api.Tests
             }
 
             // End redeployment
-            await user.GameController.PostEndPhase(session.PhaseId);
+            await user.GameController.PostEndPhase(session.GameId, session.PhaseId);
         }
     }
 }

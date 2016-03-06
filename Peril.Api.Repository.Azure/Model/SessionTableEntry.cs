@@ -6,10 +6,10 @@ namespace Peril.Api.Repository.Azure.Model
 {
     public class SessionTableEntry : TableEntity, ISession
     {
-        public SessionTableEntry(Guid sessionId)
+        public SessionTableEntry(String ownerId, Guid sessionId)
         {
             PartitionKey = sessionId.ToString();
-            RowKey = sessionId.ToString();
+            RowKey = ownerId;
             PhaseId = Guid.Empty;
             PhaseType = SessionPhase.NotStarted;
         }
@@ -20,7 +20,7 @@ namespace Peril.Api.Repository.Azure.Model
         }
 
         public Guid GameId { get { return Guid.Parse(PartitionKey); } }
-        public String OwnerUserId { get; set; }
+        public String OwnerUserId { get { return RowKey; } }
         public Guid PhaseId { get; set; }
         public SessionPhase PhaseType { get; set; }
     }

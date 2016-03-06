@@ -64,7 +64,7 @@ namespace Peril.Api.Tests.Controllers
             Assert.IsNotNull(result.GameId);
             Assert.AreEqual(Guid.Empty, result.PhaseId);
             Assert.AreEqual(SessionPhase.NotStarted, result.PhaseType);
-            Assert.AreEqual("DummyUser", primaryUser.SessionRepository.Sessions.Where(session => session.GameId == result.GameId).First().Players.First());
+            Assert.AreEqual("DummyUser", primaryUser.SessionRepository.Sessions.Where(session => session.GameId == result.GameId).First().Players.First().UserId);
         }
 
         [TestMethod]
@@ -107,7 +107,7 @@ namespace Peril.Api.Tests.Controllers
             // Assert
             await result;
             Assert.AreEqual(2, primaryUser.SessionRepository.Sessions.Where(session => session.GameId == validGuid).First().Players.Count);
-            Assert.IsTrue(primaryUser.SessionRepository.Sessions.Where(session => session.GameId == validGuid).First().Players.Contains("DummyUser"));
+            Assert.AreEqual(1, primaryUser.SessionRepository.Sessions.Where(session => session.GameId == validGuid).First().Players.Where(player => player.UserId == "DummyUser").Count());
         }
 
         [TestMethod]
@@ -186,7 +186,7 @@ namespace Peril.Api.Tests.Controllers
             // Arrange
             Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
             ControllerMock primaryUser = new ControllerMock();
-            primaryUser.SessionRepository.Sessions.Add(new DummySession { GameId = validGuid, Players = new List<String> { "DummyUser" } });
+            primaryUser.SetupDummySession(validGuid);
 
             // Act
             IEnumerable<IPlayer> result = await primaryUser.GameController.GetPlayers(validGuid);
@@ -194,7 +194,103 @@ namespace Peril.Api.Tests.Controllers
             // Assert
             Assert.IsNotNull(result);
             Assert.AreEqual(1, result.Count());
-            Assert.AreEqual("DummyUser", result.First().UserId);
+            Assert.AreEqual(primaryUser.OwnerId, result.First().UserId);
+        }
+
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("GameController")]
+        public async Task TestPostEndPhase_WithValidGuid()
+        {
+            // Arrange
+            Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
+            ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(validGuid)
+                       .SetupSessionPhase(SessionPhase.Reinforcements);
+            ISession sessionDetails = await primaryUser.SessionRepository.GetSession(validGuid);
+
+            // Act
+            await primaryUser.GameController.PostEndPhase(validGuid, sessionDetails.PhaseId);
+
+            // Assert
+            Assert.AreEqual(sessionDetails.PhaseId, primaryUser.SessionRepository.SessionMap[validGuid].Players.First().CompletedPhase);
+        }
+
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("GameController")]
+        public async Task TestPostEndPhase_WithInvalidGuid()
+        {
+            // Arrange
+            Guid invalidGuid = new Guid("3286C8E6-B510-4F7F-AAE0-9EF827459E7E");
+            ControllerMock primaryUser = new ControllerMock();
+
+            // Act
+            Task result = primaryUser.GameController.PostEndPhase(invalidGuid, invalidGuid);
+
+            // Assert
+            try
+            {
+                await result;
+                Assert.Fail("Expected exception to be thrown");
+            }
+            catch (HttpResponseException exception)
+            {
+                Assert.AreEqual(HttpStatusCode.NotFound, exception.Response.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("GameController")]
+        public async Task TestPostEndPhase_WithValidGuid_WithInvalidPhase()
+        {
+            // Arrange
+            Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
+            ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(validGuid)
+                       .SetupSessionPhase(SessionPhase.Reinforcements);
+
+            // Act
+            Task result = primaryUser.GameController.PostEndPhase(validGuid, Guid.Empty);
+
+            // Assert
+            try
+            {
+                await result;
+                Assert.Fail("Expected exception to be thrown");
+            }
+            catch (HttpResponseException exception)
+            {
+                Assert.AreEqual(HttpStatusCode.ExpectationFailed, exception.Response.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("GameController")]
+        public async Task TestPostEndPhase_WithValidGuid_WithInvalidUser()
+        {
+            // Arrange
+            Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
+            ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(validGuid, DummyUserRepository.RegisteredUserIds[1])
+                       .SetupSessionPhase(SessionPhase.Reinforcements);
+            ISession sessionDetails = await primaryUser.SessionRepository.GetSession(validGuid);
+
+            // Act
+            Task result = primaryUser.GameController.PostEndPhase(validGuid, sessionDetails.PhaseId);
+
+            // Assert
+            try
+            {
+                await result;
+                Assert.Fail("Expected exception to be thrown");
+            }
+            catch (HttpResponseException exception)
+            {
+                Assert.AreEqual(HttpStatusCode.Unauthorized, exception.Response.StatusCode);
+            }
         }
     }
 }

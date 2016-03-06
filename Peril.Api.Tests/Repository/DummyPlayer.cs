@@ -1,10 +1,17 @@
-﻿using Peril.Core;
+﻿using System;
 
 namespace Peril.Api.Tests.Repository
 {
-    class DummyPlayer : IPlayer
+    class DummyPlayer
     {
-        public string UserId { get; set; }
-        public string Name { get; set; }
+        public DummyPlayer(String userId)
+        {
+            UserId = userId;
+            CompletedPhase = Guid.Empty;
+        }
+
+        public String UserId { get; set; }
+
+        public Guid CompletedPhase { get; set; }
     }
 }

@@ -8,14 +8,14 @@ namespace Peril.Api.Tests.Repository
     {
         public DummySession()
         {
-            Players = new List<String>();
+            Players = new List<DummyPlayer>();
             PhaseId = Guid.Empty;
             PhaseType = SessionPhase.NotStarted;
         }
 
         public Guid GameId { get; set; }
 
-        public List<String> Players { get;set; }
+        public List<DummyPlayer> Players { get;set; }
 
         public Guid PhaseId { get; set; }
 
@@ -31,7 +31,7 @@ namespace Peril.Api.Tests.Repository
 
         internal DummySession SetupAddPlayer(String userId)
         {
-            Players.Add(userId);
+            Players.Add(new DummyPlayer(userId));
             return this;
         }
         #endregion

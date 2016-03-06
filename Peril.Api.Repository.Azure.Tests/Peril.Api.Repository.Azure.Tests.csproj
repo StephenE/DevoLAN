@@ -80,6 +80,7 @@
   </Choose>
   <ItemGroup>
     <Compile Include="Repository\CloudStorageEmulatorShepherd.cs" />
+    <Compile Include="Repository\SessionRepositoryExtensions.cs" />
     <Compile Include="SessionRepositoryIntergrationTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

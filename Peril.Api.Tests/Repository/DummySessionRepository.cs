@@ -3,6 +3,7 @@ using Peril.Api.Tests.Controllers;
 using Peril.Core;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Peril.Api.Tests.Repository
@@ -11,24 +12,25 @@ namespace Peril.Api.Tests.Repository
     {
         public DummySessionRepository()
         {
-            Sessions = new List<DummySession>();
+            SessionMap = new Dictionary<Guid, DummySession>();
         }
 
         #region - ISessionRepository Implementation -
         public async Task<Guid> CreateSession(String userId)
         {
             Guid newId = Guid.NewGuid();
-            Sessions.Add(new DummySession { GameId = newId });
+            SessionMap[newId] = new DummySession { GameId = newId };
             await JoinSession(newId, userId);
             return newId;
         }
 
         public async Task<IEnumerable<String>> GetSessionPlayers(Guid sessionId)
         {
-            DummySession foundSession = Sessions.Find(session => session.GameId == sessionId);
+            DummySession foundSession = SessionMap[sessionId];
             if (foundSession != null)
             {
-                return foundSession.Players;
+                return from player in foundSession.Players
+                       select player.UserId;
             }
             else
             {
@@ -43,15 +45,43 @@ namespace Peril.Api.Tests.Repository
 
         public async Task<ISession> GetSession(Guid sessionId)
         {
-            return Sessions.Find(session => session.GameId == sessionId);
+            if(SessionMap.ContainsKey(sessionId))
+            {
+                return SessionMap[sessionId];
+            }
+            else
+            {
+                return null;
+            }
         }
 
         public async Task JoinSession(Guid sessionId, String userId)
         {
-            DummySession foundSession = Sessions.Find(session => session.GameId == sessionId);
+            DummySession foundSession = SessionMap[sessionId];
             if(foundSession != null)
             {
-                foundSession.Players.Add(userId);
+                foundSession.Players.Add(new DummyPlayer(userId));
+            }
+            else
+            {
+                throw new InvalidOperationException("Called JoinSession with a non-existant GUID");
+            }
+        }
+
+        public async Task MarkPlayerCompletedPhase(Guid sessionId, String userId, Guid phaseId)
+        {
+            DummySession foundSession = SessionMap[sessionId];
+            if (foundSession != null)
+            {
+                DummyPlayer foundPlayer = foundSession.Players.Find(player => player.UserId == userId);
+                if(foundPlayer != null)
+                {
+                    foundPlayer.CompletedPhase = phaseId;
+                }
+                else
+                {
+                    throw new InvalidOperationException("Called MarkPlayerCompletedPhase with a non-existant user id");
+                }
             }
             else
             {
@@ -65,12 +95,21 @@ namespace Peril.Api.Tests.Repository
         {
             DummySession session = new DummySession { GameId = sessionId };
             session.SetupAddPlayer(ownerId);
-            Sessions.Add(session);
+            SessionMap[sessionId] = session;
             return session;
         }
         #endregion
 
-        public List<DummySession> Sessions { get;set; }
+        public IEnumerable<DummySession> Sessions
+        {
+            get
+            {
+                return from session in SessionMap
+                       select session.Value;
+            }
+        }
+
+        public Dictionary<Guid, DummySession> SessionMap { get; set; }
     }
 
     static class ControllerMockSessionRepositoryExtensions

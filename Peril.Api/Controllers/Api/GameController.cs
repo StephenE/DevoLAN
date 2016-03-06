@@ -33,7 +33,7 @@ namespace Peril.Api.Controllers.Api
         [Route("Session")]
         public async Task<Peril.Core.ISession> GetSession(Guid sessionId)
         {
-            return await SessionRepository.GetSession(sessionId);
+            return await SessionRepository.GetSessionOrThrow(sessionId);
         }
 
         // POST /api/Game/StartNewGame
@@ -48,23 +48,14 @@ namespace Peril.Api.Controllers.Api
         [Route("JoinGame")]
         public async Task PostJoinSession(Guid sessionId)
         {
-            ISession session = await SessionRepository.GetSession(sessionId);
-            if (session == null)
+            ISession session = await SessionRepository.GetSessionOrThrow(sessionId)
+                                                      .IsPhaseTypeOrThrow(SessionPhase.NotStarted);
+
+            IEnumerable<String> playerIds = await SessionRepository.GetSessionPlayers(sessionId);
+            var existingEntry = playerIds.Where(playerId => playerId == User.Identity.GetUserId());
+            if (existingEntry.Count() == 0)
             {
-                throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.NotFound, ReasonPhrase = "No session found with the provided Guid" });
-            }
-            else if(session.PhaseType != SessionPhase.NotStarted)
-            {
-                throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.ExpectationFailed, ReasonPhrase = "The session is no longer in the 'NotStarted' state" });
-            }
-            else
-            {
-                IEnumerable<String> playerIds = await SessionRepository.GetSessionPlayers(sessionId);
-                var existingEntry = playerIds.Where(playerId => playerId == User.Identity.GetUserId());
-                if (existingEntry.Count() == 0)
-                {
-                    await SessionRepository.JoinSession(sessionId, User.Identity.GetUserId());
-                }
+                await SessionRepository.JoinSession(sessionId, User.Identity.GetUserId());
             }
         }
 
@@ -72,33 +63,34 @@ namespace Peril.Api.Controllers.Api
         [Route("Players")]
         public async Task<IEnumerable<Peril.Core.IPlayer>> GetPlayers(Guid sessionId)
         {
-            ISession session = await SessionRepository.GetSession(sessionId);
-            if (session == null)
-            {
-                throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.NotFound, ReasonPhrase = "No session found with the provided Guid" });
-            }
-            else
-            {
-                // Resolve player ids into IPlayer structures
-                IEnumerable<String> playerIds = await SessionRepository.GetSessionPlayers(sessionId);
-                return from playerId in playerIds
-                       join user in UserRepository.Users on playerId equals user.Id
-                       select new Player { UserId = playerId, Name = user.UserName };
-            }
+            ISession session = await SessionRepository.GetSessionOrThrow(sessionId);
+
+            // Resolve player ids into IPlayer structures
+            IEnumerable<String> playerIds = await SessionRepository.GetSessionPlayers(sessionId);
+            return from playerId in playerIds
+                    join user in UserRepository.Users on playerId equals user.Id
+                    select new Player { UserId = playerId, Name = user.UserName };
         }
 
         // POST /api/Game/PostEndPhase
         [Route("EndPhase")]
-        public async Task PostEndPhase(Guid roundId)
+        public async Task PostEndPhase(Guid sessionId, Guid phaseId)
         {
-            // Check for concurrent action [Conflict]
-            throw new NotImplementedException("Not done yet");
+            ISession session = await SessionRepository.GetSessionOrThrow(sessionId)
+                                                      .IsPhaseIdOrThrow(phaseId)
+                                                      .IsUserIdJoinedOrThrow(SessionRepository, User.Identity.GetUserId());
+
+            await SessionRepository.MarkPlayerCompletedPhase(sessionId, User.Identity.GetUserId(), phaseId);
         }
 
         // POST /api/Game/PostAdvanceNextPhase
         [Route("AdvanceNextPhase")]
-        public async Task PostAdvanceNextPhase(Guid roundId, bool force)
+        public async Task PostAdvanceNextPhase(Guid sessionId, Guid phaseId, bool force)
         {
+            ISession session = await SessionRepository.GetSessionOrThrow(sessionId)
+                                                      .IsPhaseIdOrThrow(phaseId)
+                                                      .IsUserIdJoinedOrThrow(SessionRepository, User.Identity.GetUserId());
+
             // Check for concurrent action [Conflict]
             // Only allowed by session owner [Forbidden]
             // Check all players ready (unless force == true)

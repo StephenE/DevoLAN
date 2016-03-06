@@ -9,6 +9,7 @@ namespace Peril.Api.Repository.Azure.Model
         {
             PartitionKey = sessionId.ToString();
             RowKey = userId.ToString();
+            CompletedPhase = Guid.Empty;
         }
 
         public SessionPlayerTableEntry()
@@ -25,5 +26,7 @@ namespace Peril.Api.Repository.Azure.Model
         {
             get { return RowKey; }
         }
+
+        public Guid CompletedPhase { get; set; }
     }
 }
