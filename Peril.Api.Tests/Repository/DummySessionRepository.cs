@@ -114,14 +114,22 @@ namespace Peril.Api.Tests.Repository
 
     static class ControllerMockSessionRepositoryExtensions
     {
-        static public DummySession SetupDummySession(this ControllerMock controller, Guid sessionId)
+        static public ControllerMockSetupContext SetupDummySession(this ControllerMock controller, Guid sessionId)
         {
-            return controller.SessionRepository.SetupDummySession(sessionId, controller.OwnerId);
+            return SetupDummySession(controller, sessionId, controller.OwnerId);
         }
 
-        static public DummySession SetupDummySession(this ControllerMock controller, Guid sessionId, String ownerId)
+        static public ControllerMockSetupContext SetupDummySession(this ControllerMock controller, Guid sessionId, String ownerId)
         {
-            return controller.SessionRepository.SetupDummySession(sessionId, ownerId);
+            DummySession session = controller.SessionRepository.SetupDummySession(sessionId, ownerId);
+            controller.NationRepository.SetupDummyNation(session.GameId, ownerId);
+            return new ControllerMockSetupContext { ControllerMock = controller, DummySession = session };
+        }
+
+        static public ControllerMockSetupContext SetupSessionPhase(this ControllerMockSetupContext setupContext, SessionPhase phase)
+        {
+            setupContext.DummySession.SetupSessionPhase(phase);
+            return setupContext;
         }
     }
 }

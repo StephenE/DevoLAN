@@ -118,7 +118,12 @@
     <Compile Include="Controllers\RegionControllerTest.cs" />
     <Compile Include="IntegrationTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Repository\DummyCommandQueue.cs" />
+    <Compile Include="Repository\DummyNationData.cs" />
+    <Compile Include="Repository\DummyNationRepository.cs" />
     <Compile Include="Repository\DummyPlayer.cs" />
+    <Compile Include="Repository\DummyRegionData.cs" />
+    <Compile Include="Repository\DummyRegionRepository.cs" />
     <Compile Include="Repository\DummySession.cs" />
     <Compile Include="Repository\DummySessionRepository.cs" />
     <Compile Include="Repository\DummyUserRepository.cs" />

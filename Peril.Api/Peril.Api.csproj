@@ -240,6 +240,7 @@
     <Compile Include="Models\AttackDetails.cs" />
     <Compile Include="Models\IdentityModels.cs" />
     <Compile Include="Models\Player.cs" />
+    <Compile Include="Models\Region.cs" />
     <Compile Include="Models\Session.cs" />
     <Compile Include="Models\UserRepository.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

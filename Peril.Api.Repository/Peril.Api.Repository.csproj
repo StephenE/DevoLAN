@@ -57,7 +57,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ApplicationUser.cs" />
+    <Compile Include="Model\ApplicationUser.cs" />
+    <Compile Include="ICommandQueue.cs" />
+    <Compile Include="Model\INationData.cs" />
+    <Compile Include="INationRepository.cs" />
+    <Compile Include="IRegionRepository.cs" />
+    <Compile Include="Model\IRegionData.cs" />
     <Compile Include="ISessionRepository.cs" />
     <Compile Include="IUserRepository.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

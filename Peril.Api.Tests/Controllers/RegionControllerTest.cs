@@ -1,10 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Peril.Api.Controllers.Api;
-using Peril.Api.Models;
+using Peril.Api.Tests.Repository;
 using Peril.Core;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Web.Http;
@@ -45,6 +42,8 @@ namespace Peril.Api.Tests.Controllers
         {
             // Arrange
             ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(SessionGuid)
+                       .SetupDummyWorldAsTree();
 
             // Act
             IRegion result = await primaryUser.RegionController.GetDetails(OwnedRegionGuid);
@@ -52,6 +51,57 @@ namespace Peril.Api.Tests.Controllers
             // Assert
             Assert.IsNotNull(result);
             Assert.AreEqual(OwnedRegionGuid, result.RegionId);
+        }
+
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("RegionController")]
+        public async Task TestGetDetails_WithInvalidSession()
+        {
+            // Arrange
+            ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(InvalidRegionGuid)
+                       .SetupDummyWorldAsTree();
+            primaryUser.SessionRepository.SessionMap.Clear();
+
+            // Act
+            Task<IRegion> result = primaryUser.RegionController.GetDetails(OwnedRegionGuid);
+
+            // Assert
+            try
+            {
+                await result;
+                Assert.Fail("Expected exception to be thrown");
+            }
+            catch (HttpResponseException exception)
+            {
+                Assert.AreEqual(HttpStatusCode.NotFound, exception.Response.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("RegionController")]
+        public async Task TestGetDetails_WithUnownedSession()
+        {
+            // Arrange
+            ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(SessionGuid, DummyUserRepository.RegisteredUserIds[1])
+                       .SetupDummyWorldAsTree(DummyUserRepository.RegisteredUserIds[1]);
+
+            // Act
+            Task<IRegion> result = primaryUser.RegionController.GetDetails(OwnedRegionGuid);
+
+            // Assert
+            try
+            {
+                await result;
+                Assert.Fail("Expected exception to be thrown");
+            }
+            catch (HttpResponseException exception)
+            {
+                Assert.AreEqual(HttpStatusCode.Unauthorized, exception.Response.StatusCode);
+            }
         }
         #endregion
 
@@ -63,6 +113,8 @@ namespace Peril.Api.Tests.Controllers
         {
             // Arrange
             ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(SessionGuid)
+                       .SetupDummyWorldAsTree();
 
             // Act
             Task result = primaryUser.RegionController.PostDeployTroops(InvalidRegionGuid, 1);
@@ -86,6 +138,10 @@ namespace Peril.Api.Tests.Controllers
         {
             // Arrange
             ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(SessionGuid)
+                       .SetupSessionPhase(SessionPhase.Reinforcements)
+                       .SetupDummyWorldAsTree()
+                       .SetupRegionOwnership(UnownedRegionGuid, DummyUserRepository.RegisteredUserIds[1]);
 
             // Act
             Task result = primaryUser.RegionController.PostDeployTroops(UnownedRegionGuid, 1);
@@ -98,7 +154,7 @@ namespace Peril.Api.Tests.Controllers
             }
             catch (HttpResponseException exception)
             {
-                Assert.AreEqual(HttpStatusCode.PreconditionFailed, exception.Response.StatusCode);
+                Assert.AreEqual(HttpStatusCode.NotAcceptable, exception.Response.StatusCode);
             }
         }
 
@@ -109,6 +165,9 @@ namespace Peril.Api.Tests.Controllers
         {
             // Arrange
             ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(SessionGuid)
+                       .SetupSessionPhase(SessionPhase.CombatOrders)
+                       .SetupDummyWorldAsTree();
 
             // Act
             Task result = primaryUser.RegionController.PostDeployTroops(OwnedRegionGuid, 1);
@@ -132,6 +191,10 @@ namespace Peril.Api.Tests.Controllers
         {
             // Arrange
             ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(SessionGuid)
+                       .SetupSessionPhase(SessionPhase.Reinforcements)
+                       .SetupAvailableReinforcements(1)
+                       .SetupDummyWorldAsTree();
 
             // Act
             await primaryUser.RegionController.PostDeployTroops(OwnedRegionGuid, 1);
@@ -146,6 +209,10 @@ namespace Peril.Api.Tests.Controllers
         {
             // Arrange
             ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(SessionGuid)
+                       .SetupSessionPhase(SessionPhase.Reinforcements)
+                       .SetupAvailableReinforcements(9)
+                       .SetupDummyWorldAsTree();
 
             // Act
             Task result = primaryUser.RegionController.PostDeployTroops(OwnedRegionGuid, 10);
@@ -340,218 +407,6 @@ namespace Peril.Api.Tests.Controllers
         }
         #endregion
 
-        #region - Get Attack -
-        [TestMethod]
-        [TestCategory("Unit")]
-        [TestCategory("RegionController")]
-        public async Task TestGetAttack_WithInvalidRegion()
-        {
-            // Arrange
-            ControllerMock primaryUser = new ControllerMock();
-
-            // Act
-            Task<IEnumerable<AttackDetails>> result = primaryUser.RegionController.GetAttack(InvalidRegionGuid);
-
-            // Assert
-            try
-            {
-                await result;
-                Assert.Fail("Expected exception to be thrown");
-            }
-            catch (HttpResponseException exception)
-            {
-                Assert.AreEqual(HttpStatusCode.NotFound, exception.Response.StatusCode);
-            }
-        }
-
-        [TestMethod]
-        [TestCategory("Unit")]
-        [TestCategory("RegionController")]
-        public async Task TestGetAttack_WithUnownedRegion()
-        {
-            // Arrange
-            ControllerMock primaryUser = new ControllerMock();
-
-            // Act
-            Task<IEnumerable<AttackDetails>> result = primaryUser.RegionController.GetAttack(UnownedRegionGuid);
-
-            // Assert
-            try
-            {
-                await result;
-                Assert.Fail("Expected exception to be thrown");
-            }
-            catch (HttpResponseException exception)
-            {
-                Assert.AreEqual(HttpStatusCode.PreconditionFailed, exception.Response.StatusCode);
-            }
-        }
-
-        [TestMethod]
-        [TestCategory("Unit")]
-        [TestCategory("RegionController")]
-        public async Task TestGetAttack_WithValidRegion_WithInvalidRound()
-        {
-            // Arrange
-            ControllerMock primaryUser = new ControllerMock();
-
-            // Act
-            Task<IEnumerable<AttackDetails>> result = primaryUser.RegionController.GetAttack(OwnedRegionGuid);
-
-            // Assert
-            try
-            {
-                await result;
-                Assert.Fail("Expected exception to be thrown");
-            }
-            catch (HttpResponseException exception)
-            {
-                Assert.AreEqual(HttpStatusCode.ExpectationFailed, exception.Response.StatusCode);
-            }
-        }
-
-        [TestMethod]
-        [TestCategory("Unit")]
-        [TestCategory("RegionController")]
-        public async Task TestGetAttack_WithValidRegion()
-        {
-            // Arrange
-            ControllerMock primaryUser = new ControllerMock();
-
-            // Act
-            IEnumerable<AttackDetails> result = await primaryUser.RegionController.GetAttack(OwnedRegionGuid);
-
-            // Assert
-            Assert.IsNotNull(result);
-            Assert.AreEqual(1, result.Count());
-            Assert.AreEqual(OwnedRegionGuid, result.First().SourceRegion);
-            Assert.AreEqual(UnownedAdjacentRegionGuid, result.First().TargetRegion);
-            Assert.AreEqual(1, result.First().NumberOfTroops);
-        }
-        #endregion
-
-        #region - Delete Attack -
-        [TestMethod]
-        [TestCategory("Unit")]
-        [TestCategory("RegionController")]
-        public async Task TestDeleteAttack_WithInvalidRegion()
-        {
-            // Arrange
-            ControllerMock primaryUser = new ControllerMock();
-
-            // Act
-            Task result = primaryUser.RegionController.DeleteAttack(InvalidRegionGuid, InvalidRegionGuid);
-
-            // Assert
-            try
-            {
-                await result;
-                Assert.Fail("Expected exception to be thrown");
-            }
-            catch (HttpResponseException exception)
-            {
-                Assert.AreEqual(HttpStatusCode.NotFound, exception.Response.StatusCode);
-            }
-        }
-
-        [TestMethod]
-        [TestCategory("Unit")]
-        [TestCategory("RegionController")]
-        public async Task TestDeleteAttack_WithValidRegion_WithInvalidTargetRegion()
-        {
-            // Arrange
-            ControllerMock primaryUser = new ControllerMock();
-
-            // Act
-            Task result = primaryUser.RegionController.DeleteAttack(OwnedRegionGuid, InvalidRegionGuid);
-
-            // Assert
-            try
-            {
-                await result;
-                Assert.Fail("Expected exception to be thrown");
-            }
-            catch (HttpResponseException exception)
-            {
-                Assert.AreEqual(HttpStatusCode.NotFound, exception.Response.StatusCode);
-            }
-        }
-
-        [TestMethod]
-        [TestCategory("Unit")]
-        [TestCategory("RegionController")]
-        public async Task TestDeletetAttack_WithUnownedRegion()
-        {
-            // Arrange
-            ControllerMock primaryUser = new ControllerMock();
-
-            // Act
-            Task result = primaryUser.RegionController.DeleteAttack(UnownedRegionGuid, UnownedAdjacentRegionGuid);
-
-            // Assert
-            try
-            {
-                await result;
-                Assert.Fail("Expected exception to be thrown");
-            }
-            catch (HttpResponseException exception)
-            {
-                Assert.AreEqual(HttpStatusCode.PreconditionFailed, exception.Response.StatusCode);
-            }
-        }
-
-        [TestMethod]
-        [TestCategory("Unit")]
-        [TestCategory("RegionController")]
-        public async Task TestDeleteAttack_WithValidRegion_WithInvalidRound()
-        {
-            // Arrange
-            ControllerMock primaryUser = new ControllerMock();
-
-            // Act
-            Task result = primaryUser.RegionController.DeleteAttack(OwnedRegionGuid, UnownedAdjacentRegionGuid);
-
-            // Assert
-            try
-            {
-                await result;
-                Assert.Fail("Expected exception to be thrown");
-            }
-            catch (HttpResponseException exception)
-            {
-                Assert.AreEqual(HttpStatusCode.ExpectationFailed, exception.Response.StatusCode);
-            }
-        }
-
-        [TestMethod]
-        [TestCategory("Unit")]
-        [TestCategory("RegionController")]
-        public async Task TestDeleteAttack_WithValidRegion_WithValidAttack()
-        {
-            // Arrange
-            ControllerMock primaryUser = new ControllerMock();
-
-            // Act
-            await primaryUser.RegionController.DeleteAttack(OwnedRegionGuid, UnownedAdjacentRegionGuid);
-
-            // Assert
-        }
-
-        [TestMethod]
-        [TestCategory("Unit")]
-        [TestCategory("RegionController")]
-        public async Task TestDeleteAttack_WithValidRegion_WithInvalidAttack()
-        {
-            // Arrange
-            ControllerMock primaryUser = new ControllerMock();
-
-            // Act
-            await primaryUser.RegionController.DeleteAttack(OwnedRegionGuid, UnownedAdjacentRegionGuid);
-
-            // Assert
-        }
-        #endregion
-
         #region - Post Redeploy -
         [TestMethod]
         [TestCategory("Unit")]
@@ -729,11 +584,12 @@ namespace Peril.Api.Tests.Controllers
         }
         #endregion
 
+        Guid SessionGuid { get { return new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45"); } }
         Guid InvalidRegionGuid { get { return new Guid("024D1E45-EF34-4AB1-840D-79229CCDE8C3"); } }
-        Guid OwnedRegionGuid { get { return new Guid("54901E57-862D-4223-8C57-F2FFB2EBD77C"); } }
-        Guid OwnedAdjacentRegionGuid { get { return new Guid("54901E57-862D-4223-8C57-F2FFB2EBD77C"); } }
-        Guid OwnedNonAdjacentRegionGuid { get { return new Guid("54901E57-862D-4223-8C57-F2FFB2EBD77C"); } }
-        Guid UnownedRegionGuid { get { return new Guid("024D1E45-EF34-4AB1-840D-79229CCDE8C3"); } }
-        Guid UnownedAdjacentRegionGuid { get { return new Guid("024D1E45-EF34-4AB1-840D-79229CCDE8C3"); } }
+        Guid OwnedRegionGuid { get { return ControllerMockRegionRepositoryExtensions.DummyWorldRegionA; } }
+        Guid OwnedAdjacentRegionGuid { get { return ControllerMockRegionRepositoryExtensions.DummyWorldRegionB; } }
+        Guid OwnedNonAdjacentRegionGuid { get { return ControllerMockRegionRepositoryExtensions.DummyWorldRegionC; } }
+        Guid UnownedRegionGuid { get { return ControllerMockRegionRepositoryExtensions.DummyWorldRegionE; } }
+        Guid UnownedAdjacentRegionGuid { get { return ControllerMockRegionRepositoryExtensions.DummyWorldRegionD; } }
     }
 }
