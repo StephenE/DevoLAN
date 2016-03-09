@@ -89,6 +89,19 @@ namespace Peril.Api.Tests.Repository
             return setupContext;
         }
 
+        static public ControllerMockSetupContext SetupRegionTroops(this ControllerMockSetupContext setupContext, UInt32 troopCount)
+        {
+            setupContext.DummyRegion.TroopCount = troopCount;
+            return setupContext;
+        }
+
+        static public ControllerMockSetupContext SetupRegionTroops(this ControllerMockSetupContext setupContext, Guid regionId, UInt32 troopCount)
+        {
+            setupContext.DummyRegion = setupContext.ControllerMock.RegionRepository.RegionData[regionId];
+            setupContext.SetupRegionTroops(troopCount);
+            return setupContext;
+        }
+
         static public Guid DummyWorldRegionA { get { return new Guid("54901E57-862D-4223-8C57-F2FFB2EBD77C"); } }
         static public Guid DummyWorldRegionB { get { return new Guid("711E2869-22C6-4994-BCC1-26B490A56CC2"); } }
         static public Guid DummyWorldRegionC { get { return new Guid("24BF6F0E-3395-49FC-B055-FA1F91594F35"); } }

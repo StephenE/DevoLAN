@@ -2,6 +2,7 @@
 using Peril.Api.Tests.Repository;
 using Peril.Core;
 using System;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Web.Http;
@@ -197,9 +198,13 @@ namespace Peril.Api.Tests.Controllers
                        .SetupDummyWorldAsTree();
 
             // Act
-            await primaryUser.RegionController.PostDeployTroops(OwnedRegionGuid, 1);
+            Guid operationId = await primaryUser.RegionController.PostDeployTroops(OwnedRegionGuid, 1);
 
             // Assert
+            Assert.AreEqual(1, primaryUser.CommandQueue.DummyDeployReinforcementsQueue.Count());
+            Assert.AreEqual(operationId, primaryUser.CommandQueue.DummyDeployReinforcementsQueue.First().OperationId);
+            Assert.AreEqual(OwnedRegionGuid, primaryUser.CommandQueue.DummyDeployReinforcementsQueue.First().TargetRegion);
+            Assert.AreEqual(1U, primaryUser.CommandQueue.DummyDeployReinforcementsQueue.First().NumberOfTroops);
         }
 
         [TestMethod]
@@ -238,6 +243,8 @@ namespace Peril.Api.Tests.Controllers
         {
             // Arrange
             ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(SessionGuid)
+                       .SetupDummyWorldAsTree();
 
             // Act
             Task result = primaryUser.RegionController.PostAttack(InvalidRegionGuid, 1, InvalidRegionGuid);
@@ -261,6 +268,9 @@ namespace Peril.Api.Tests.Controllers
         {
             // Arrange
             ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(SessionGuid)
+                       .SetupSessionPhase(SessionPhase.CombatOrders)
+                       .SetupDummyWorldAsTree();
 
             // Act
             Task result = primaryUser.RegionController.PostAttack(OwnedRegionGuid, 1, InvalidRegionGuid);
@@ -284,6 +294,9 @@ namespace Peril.Api.Tests.Controllers
         {
             // Arrange
             ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(SessionGuid)
+                       .SetupSessionPhase(SessionPhase.CombatOrders)
+                       .SetupDummyWorldAsTree();
 
             // Act
             Task result = primaryUser.RegionController.PostAttack(OwnedRegionGuid, 1, OwnedAdjacentRegionGuid);
@@ -307,6 +320,10 @@ namespace Peril.Api.Tests.Controllers
         {
             // Arrange
             ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(SessionGuid)
+                       .SetupSessionPhase(SessionPhase.CombatOrders)
+                       .SetupDummyWorldAsTree()
+                       .SetupRegionOwnership(UnownedRegionGuid, DummyUserRepository.RegisteredUserIds[1]);
 
             // Act
             Task result = primaryUser.RegionController.PostAttack(UnownedRegionGuid, 1, UnownedAdjacentRegionGuid);
@@ -319,7 +336,7 @@ namespace Peril.Api.Tests.Controllers
             }
             catch (HttpResponseException exception)
             {
-                Assert.AreEqual(HttpStatusCode.PreconditionFailed, exception.Response.StatusCode);
+                Assert.AreEqual(HttpStatusCode.NotAcceptable, exception.Response.StatusCode);
             }
         }
 
@@ -330,6 +347,10 @@ namespace Peril.Api.Tests.Controllers
         {
             // Arrange
             ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(SessionGuid)
+                       .SetupSessionPhase(SessionPhase.Reinforcements)
+                       .SetupDummyWorldAsTree()
+                       .SetupRegionOwnership(UnownedAdjacentRegionGuid, DummyUserRepository.RegisteredUserIds[1]);
 
             // Act
             Task result = primaryUser.RegionController.PostAttack(OwnedRegionGuid, 1, UnownedAdjacentRegionGuid);
@@ -353,6 +374,10 @@ namespace Peril.Api.Tests.Controllers
         {
             // Arrange
             ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(SessionGuid)
+                       .SetupSessionPhase(SessionPhase.CombatOrders)
+                       .SetupDummyWorldAsTree()
+                       .SetupRegionOwnership(UnownedRegionGuid, DummyUserRepository.RegisteredUserIds[1]);
 
             // Act
             Task result = primaryUser.RegionController.PostAttack(OwnedRegionGuid, 1, UnownedRegionGuid);
@@ -376,11 +401,20 @@ namespace Peril.Api.Tests.Controllers
         {
             // Arrange
             ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(SessionGuid)
+                       .SetupSessionPhase(SessionPhase.CombatOrders)
+                       .SetupDummyWorldAsTree()
+                       .SetupRegionOwnership(UnownedAdjacentRegionGuid, DummyUserRepository.RegisteredUserIds[1])
+                       .SetupRegionTroops(OwnedRegionGuid, 2);
 
             // Act
-            await primaryUser.RegionController.PostAttack(OwnedRegionGuid, 1, UnownedAdjacentRegionGuid);
+            Guid operationId = await primaryUser.RegionController.PostAttack(OwnedRegionGuid, 1, UnownedAdjacentRegionGuid);
 
             // Assert
+            Assert.AreEqual(1, primaryUser.CommandQueue.DummyOrderAttackQueue.Count());
+            Assert.AreEqual(operationId, primaryUser.CommandQueue.DummyOrderAttackQueue.First().OperationId);
+            Assert.AreEqual(UnownedAdjacentRegionGuid, primaryUser.CommandQueue.DummyOrderAttackQueue.First().TargetRegion);
+            Assert.AreEqual(1U, primaryUser.CommandQueue.DummyOrderAttackQueue.First().NumberOfTroops);
         }
 
         [TestMethod]
@@ -390,6 +424,11 @@ namespace Peril.Api.Tests.Controllers
         {
             // Arrange
             ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(SessionGuid)
+                       .SetupSessionPhase(SessionPhase.CombatOrders)
+                       .SetupDummyWorldAsTree()
+                       .SetupRegionOwnership(UnownedAdjacentRegionGuid, DummyUserRepository.RegisteredUserIds[1])
+                       .SetupRegionTroops(OwnedRegionGuid, 10);
 
             // Act
             Task result = primaryUser.RegionController.PostAttack(OwnedRegionGuid, 10, UnownedAdjacentRegionGuid);
@@ -415,6 +454,9 @@ namespace Peril.Api.Tests.Controllers
         {
             // Arrange
             ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(SessionGuid)
+                       .SetupSessionPhase(SessionPhase.Redeployment)
+                       .SetupDummyWorldAsTree();
 
             // Act
             Task result = primaryUser.RegionController.PostRedeployTroops(InvalidRegionGuid, 1, InvalidRegionGuid);
@@ -438,6 +480,9 @@ namespace Peril.Api.Tests.Controllers
         {
             // Arrange
             ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(SessionGuid)
+                       .SetupSessionPhase(SessionPhase.Redeployment)
+                       .SetupDummyWorldAsTree();
 
             // Act
             Task result = primaryUser.RegionController.PostRedeployTroops(OwnedRegionGuid, 1, InvalidRegionGuid);
@@ -461,6 +506,11 @@ namespace Peril.Api.Tests.Controllers
         {
             // Arrange
             ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(SessionGuid)
+                       .SetupSessionPhase(SessionPhase.Redeployment)
+                       .SetupDummyWorldAsTree()
+                       .SetupRegionTroops(OwnedRegionGuid, 2)
+                       .SetupRegionOwnership(UnownedAdjacentRegionGuid, DummyUserRepository.RegisteredUserIds[1]);
 
             // Act
             Task result = primaryUser.RegionController.PostRedeployTroops(OwnedRegionGuid, 1, UnownedAdjacentRegionGuid);
@@ -484,6 +534,10 @@ namespace Peril.Api.Tests.Controllers
         {
             // Arrange
             ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(SessionGuid)
+                       .SetupSessionPhase(SessionPhase.Redeployment)
+                       .SetupDummyWorldAsTree()
+                       .SetupRegionOwnership(UnownedRegionGuid, DummyUserRepository.RegisteredUserIds[1]);
 
             // Act
             Task result = primaryUser.RegionController.PostRedeployTroops(UnownedRegionGuid, 1, OwnedAdjacentRegionGuid);
@@ -496,7 +550,7 @@ namespace Peril.Api.Tests.Controllers
             }
             catch (HttpResponseException exception)
             {
-                Assert.AreEqual(HttpStatusCode.PreconditionFailed, exception.Response.StatusCode);
+                Assert.AreEqual(HttpStatusCode.NotAcceptable, exception.Response.StatusCode);
             }
         }
 
@@ -507,6 +561,9 @@ namespace Peril.Api.Tests.Controllers
         {
             // Arrange
             ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(SessionGuid)
+                       .SetupSessionPhase(SessionPhase.CombatOrders)
+                       .SetupDummyWorldAsTree();
 
             // Act
             Task result = primaryUser.RegionController.PostRedeployTroops(OwnedRegionGuid, 1, OwnedAdjacentRegionGuid);
@@ -530,6 +587,9 @@ namespace Peril.Api.Tests.Controllers
         {
             // Arrange
             ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(SessionGuid)
+                       .SetupSessionPhase(SessionPhase.Redeployment)
+                       .SetupDummyWorldAsTree();
 
             // Act
             Task result = primaryUser.RegionController.PostRedeployTroops(OwnedRegionGuid, 1, OwnedNonAdjacentRegionGuid);
@@ -553,11 +613,19 @@ namespace Peril.Api.Tests.Controllers
         {
             // Arrange
             ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(SessionGuid)
+                       .SetupSessionPhase(SessionPhase.Redeployment)
+                       .SetupDummyWorldAsTree()
+                       .SetupRegionTroops(OwnedRegionGuid, 2);
 
             // Act
-            await primaryUser.RegionController.PostRedeployTroops(OwnedRegionGuid, 1, OwnedAdjacentRegionGuid);
+            Guid operationId = await primaryUser.RegionController.PostRedeployTroops(OwnedRegionGuid, 1, OwnedAdjacentRegionGuid);
 
             // Assert
+            Assert.AreEqual(1, primaryUser.CommandQueue.DummyRedeployQueue.Count());
+            Assert.AreEqual(operationId, primaryUser.CommandQueue.DummyRedeployQueue.First().OperationId);
+            Assert.AreEqual(OwnedAdjacentRegionGuid, primaryUser.CommandQueue.DummyRedeployQueue.First().TargetRegion);
+            Assert.AreEqual(1U, primaryUser.CommandQueue.DummyRedeployQueue.First().NumberOfTroops);
         }
 
         [TestMethod]
@@ -567,6 +635,10 @@ namespace Peril.Api.Tests.Controllers
         {
             // Arrange
             ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(SessionGuid)
+                       .SetupSessionPhase(SessionPhase.Redeployment)
+                       .SetupDummyWorldAsTree()
+                       .SetupRegionTroops(OwnedRegionGuid, 10);
 
             // Act
             Task result = primaryUser.RegionController.PostRedeployTroops(OwnedRegionGuid, 10, OwnedAdjacentRegionGuid);
