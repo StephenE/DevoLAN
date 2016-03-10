@@ -71,6 +71,7 @@
     <Compile Include="Model\SessionPlayerTableEntry.cs" />
     <Compile Include="Model\SessionTableEntry.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RegionRepository.cs" />
     <Compile Include="SessionRepository.cs" />
   </ItemGroup>
   <ItemGroup>
