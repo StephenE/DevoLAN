@@ -3,11 +3,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Peril.Api.Repository.Azure.Model
 {
-    class RegionTableEntry : TableEntity
+    public class RegionTableEntry : TableEntity, IRegionData
     {
         public RegionTableEntry(Guid sessionId, Guid regionId, Guid continentId, String name)
         {
@@ -16,13 +15,14 @@ namespace Peril.Api.Repository.Azure.Model
             ContinentId = continentId;
             Name = name;
             OwnerId = String.Empty;
-            TroopCount = 0;
-            ConnectedRegionList = new List<Guid>();
+            StoredTroopCount = 0;
+            StoredTroopsCommittedToPhase = 0;
+            m_ConnectedRegionList = new List<Guid>();
         }
 
         public RegionTableEntry()
         {
-
+            m_ConnectedRegionList = new List<Guid>();
         }
 
         public Guid SessionId
@@ -41,13 +41,62 @@ namespace Peril.Api.Repository.Azure.Model
 
         public IEnumerable<Guid> ConnectedRegions
         {
-            get { return ConnectedRegionList; }
+            get { return m_ConnectedRegionList; }
         }
 
         public String OwnerId { get; set; }
 
-        public UInt32 TroopCount { get; set; }
+        public Int32 StoredTroopCount { get; set; }
 
-        public List<Guid> ConnectedRegionList { get; set; }
+        public Int32 StoredTroopsCommittedToPhase { get; set; }
+
+        public String ConnectedRegionString
+        {
+            get
+            {
+                return m_ConnectedRegionString;
+            }
+            set
+            {
+                m_ConnectedRegionString = value;
+                m_ConnectedRegionList.Clear();
+
+                if (!String.IsNullOrEmpty(m_ConnectedRegionString))
+                {
+                    String[] guidStrings = m_ConnectedRegionString.Split(';');
+                    foreach(String guidString in guidStrings)
+                    {
+                        Guid result;
+                        if(Guid.TryParse(guidString, out result))
+                        {
+                            m_ConnectedRegionList.Add(result);
+                        }
+                    }
+                }
+            }
+        }
+
+        public UInt32 TroopsCommittedToPhase { get { return (UInt32)StoredTroopsCommittedToPhase; } }
+
+        public string CurrentEtag { get { return ETag; } }
+
+        public UInt32 TroopCount { get { return (UInt32)StoredTroopCount; } }
+
+        internal void SetConnectedRegions(IEnumerable<Guid> regions)
+        {
+            m_ConnectedRegionList = regions.ToList();
+
+            StringBuilder builder = new StringBuilder();
+            foreach(Guid regionId in m_ConnectedRegionList)
+            {
+                builder.Append(regionId.ToString());
+                builder.Append(';');
+            }
+
+            m_ConnectedRegionString = builder.ToString().TrimEnd(';');
+        }
+
+        private List<Guid> m_ConnectedRegionList;
+        private String m_ConnectedRegionString;
     }
 }

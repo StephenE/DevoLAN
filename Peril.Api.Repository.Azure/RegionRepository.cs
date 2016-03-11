@@ -27,7 +27,7 @@ namespace Peril.Api.Repository.Azure
         {
             // Create a new table entry
             RegionTableEntry newRegion = new RegionTableEntry(sessionId, regionId, continentId, name);
-            newRegion.ConnectedRegionList = connectedRegions.ToList();
+            newRegion.SetConnectedRegions(connectedRegions);
 
             // Kick off the insert operation
             TableOperation insertOperation = TableOperation.Insert(newRegion);
@@ -36,7 +36,11 @@ namespace Peril.Api.Repository.Azure
 
         public async Task<IRegionData> GetRegion(Guid regionId)
         {
-            throw new NotImplementedException("TODO");
+            TableQuery<RegionTableEntry> query = new TableQuery<RegionTableEntry>()
+                .Where(TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal, regionId.ToString()));
+
+            var results = await RegionTable.ExecuteQuerySegmentedAsync(query, null);
+            return results.FirstOrDefault();
         }
 
         private CloudStorageAccount StorageAccount { get; set; }
