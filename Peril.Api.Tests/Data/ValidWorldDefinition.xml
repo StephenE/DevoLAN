@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<World>
+  <Continent Name="Asia">
+    <Region Name="Afghanistan" />
+    <Region Name="China" />
+    <Region Name="India" />
+    <Region Name="Middle East" />
+    <Region Name="Ural" />
+  </Continent>
+  <Continent Name="Europe">
+    <Region Name="Ukraine" />
+  </Continent>
+  <Connections>
+    <Connected Name="Afghanistan" Other="China" />
+    <Connected Name="Afghanistan" Other="India" />
+    <Connected Name="Afghanistan" Other="Middle East" />
+    <Connected Name="Afghanistan" Other="Ukraine" />
+    <Connected Name="Afghanistan" Other="Ural" />
+  </Connections>
+</World>

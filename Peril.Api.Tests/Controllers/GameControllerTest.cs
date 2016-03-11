@@ -51,10 +51,12 @@ namespace Peril.Api.Tests.Controllers
         [TestMethod]
         [TestCategory("Unit")]
         [TestCategory("GameController")]
+        [DeploymentItem(@"Data\ValidWorldDefinition.xml", "WorldData")]
         public async Task TestStartNewSession()
         {
             // Arrange
             ControllerMock primaryUser = new ControllerMock();
+            primaryUser.RegionRepository.WorldDefinitionPath = @"WorldData\ValidWorldDefinition.xml";
 
             // Act
             ISession result = await primaryUser.GameController.PostStartNewSession();
@@ -65,6 +67,7 @@ namespace Peril.Api.Tests.Controllers
             Assert.AreEqual(Guid.Empty, result.PhaseId);
             Assert.AreEqual(SessionPhase.NotStarted, result.PhaseType);
             Assert.AreEqual("DummyUser", primaryUser.SessionRepository.Sessions.Where(session => session.GameId == result.GameId).First().Players.First().UserId);
+            Assert.AreEqual(6, primaryUser.RegionRepository.RegionData.Count);
         }
 
         [TestMethod]

@@ -13,6 +13,17 @@ namespace Peril.Api.Tests.Repository
             RegionData = new Dictionary<Guid, DummyRegionData>();
         }
 
+        public String WorldDefinitionPath { get; set; }
+
+        public async Task CreateRegion(Guid sessionId, Guid regionId, Guid continentId, String name, IEnumerable<Guid> connectedRegions)
+        {
+            RegionData[regionId] = new DummyRegionData(sessionId, regionId, continentId, String.Empty);
+            foreach(Guid connectedRegion in connectedRegions)
+            {
+                RegionData[regionId].ConnectedRegionIds.Add(connectedRegion);
+            }
+        }
+
         public async Task<IRegionData> GetRegion(Guid regionId)
         {
             if(RegionData.ContainsKey(regionId))

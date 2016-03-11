@@ -9,6 +9,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web.Http;
+using System.Xml.Linq;
 
 namespace Peril.Api.Controllers.Api
 {
@@ -16,8 +17,9 @@ namespace Peril.Api.Controllers.Api
     [RoutePrefix("api/Game")]
     public class GameController : ApiController
     {
-        public GameController(ISessionRepository sessionRepository, IUserRepository userRepository)
+        public GameController(IRegionRepository regionRepository, ISessionRepository sessionRepository, IUserRepository userRepository)
         {
+            RegionRepository = regionRepository;
             SessionRepository = sessionRepository;
             UserRepository = userRepository;
         }
@@ -41,6 +43,61 @@ namespace Peril.Api.Controllers.Api
         public async Task<Peril.Core.ISession> PostStartNewSession()
         {
             Guid sessionGuid = await SessionRepository.CreateSession(User.Identity.GetUserId());
+
+            try
+            {
+                XDocument worldDefinition = XDocument.Load(RegionRepository.WorldDefinitionPath);
+                var regions = from continentXml in worldDefinition.Root.Elements("Continent")
+                              let continentId = Guid.NewGuid()
+                              from regionXml in continentXml.Elements("Region")
+                              select new Region
+                              {
+                                  RegionId = Guid.NewGuid(),
+                                  ContinentId = continentId,
+                                  Name = regionXml.Attribute("Name").Value
+                              };
+
+                Dictionary<String, Region> regionLookup = new Dictionary<string, Region>();
+                Dictionary<String, List<Guid>> regionConnectionsLookup = new Dictionary<string, List<Guid>>();
+                foreach (Region region in regions)
+                {
+                    regionLookup[region.Name] = region;
+                    regionConnectionsLookup[region.Name] = new List<Guid>();
+                }
+
+                var connections = from connectionXml in worldDefinition.Root.Elements("Connections")
+                                  from connectedXml in connectionXml.Elements("Connected")
+                                  let regionId = connectedXml.Attribute("Name").Value
+                                  let otherRegionId = connectedXml.Attribute("Other").Value
+                                  join regionData in regions on regionId equals regionData.Name
+                                  join otherRegionData in regions on otherRegionId equals otherRegionData.Name
+                                  select new
+                                  {
+                                      Region = regionId,
+                                      RegionId = regionData.RegionId,
+                                      OtherRegion = otherRegionId,
+                                      OtherRegionId = otherRegionData.RegionId
+                                  };
+
+                
+                foreach(var connection in connections)
+                {
+                    regionConnectionsLookup[connection.Region].Add(connection.OtherRegionId);
+                    regionConnectionsLookup[connection.OtherRegion].Add(connection.RegionId);
+                }
+
+                List<Task> regionCreationOperations = new List<Task>();
+                foreach(var regionPair in regionLookup)
+                {
+                    regionCreationOperations.Add(RegionRepository.CreateRegion(sessionGuid, regionPair.Value.RegionId, regionPair.Value.ContinentId, regionPair.Key, regionConnectionsLookup[regionPair.Key]));
+                }
+                await Task.WhenAll(regionCreationOperations);
+            }
+            catch(Exception error)
+            {
+                throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.InternalServerError, ReasonPhrase = error.Message });
+            }
+
             return new Models.Session { GameId = sessionGuid };
         }
 
@@ -97,6 +154,7 @@ namespace Peril.Api.Controllers.Api
             throw new NotImplementedException("Not done yet");
         }
 
+        private IRegionRepository RegionRepository { get; set; }
         private ISessionRepository SessionRepository { get; set; }
         private IUserRepository UserRepository { get; set; }
     }

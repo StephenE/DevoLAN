@@ -12,6 +12,11 @@ namespace Peril.Api.Models
 {
     public class Region : IRegion
     {
+        public Region()
+        {
+
+        }
+
         public Region(IRegionData data)
         {
             RegionId = data.RegionId;

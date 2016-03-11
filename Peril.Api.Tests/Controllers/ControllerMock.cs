@@ -52,7 +52,7 @@ namespace Peril.Api.Tests.Controllers
 
         public GameController CreateGameController(String userId)
         {
-            GameController controller = new GameController(SessionRepository, UserRepository);
+            GameController controller = new GameController(RegionRepository, SessionRepository, UserRepository);
             controller.ControllerContext.RequestContext.Principal = UserRepository.GetPrincipal(userId);
             return controller;
         }

@@ -1,10 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Peril.Api.Repository
 {
     public interface IRegionRepository
     {
+        String WorldDefinitionPath { get; }
+
+        Task CreateRegion(Guid sessionId, Guid regionId, Guid continentId, String name, IEnumerable<Guid> connectedRegions);
+
         Task<IRegionData> GetRegion(Guid regionId);
     }
 }
