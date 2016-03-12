@@ -15,7 +15,7 @@
 		margin:0px;
 		padding:0px;
 		
-		background-image:url('images/bckMap.jpg');
+		background-image:url('Content/images/bckMap.jpg');
 		background-size:cover;
 	}
 	
@@ -271,7 +271,8 @@
 		
 /* SVG Styles */
 	svg{
-		position:absolute;
+		position:relative;
+		display:block;
 		
 		height:100%;
 		width:100%;
@@ -334,22 +335,63 @@
 			fill: rgba(210,210,210,0.6);
 			stroke: white;
 		}
+
+/* Interface */
+	/* HUD */
+		#hud{
+			position:absolute;
+			display:flex;
+			
+			bottom:25px;
+			left:50%;
+			
+			width:80%;
+			
+			margin-left:-40%;
+			
+			background:#ff0000;
+		}
 		
-/* Game Container */
-	#gameContainer{
-		position:absolute;
+		table{
+			height:100%;
+			width:100%;
+			
+			border-collapse:collapse;
+		}
 		
-		height:100%;
-		width:100%;
-	}
+		table, td{
+			border: 1px solid black;
+		}
+		
+		td{
+			padding:5px;
+		}
+			
+	/* Overlay */
+		#overlay{
+			position:absolute;
+			display:none;
+			
+			height:100%;
+			width:100%;
+			
+			background:rgba(0,0,0,0.6)
+		}
 
 /* @Media Tags */
-	@media(max-width:1100px), (max-height:600px){
-		text.label{
-			fill: none;
-		}
-		
-		text.counter{
-			font-size: 36px;
-		}
+	@media(max-width:1100px), (max-height:650px){
+		/* SVG */
+			text.label{
+				fill: none;
+			}
+			
+			text.counter{
+				font-size: 36px;
+			}
+			
+		/* HUD */
+			#hud{
+				position:relative;
+				display:block;
+			}
 	}

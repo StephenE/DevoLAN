@@ -14,7 +14,7 @@
 				var r = 17.5;
 				
 				for(x = 0; x < circles.length; x++){
-					if(window.innerWidth < 1100 || window.innerHeight < 600){
+					if(window.innerWidth < 1100 || window.innerHeight < 650){
 						r = 35;
 					} else {
 						r = 17.5;
