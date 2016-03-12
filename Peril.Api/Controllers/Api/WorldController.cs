@@ -1,4 +1,7 @@
-﻿using Peril.Core;
+﻿using Microsoft.AspNet.Identity;
+using Peril.Api.Models;
+using Peril.Api.Repository;
+using Peril.Core;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -10,12 +13,20 @@ namespace Peril.Api.Controllers.Api
     [RoutePrefix("api/World")]
     public class WorldController : ApiController
     {
+        public WorldController(IRegionRepository regionRepository, ISessionRepository sessionRepository)
+        {
+            RegionRepository = regionRepository;
+            SessionRepository = sessionRepository;
+        }
+
         // GET /api/World/Regions
         [Route("Regions")]
-        public async Task<IEnumerable<IRegion>> GetRegions()
+        public async Task<IEnumerable<IRegion>> GetRegions(Guid sessionId)
         {
-            // Check taking part in session [Forbidden]
-            throw new NotImplementedException("Not implemented");
+            ISession session = await SessionRepository.GetSessionOrThrow(sessionId)
+                                                      .IsUserIdJoinedOrThrow(SessionRepository, User.Identity.GetUserId());
+
+            return await RegionRepository.GetRegions(session.GameId);
         }
 
         // GET /api/World/Combat
@@ -38,5 +49,8 @@ namespace Peril.Api.Controllers.Api
             //   - Must be in correct round
             throw new NotImplementedException("Not implemented");
         }
+
+        private IRegionRepository RegionRepository { get; set; }
+        private ISessionRepository SessionRepository { get; set; }
     }
 }

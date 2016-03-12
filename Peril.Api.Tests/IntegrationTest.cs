@@ -61,9 +61,9 @@ namespace Peril.Api.Tests
             await primaryUser.GameController.PostAdvanceNextPhase(sessionDetails.GameId, sessionDetails.GameId, true);
         }
 
-        private async Task<IEnumerable<Guid>> GetCurrentlyOwnedRegions(ControllerMock user)
+        private async Task<IEnumerable<Guid>> GetCurrentlyOwnedRegions(ControllerMock user, Guid sessionId)
         {
-            IEnumerable<IRegion> worldRegions = await user.WorldController.GetRegions();
+            IEnumerable<IRegion> worldRegions = await user.WorldController.GetRegions(sessionId);
 
             return from region in worldRegions
                    where region.OwnerId == user.OwnerId
@@ -76,7 +76,7 @@ namespace Peril.Api.Tests
             ISession session = await user.GameController.GetSession(sessionId);
 
             // Get owned regions
-            IEnumerable<Guid> ownedRegions = await GetCurrentlyOwnedRegions(user);
+            IEnumerable<Guid> ownedRegions = await GetCurrentlyOwnedRegions(user, sessionId);
 
             // Get number of available troops
             UInt32 numberOfAvailableTroops = await user.NationController.GetReinforcements();
@@ -86,7 +86,7 @@ namespace Peril.Api.Tests
             {
                 int index = rand.Next(0, ownedRegions.Count());
                 Guid targetRegion = ownedRegions.ElementAt(index);
-                await user.RegionController.PostDeployTroops(targetRegion, 1);
+                await user.RegionController.PostDeployTroops(sessionId, targetRegion, 1);
                 numberOfAvailableTroops -= 1;
             }
 
@@ -99,20 +99,20 @@ namespace Peril.Api.Tests
             ISession session = await user.GameController.GetSession(sessionId);
 
             // Get owned regions
-            IEnumerable<Guid> ownedRegions = await GetCurrentlyOwnedRegions(user);
+            IEnumerable<Guid> ownedRegions = await GetCurrentlyOwnedRegions(user, sessionId);
             bool hasAttacked = false;
 
             foreach(Guid ownedRegionId in ownedRegions)
             {
-                IRegion details = await user.RegionController.GetDetails(ownedRegionId);
+                IRegion details = await user.RegionController.GetDetails(sessionId, ownedRegionId);
                 if (details.TroopCount > 1)
                 {
                     foreach (Guid adjacentRegionId in details.ConnectedRegions)
                     {
-                        IRegion targetDetails = await user.RegionController.GetDetails(adjacentRegionId);
+                        IRegion targetDetails = await user.RegionController.GetDetails(sessionId, adjacentRegionId);
                         if(targetDetails.OwnerId != user.OwnerId)
                         {
-                            await user.RegionController.PostAttack(ownedRegionId, details.TroopCount - 1, adjacentRegionId);
+                            await user.RegionController.PostAttack(sessionId, ownedRegionId, details.TroopCount - 1, adjacentRegionId);
                             hasAttacked = true;
                             break;
                         }
@@ -168,19 +168,19 @@ namespace Peril.Api.Tests
             ISession session = await user.GameController.GetSession(sessionId);
 
             // Get owned regions
-            IEnumerable<Guid> ownedRegions = await GetCurrentlyOwnedRegions(user);
+            IEnumerable<Guid> ownedRegions = await GetCurrentlyOwnedRegions(user, sessionId);
             bool hasRedeployed = false;
 
             foreach (Guid ownedRegionId in ownedRegions)
             {
-                IRegion details = await user.RegionController.GetDetails(ownedRegionId);
+                IRegion details = await user.RegionController.GetDetails(sessionId, ownedRegionId);
                 if (details.TroopCount > 1)
                 {
                     foreach (Guid adjacentRegionId in details.ConnectedRegions)
                     {
                         if (ownedRegions.Contains(adjacentRegionId))
                         {
-                            await user.RegionController.PostRedeployTroops(ownedRegionId, details.TroopCount - 1, adjacentRegionId);
+                            await user.RegionController.PostRedeployTroops(sessionId, ownedRegionId, details.TroopCount - 1, adjacentRegionId);
                             hasRedeployed = true;
                             break;
                         }

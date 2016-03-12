@@ -3,7 +3,6 @@ using Microsoft.WindowsAzure.Storage.Table;
 using Peril.Api.Repository.Azure.Model;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Peril.Api.Repository.Azure
@@ -34,13 +33,32 @@ namespace Peril.Api.Repository.Azure
             await RegionTable.ExecuteAsync(insertOperation);
         }
 
-        public async Task<IRegionData> GetRegion(Guid regionId)
+        public async Task<IRegionData> GetRegion(Guid sessionId, Guid regionId)
         {
-            TableQuery<RegionTableEntry> query = new TableQuery<RegionTableEntry>()
-                .Where(TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal, regionId.ToString()));
+            TableOperation operation = TableOperation.Retrieve<RegionTableEntry>(sessionId.ToString(), regionId.ToString());
+            TableResult result = await RegionTable.ExecuteAsync(operation);
+            return result.Result as RegionTableEntry;
+        }
 
-            var results = await RegionTable.ExecuteQuerySegmentedAsync(query, null);
-            return results.FirstOrDefault();
+        public async Task<IEnumerable<IRegionData>> GetRegions(Guid sessionId)
+        {
+            List<RegionTableEntry> results = new List<RegionTableEntry>();
+            TableQuery<RegionTableEntry> query = new TableQuery<RegionTableEntry>()
+                .Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, sessionId.ToString()));
+
+            // Initialize the continuation token to null to start from the beginning of the table.
+            TableContinuationToken continuationToken = null;
+
+            // Loop until the continuation token comes back as null
+            do
+            {
+                var queryResults = await RegionTable.ExecuteQuerySegmentedAsync(query, continuationToken);
+                continuationToken = queryResults.ContinuationToken;
+                results.AddRange(queryResults.Results);
+            }
+            while (continuationToken != null);
+
+            return results;
         }
 
         private CloudStorageAccount StorageAccount { get; set; }

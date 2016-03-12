@@ -73,7 +73,7 @@ namespace Peril.Api.Tests.Controllers
 
         public WorldController CreateWorldController(String userId)
         {
-            WorldController controller = new WorldController();
+            WorldController controller = new WorldController(RegionRepository, SessionRepository);
             controller.ControllerContext.RequestContext.Principal = controller.ControllerContext.RequestContext.Principal = UserRepository.GetPrincipal(userId);
             return controller;
         }

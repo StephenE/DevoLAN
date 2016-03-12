@@ -2,6 +2,7 @@
 using Peril.Api.Tests.Controllers;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Peril.Api.Tests.Repository
@@ -24,7 +25,7 @@ namespace Peril.Api.Tests.Repository
             }
         }
 
-        public async Task<IRegionData> GetRegion(Guid regionId)
+        public async Task<IRegionData> GetRegion(Guid sessionId, Guid regionId)
         {
             if(RegionData.ContainsKey(regionId))
             {
@@ -34,6 +35,13 @@ namespace Peril.Api.Tests.Repository
             {
                 return null;
             }
+        }
+
+        public async Task<IEnumerable<IRegionData>> GetRegions(Guid sessionId)
+        {
+            return from region in RegionData
+                   where region.Value.SessionId == sessionId
+                   select region.Value;
         }
 
         #region - Test Setup Helpers -

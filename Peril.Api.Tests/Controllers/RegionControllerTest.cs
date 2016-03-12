@@ -22,7 +22,7 @@ namespace Peril.Api.Tests.Controllers
             ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            Task<IRegion> result = primaryUser.RegionController.GetDetails(InvalidRegionGuid);
+            Task<IRegion> result = primaryUser.RegionController.GetDetails(SessionGuid, InvalidRegionGuid);
 
             // Assert
             try
@@ -47,7 +47,7 @@ namespace Peril.Api.Tests.Controllers
                        .SetupDummyWorldAsTree();
 
             // Act
-            IRegion result = await primaryUser.RegionController.GetDetails(OwnedRegionGuid);
+            IRegion result = await primaryUser.RegionController.GetDetails(SessionGuid, OwnedRegionGuid);
 
             // Assert
             Assert.IsNotNull(result);
@@ -66,7 +66,7 @@ namespace Peril.Api.Tests.Controllers
             primaryUser.SessionRepository.SessionMap.Clear();
 
             // Act
-            Task<IRegion> result = primaryUser.RegionController.GetDetails(OwnedRegionGuid);
+            Task<IRegion> result = primaryUser.RegionController.GetDetails(SessionGuid, OwnedRegionGuid);
 
             // Assert
             try
@@ -91,7 +91,7 @@ namespace Peril.Api.Tests.Controllers
                        .SetupDummyWorldAsTree(DummyUserRepository.RegisteredUserIds[1]);
 
             // Act
-            Task<IRegion> result = primaryUser.RegionController.GetDetails(OwnedRegionGuid);
+            Task<IRegion> result = primaryUser.RegionController.GetDetails(SessionGuid, OwnedRegionGuid);
 
             // Assert
             try
@@ -118,7 +118,7 @@ namespace Peril.Api.Tests.Controllers
                        .SetupDummyWorldAsTree();
 
             // Act
-            Task result = primaryUser.RegionController.PostDeployTroops(InvalidRegionGuid, 1);
+            Task result = primaryUser.RegionController.PostDeployTroops(SessionGuid, InvalidRegionGuid, 1);
 
             // Assert
             try
@@ -145,7 +145,7 @@ namespace Peril.Api.Tests.Controllers
                        .SetupRegionOwnership(UnownedRegionGuid, DummyUserRepository.RegisteredUserIds[1]);
 
             // Act
-            Task result = primaryUser.RegionController.PostDeployTroops(UnownedRegionGuid, 1);
+            Task result = primaryUser.RegionController.PostDeployTroops(SessionGuid, UnownedRegionGuid, 1);
 
             // Assert
             try
@@ -171,7 +171,7 @@ namespace Peril.Api.Tests.Controllers
                        .SetupDummyWorldAsTree();
 
             // Act
-            Task result = primaryUser.RegionController.PostDeployTroops(OwnedRegionGuid, 1);
+            Task result = primaryUser.RegionController.PostDeployTroops(SessionGuid, OwnedRegionGuid, 1);
 
             // Assert
             try
@@ -198,7 +198,7 @@ namespace Peril.Api.Tests.Controllers
                        .SetupDummyWorldAsTree();
 
             // Act
-            Guid operationId = await primaryUser.RegionController.PostDeployTroops(OwnedRegionGuid, 1);
+            Guid operationId = await primaryUser.RegionController.PostDeployTroops(SessionGuid, OwnedRegionGuid, 1);
 
             // Assert
             Assert.AreEqual(1, primaryUser.CommandQueue.DummyDeployReinforcementsQueue.Count());
@@ -220,7 +220,7 @@ namespace Peril.Api.Tests.Controllers
                        .SetupDummyWorldAsTree();
 
             // Act
-            Task result = primaryUser.RegionController.PostDeployTroops(OwnedRegionGuid, 10);
+            Task result = primaryUser.RegionController.PostDeployTroops(SessionGuid, OwnedRegionGuid, 10);
 
             // Assert
             try
@@ -247,7 +247,7 @@ namespace Peril.Api.Tests.Controllers
                        .SetupDummyWorldAsTree();
 
             // Act
-            Task result = primaryUser.RegionController.PostAttack(InvalidRegionGuid, 1, InvalidRegionGuid);
+            Task result = primaryUser.RegionController.PostAttack(SessionGuid, InvalidRegionGuid, 1, InvalidRegionGuid);
 
             // Assert
             try
@@ -273,7 +273,7 @@ namespace Peril.Api.Tests.Controllers
                        .SetupDummyWorldAsTree();
 
             // Act
-            Task result = primaryUser.RegionController.PostAttack(OwnedRegionGuid, 1, InvalidRegionGuid);
+            Task result = primaryUser.RegionController.PostAttack(SessionGuid, OwnedRegionGuid, 1, InvalidRegionGuid);
 
             // Assert
             try
@@ -299,7 +299,7 @@ namespace Peril.Api.Tests.Controllers
                        .SetupDummyWorldAsTree();
 
             // Act
-            Task result = primaryUser.RegionController.PostAttack(OwnedRegionGuid, 1, OwnedAdjacentRegionGuid);
+            Task result = primaryUser.RegionController.PostAttack(SessionGuid, OwnedRegionGuid, 1, OwnedAdjacentRegionGuid);
 
             // Assert
             try
@@ -326,7 +326,7 @@ namespace Peril.Api.Tests.Controllers
                        .SetupRegionOwnership(UnownedRegionGuid, DummyUserRepository.RegisteredUserIds[1]);
 
             // Act
-            Task result = primaryUser.RegionController.PostAttack(UnownedRegionGuid, 1, UnownedAdjacentRegionGuid);
+            Task result = primaryUser.RegionController.PostAttack(SessionGuid, UnownedRegionGuid, 1, UnownedAdjacentRegionGuid);
 
             // Assert
             try
@@ -353,7 +353,7 @@ namespace Peril.Api.Tests.Controllers
                        .SetupRegionOwnership(UnownedAdjacentRegionGuid, DummyUserRepository.RegisteredUserIds[1]);
 
             // Act
-            Task result = primaryUser.RegionController.PostAttack(OwnedRegionGuid, 1, UnownedAdjacentRegionGuid);
+            Task result = primaryUser.RegionController.PostAttack(SessionGuid, OwnedRegionGuid, 1, UnownedAdjacentRegionGuid);
 
             // Assert
             try
@@ -380,7 +380,7 @@ namespace Peril.Api.Tests.Controllers
                        .SetupRegionOwnership(UnownedRegionGuid, DummyUserRepository.RegisteredUserIds[1]);
 
             // Act
-            Task result = primaryUser.RegionController.PostAttack(OwnedRegionGuid, 1, UnownedRegionGuid);
+            Task result = primaryUser.RegionController.PostAttack(SessionGuid, OwnedRegionGuid, 1, UnownedRegionGuid);
 
             // Assert
             try
@@ -408,7 +408,7 @@ namespace Peril.Api.Tests.Controllers
                        .SetupRegionTroops(OwnedRegionGuid, 2);
 
             // Act
-            Guid operationId = await primaryUser.RegionController.PostAttack(OwnedRegionGuid, 1, UnownedAdjacentRegionGuid);
+            Guid operationId = await primaryUser.RegionController.PostAttack(SessionGuid, OwnedRegionGuid, 1, UnownedAdjacentRegionGuid);
 
             // Assert
             Assert.AreEqual(1, primaryUser.CommandQueue.DummyOrderAttackQueue.Count());
@@ -431,7 +431,7 @@ namespace Peril.Api.Tests.Controllers
                        .SetupRegionTroops(OwnedRegionGuid, 10);
 
             // Act
-            Task result = primaryUser.RegionController.PostAttack(OwnedRegionGuid, 10, UnownedAdjacentRegionGuid);
+            Task result = primaryUser.RegionController.PostAttack(SessionGuid, OwnedRegionGuid, 10, UnownedAdjacentRegionGuid);
 
             // Assert
             try
@@ -459,7 +459,7 @@ namespace Peril.Api.Tests.Controllers
                        .SetupDummyWorldAsTree();
 
             // Act
-            Task result = primaryUser.RegionController.PostRedeployTroops(InvalidRegionGuid, 1, InvalidRegionGuid);
+            Task result = primaryUser.RegionController.PostRedeployTroops(SessionGuid, InvalidRegionGuid, 1, InvalidRegionGuid);
 
             // Assert
             try
@@ -485,7 +485,7 @@ namespace Peril.Api.Tests.Controllers
                        .SetupDummyWorldAsTree();
 
             // Act
-            Task result = primaryUser.RegionController.PostRedeployTroops(OwnedRegionGuid, 1, InvalidRegionGuid);
+            Task result = primaryUser.RegionController.PostRedeployTroops(SessionGuid, OwnedRegionGuid, 1, InvalidRegionGuid);
 
             // Assert
             try
@@ -513,7 +513,7 @@ namespace Peril.Api.Tests.Controllers
                        .SetupRegionOwnership(UnownedAdjacentRegionGuid, DummyUserRepository.RegisteredUserIds[1]);
 
             // Act
-            Task result = primaryUser.RegionController.PostRedeployTroops(OwnedRegionGuid, 1, UnownedAdjacentRegionGuid);
+            Task result = primaryUser.RegionController.PostRedeployTroops(SessionGuid, OwnedRegionGuid, 1, UnownedAdjacentRegionGuid);
 
             // Assert
             try
@@ -540,7 +540,7 @@ namespace Peril.Api.Tests.Controllers
                        .SetupRegionOwnership(UnownedRegionGuid, DummyUserRepository.RegisteredUserIds[1]);
 
             // Act
-            Task result = primaryUser.RegionController.PostRedeployTroops(UnownedRegionGuid, 1, OwnedAdjacentRegionGuid);
+            Task result = primaryUser.RegionController.PostRedeployTroops(SessionGuid, UnownedRegionGuid, 1, OwnedAdjacentRegionGuid);
 
             // Assert
             try
@@ -566,7 +566,7 @@ namespace Peril.Api.Tests.Controllers
                        .SetupDummyWorldAsTree();
 
             // Act
-            Task result = primaryUser.RegionController.PostRedeployTroops(OwnedRegionGuid, 1, OwnedAdjacentRegionGuid);
+            Task result = primaryUser.RegionController.PostRedeployTroops(SessionGuid, OwnedRegionGuid, 1, OwnedAdjacentRegionGuid);
 
             // Assert
             try
@@ -592,7 +592,7 @@ namespace Peril.Api.Tests.Controllers
                        .SetupDummyWorldAsTree();
 
             // Act
-            Task result = primaryUser.RegionController.PostRedeployTroops(OwnedRegionGuid, 1, OwnedNonAdjacentRegionGuid);
+            Task result = primaryUser.RegionController.PostRedeployTroops(SessionGuid, OwnedRegionGuid, 1, OwnedNonAdjacentRegionGuid);
 
             // Assert
             try
@@ -619,7 +619,7 @@ namespace Peril.Api.Tests.Controllers
                        .SetupRegionTroops(OwnedRegionGuid, 2);
 
             // Act
-            Guid operationId = await primaryUser.RegionController.PostRedeployTroops(OwnedRegionGuid, 1, OwnedAdjacentRegionGuid);
+            Guid operationId = await primaryUser.RegionController.PostRedeployTroops(SessionGuid, OwnedRegionGuid, 1, OwnedAdjacentRegionGuid);
 
             // Assert
             Assert.AreEqual(1, primaryUser.CommandQueue.DummyRedeployQueue.Count());
@@ -641,7 +641,7 @@ namespace Peril.Api.Tests.Controllers
                        .SetupRegionTroops(OwnedRegionGuid, 10);
 
             // Act
-            Task result = primaryUser.RegionController.PostRedeployTroops(OwnedRegionGuid, 10, OwnedAdjacentRegionGuid);
+            Task result = primaryUser.RegionController.PostRedeployTroops(SessionGuid, OwnedRegionGuid, 10, OwnedAdjacentRegionGuid);
 
             // Assert
             try

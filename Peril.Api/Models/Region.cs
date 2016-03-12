@@ -42,9 +42,9 @@ namespace Peril.Api.Models
 
     static public class RegionRepositoryExtensionMethods
     {
-        static public async Task<IRegionData> GetRegionOrThrow(this IRegionRepository repository, Guid regionId)
+        static public async Task<IRegionData> GetRegionOrThrow(this IRegionRepository repository, Guid sessionId, Guid regionId)
         {
-            IRegionData region = await repository.GetRegion(regionId);
+            IRegionData region = await repository.GetRegion(sessionId, regionId);
             if (region == null)
             {
                 throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.NotFound, ReasonPhrase = "No region found with the provided Guid" });

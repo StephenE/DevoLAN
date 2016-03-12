@@ -25,9 +25,9 @@ namespace Peril.Api.Controllers.Api
 
         // GET /api/Region/Details
         [Route("Details")]
-        public async Task<IRegion> GetDetails(Guid regionId)
+        public async Task<IRegion> GetDetails(Guid sessionId, Guid regionId)
         {
-            IRegionData region = await RegionRepository.GetRegionOrThrow(regionId);
+            IRegionData region = await RegionRepository.GetRegionOrThrow(sessionId, regionId);
             ISession session = await SessionRepository.GetSessionOrThrow(region)
                                                       .IsUserIdJoinedOrThrow(SessionRepository, User.Identity.GetUserId());
 
@@ -36,9 +36,9 @@ namespace Peril.Api.Controllers.Api
 
         // POST /api/Region/Deploy
         [Route("Deploy")]
-        public async Task<Guid> PostDeployTroops(Guid regionId, uint numberOfTroops)
+        public async Task<Guid> PostDeployTroops(Guid sessionId, Guid regionId, uint numberOfTroops)
         {
-            IRegionData region = await RegionRepository.GetRegionOrThrow(regionId)
+            IRegionData region = await RegionRepository.GetRegionOrThrow(sessionId, regionId)
                                                        .IsRegionOwnerOrThrow(User.Identity.GetUserId());
             ISession session = await SessionRepository.GetSessionOrThrow(region)
                                                       .IsUserIdJoinedOrThrow(SessionRepository, User.Identity.GetUserId())
@@ -57,14 +57,14 @@ namespace Peril.Api.Controllers.Api
 
         // POST /api/Region/Attack
         [Route("Attack")]
-        public async Task<Guid> PostAttack(Guid regionId, uint numberOfTroops, Guid targetRegionId)
+        public async Task<Guid> PostAttack(Guid sessionId, Guid regionId, uint numberOfTroops, Guid targetRegionId)
         {
-            IRegionData sourceRegion = await RegionRepository.GetRegionOrThrow(regionId)
+            IRegionData sourceRegion = await RegionRepository.GetRegionOrThrow(sessionId, regionId)
                                                        .IsRegionOwnerOrThrow(User.Identity.GetUserId());
             ISession session = await SessionRepository.GetSessionOrThrow(sourceRegion)
                                                       .IsUserIdJoinedOrThrow(SessionRepository, User.Identity.GetUserId())
                                                       .IsPhaseTypeOrThrow(SessionPhase.CombatOrders);
-            IRegionData targetRegion = await RegionRepository.GetRegionOrThrow(targetRegionId)
+            IRegionData targetRegion = await RegionRepository.GetRegionOrThrow(session.GameId, targetRegionId)
                                                              .IsNotRegionOwnerOrThrow(User.Identity.GetUserId())
                                                              .IsRegionConnectedOrThrow(sourceRegion.RegionId);
 
@@ -80,14 +80,14 @@ namespace Peril.Api.Controllers.Api
 
         // POST /api/Region/Redeploy
         [Route("Redeploy")]
-        public async Task<Guid> PostRedeployTroops(Guid regionId, uint numberOfTroops, Guid targetRegionId)
+        public async Task<Guid> PostRedeployTroops(Guid sessionId, Guid regionId, uint numberOfTroops, Guid targetRegionId)
         {
-            IRegionData sourceRegion = await RegionRepository.GetRegionOrThrow(regionId)
+            IRegionData sourceRegion = await RegionRepository.GetRegionOrThrow(sessionId, regionId)
                                                        .IsRegionOwnerOrThrow(User.Identity.GetUserId());
             ISession session = await SessionRepository.GetSessionOrThrow(sourceRegion)
                                                       .IsUserIdJoinedOrThrow(SessionRepository, User.Identity.GetUserId())
                                                       .IsPhaseTypeOrThrow(SessionPhase.Redeployment);
-            IRegionData targetRegion = await RegionRepository.GetRegionOrThrow(targetRegionId)
+            IRegionData targetRegion = await RegionRepository.GetRegionOrThrow(session.GameId, targetRegionId)
                                                              .IsRegionOwnerOrThrow(User.Identity.GetUserId())
                                                              .IsRegionConnectedOrThrow(sourceRegion.RegionId);
             INationData nation = await NationRepository.GetNation(User.Identity.GetUserId());

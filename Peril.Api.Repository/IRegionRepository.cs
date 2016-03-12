@@ -10,6 +10,8 @@ namespace Peril.Api.Repository
 
         Task CreateRegion(Guid sessionId, Guid regionId, Guid continentId, String name, IEnumerable<Guid> connectedRegions);
 
-        Task<IRegionData> GetRegion(Guid regionId);
+        Task<IRegionData> GetRegion(Guid sessionId, Guid regionId);
+
+        Task<IEnumerable<IRegionData>> GetRegions(Guid sessionId);
     }
 }

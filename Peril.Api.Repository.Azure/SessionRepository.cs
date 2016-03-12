@@ -52,9 +52,22 @@ namespace Peril.Api.Repository.Azure
         {
             // Doing a full query like this is very expensive, as if we ever need to support more than a couple of sessions
             // then we should probably maintain a list of open sessions in the database
+            List<SessionTableEntry> results = new List<SessionTableEntry>();
             TableQuery<SessionTableEntry> query = new TableQuery<SessionTableEntry>();
 
-            return await SessionTable.ExecuteQuerySegmentedAsync(query, null);
+            // Initialize the continuation token to null to start from the beginning of the table.
+            TableContinuationToken continuationToken = null;
+
+            // Loop until the continuation token comes back as null
+            do
+            {
+                var queryResults = await SessionTable.ExecuteQuerySegmentedAsync(query, continuationToken);
+                continuationToken = queryResults.ContinuationToken;
+                results.AddRange(queryResults.Results);
+            }
+            while (continuationToken != null);
+
+            return results;
         }
 
         public async Task<ISession> GetSession(Guid sessionId)

@@ -70,7 +70,7 @@ namespace Peril.Api.Repository.Azure.Tests
             await repository.CreateRegion(dummySessionId, dummyRegionId, dummyContinentId, "DummyRegion", dummyConnections);
 
             // Act
-            IRegionData regionData = await repository.GetRegion(dummyRegionId);
+            IRegionData regionData = await repository.GetRegion(dummySessionId, dummyRegionId);
 
             // Assert
             Assert.IsNotNull(regionData);
@@ -84,13 +84,38 @@ namespace Peril.Api.Repository.Azure.Tests
         {
             // Arrange
             RegionRepository repository = new RegionRepository(DevelopmentStorageAccountConnectionString);
+            Guid dummySessionId = new Guid("74720766-452A-40AD-8A61-FEF07E8573C9");
             Guid dummyRegionId = new Guid("DE167712-0CE6-455C-83EA-CB2A6936F1BE");
 
             // Act
-            IRegionData regionData = await repository.GetRegion(dummyRegionId);
+            IRegionData regionData = await repository.GetRegion(dummySessionId, dummyRegionId);
 
             // Assert
             Assert.IsNull(regionData);
+        }
+
+        [TestMethod]
+        [TestCategory("Integration")]
+        [TestCategory("RegionRepository")]
+        public async Task IntegrationTestGetRegions()
+        {
+            // Arrange
+            RegionRepository repository = new RegionRepository(DevelopmentStorageAccountConnectionString);
+            Guid dummySessionId = new Guid("74720766-452A-40AD-8A61-FEF07E8573C9");
+            Guid dummyRegionId = new Guid("CBDF6EBE-5F91-4ADF-AC30-D149D8E5F8EB");
+            Guid secondDummyRegionId = new Guid("336312D8-F219-4C9B-B3FE-F4B39602E28D");
+            Guid dummyContinentId = new Guid("DE167712-0CE6-455C-83EA-CB2A6936F1BE");
+            await repository.CreateRegion(dummySessionId, dummyRegionId, dummyContinentId, "DummyRegion", new List<Guid>());
+            await repository.CreateRegion(dummySessionId, secondDummyRegionId, dummyContinentId, "DummyRegion2", new List<Guid>());
+
+            // Act
+            IEnumerable<IRegionData> regionData = await repository.GetRegions(dummySessionId);
+
+            // Assert
+            Assert.IsNotNull(regionData);
+            Assert.IsTrue(regionData.Count() >= 2, "Expected at least two regions");
+            Assert.AreEqual(1, regionData.Where(region => region.RegionId == dummyRegionId).Count());
+            Assert.AreEqual(1, regionData.Where(region => region.RegionId == secondDummyRegionId).Count());
         }
 
         static private String DevelopmentStorageAccountConnectionString
