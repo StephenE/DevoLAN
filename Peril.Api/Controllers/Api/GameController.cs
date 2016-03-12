@@ -26,21 +26,23 @@ namespace Peril.Api.Controllers.Api
 
         // GET /api/Game/Sessions
         [Route("Sessions")]
-        public async Task<IEnumerable<Peril.Core.ISession>> GetSessions()
+        public async Task<IEnumerable<ISession>> GetSessions()
         {
-            return await SessionRepository.GetSessions();
+            IEnumerable<ISession> sessionData = await SessionRepository.GetSessions();
+            return from session in sessionData
+                   select new Session(session);
         }
 
         // GET /api/Game/Session
         [Route("Session")]
-        public async Task<Peril.Core.ISession> GetSession(Guid sessionId)
+        public async Task<ISession> GetSession(Guid sessionId)
         {
-            return await SessionRepository.GetSessionOrThrow(sessionId);
+            return new Session(await SessionRepository.GetSessionOrThrow(sessionId));
         }
 
         // POST /api/Game/StartNewGame
         [Route("StartNewGame")]
-        public async Task<Peril.Core.ISession> PostStartNewSession()
+        public async Task<ISession> PostStartNewSession()
         {
             Guid sessionGuid = await SessionRepository.CreateSession(User.Identity.GetUserId());
 
@@ -118,7 +120,7 @@ namespace Peril.Api.Controllers.Api
 
         // GET /api/Game/Players
         [Route("Players")]
-        public async Task<IEnumerable<Peril.Core.IPlayer>> GetPlayers(Guid sessionId)
+        public async Task<IEnumerable<IPlayer>> GetPlayers(Guid sessionId)
         {
             ISession session = await SessionRepository.GetSessionOrThrow(sessionId);
 

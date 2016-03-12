@@ -12,6 +12,18 @@ namespace Peril.Api.Models
 {
     public class Session : ISession
     {
+        public Session()
+        {
+
+        }
+
+        public Session(ISession repositorySession)
+        {
+            GameId = repositorySession.GameId;
+            PhaseId = repositorySession.PhaseId;
+            PhaseType = repositorySession.PhaseType;
+        }
+
         public Guid GameId { get; set; }
         public Guid PhaseId { get; set; }
         public SessionPhase PhaseType { get; set; }

@@ -4,6 +4,7 @@ using Peril.Api.Repository;
 using Peril.Core;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Http;
 
@@ -19,14 +20,16 @@ namespace Peril.Api.Controllers.Api
             SessionRepository = sessionRepository;
         }
 
-        // GET /api/World/Regions
-        [Route("Regions")]
-        public async Task<IEnumerable<IRegion>> GetRegions(Guid sessionId)
+        // GET /api/World/RegionList
+        [Route("RegionList")]
+        public async Task<IEnumerable<IRegion>> GetRegionList(Guid sessionId)
         {
             ISession session = await SessionRepository.GetSessionOrThrow(sessionId)
                                                       .IsUserIdJoinedOrThrow(SessionRepository, User.Identity.GetUserId());
 
-            return await RegionRepository.GetRegions(session.GameId);
+            IEnumerable<IRegionData> regionData = await RegionRepository.GetRegions(session.GameId);
+            return from region in regionData
+                   select new Region(region);
         }
 
         // GET /api/World/Combat

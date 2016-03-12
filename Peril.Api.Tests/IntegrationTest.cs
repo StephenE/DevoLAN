@@ -63,7 +63,7 @@ namespace Peril.Api.Tests
 
         private async Task<IEnumerable<Guid>> GetCurrentlyOwnedRegions(ControllerMock user, Guid sessionId)
         {
-            IEnumerable<IRegion> worldRegions = await user.WorldController.GetRegions(sessionId);
+            IEnumerable<IRegion> worldRegions = await user.WorldController.GetRegionList(sessionId);
 
             return from region in worldRegions
                    where region.OwnerId == user.OwnerId

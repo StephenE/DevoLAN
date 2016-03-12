@@ -16,13 +16,13 @@ namespace Peril.Api.Tests.Controllers
         [TestMethod]
         [TestCategory("Unit")]
         [TestCategory("WorldController")]
-        public async Task TestGetRegions_WithInvalidRegion()
+        public async Task TestGetRegionList_WithInvalidRegion()
         {
             // Arrange
             ControllerMock primaryUser = new ControllerMock();
 
             // Act
-            Task<IEnumerable<IRegion>> result = primaryUser.WorldController.GetRegions(SessionGuid);
+            Task<IEnumerable<IRegion>> result = primaryUser.WorldController.GetRegionList(SessionGuid);
 
             // Assert
             try
@@ -39,14 +39,14 @@ namespace Peril.Api.Tests.Controllers
         [TestMethod]
         [TestCategory("Unit")]
         [TestCategory("WorldController")]
-        public async Task TestGetRegions_WithNotInSession()
+        public async Task TestGetRegionList_WithNotInSession()
         {
             // Arrange
             ControllerMock primaryUser = new ControllerMock();
             primaryUser.SetupDummySession(SessionGuid, DummyUserRepository.RegisteredUserIds[1]);
 
             // Act
-            Task<IEnumerable<IRegion>> result = primaryUser.WorldController.GetRegions(SessionGuid);
+            Task<IEnumerable<IRegion>> result = primaryUser.WorldController.GetRegionList(SessionGuid);
 
             // Assert
             try
@@ -63,14 +63,14 @@ namespace Peril.Api.Tests.Controllers
         [TestMethod]
         [TestCategory("Unit")]
         [TestCategory("WorldController")]
-        public async Task TestGetRegions_WithNoRegions()
+        public async Task TestGetRegionList_WithNoRegions()
         {
             // Arrange
             ControllerMock primaryUser = new ControllerMock();
             primaryUser.SetupDummySession(SessionGuid);
 
             // Act
-            IEnumerable<IRegion> result = await primaryUser.WorldController.GetRegions(SessionGuid);
+            IEnumerable<IRegion> result = await primaryUser.WorldController.GetRegionList(SessionGuid);
 
             // Assert
             Assert.IsNotNull(result);
@@ -80,7 +80,7 @@ namespace Peril.Api.Tests.Controllers
         [TestMethod]
         [TestCategory("Unit")]
         [TestCategory("WorldController")]
-        public async Task TestGetRegions_WithValidRegions()
+        public async Task TestGetRegionList_WithValidRegions()
         {
             // Arrange
             ControllerMock primaryUser = new ControllerMock();
@@ -88,7 +88,7 @@ namespace Peril.Api.Tests.Controllers
                        .SetupDummyWorldAsTree();
 
             // Act
-            IEnumerable<IRegion> result = await primaryUser.WorldController.GetRegions(SessionGuid);
+            IEnumerable<IRegion> result = await primaryUser.WorldController.GetRegionList(SessionGuid);
 
             // Assert
             Assert.IsNotNull(result);
