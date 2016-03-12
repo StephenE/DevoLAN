@@ -8,5 +8,7 @@ namespace Peril.Api.Models
         public String UserId { get; set; }
 
         public String Name { get; set; }
+
+        public PlayerColour Colour { get; set; }
     }
 }

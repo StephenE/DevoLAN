@@ -38,14 +38,25 @@ namespace Peril.Api.Repository.Azure
             return newSessionGuid;
         }
 
-        public async Task<IEnumerable<String>> GetSessionPlayers(Guid session)
+        public async Task<IEnumerable<IPlayer>> GetSessionPlayers(Guid session)
         {
-            TableQuery query = new TableQuery()
-                .Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, session.ToString()))
-                .Select(new List<String> { "RowKey" });
+            List<IPlayer> results = new List<IPlayer>();
+            TableQuery<NationTableEntry> query = new TableQuery<NationTableEntry>()
+                .Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, session.ToString()));
 
-            var queryResults = await SessionPlayersTable.ExecuteQuerySegmentedAsync(query, null);
-            return queryResults.Select(element => element.RowKey);
+            // Initialize the continuation token to null to start from the beginning of the table.
+            TableContinuationToken continuationToken = null;
+
+            // Loop until the continuation token comes back as null
+            do
+            {
+                var queryResults = await SessionPlayersTable.ExecuteQuerySegmentedAsync(query, continuationToken);
+                continuationToken = queryResults.ContinuationToken;
+                results.AddRange(queryResults.Results);
+            }
+            while (continuationToken != null);
+
+            return results;
         }
 
         public async Task<IEnumerable<ISession>> GetSessions()
@@ -82,7 +93,7 @@ namespace Peril.Api.Repository.Azure
         public async Task JoinSession(Guid sessionId, String userId)
         {
             // Create a new table entry
-            SessionPlayerTableEntry newSessionPlayerEntry = new SessionPlayerTableEntry(sessionId, userId);
+            NationTableEntry newSessionPlayerEntry = new NationTableEntry(sessionId, userId);
 
             // Kick off the insert operation
             TableOperation insertOperation = TableOperation.Insert(newSessionPlayerEntry);
@@ -92,11 +103,11 @@ namespace Peril.Api.Repository.Azure
         public async Task MarkPlayerCompletedPhase(Guid sessionId, String userId, Guid phaseId)
         {
             // Fetch existing entry
-            var operation = TableOperation.Retrieve<SessionPlayerTableEntry>(sessionId.ToString(), userId);
+            var operation = TableOperation.Retrieve<NationTableEntry>(sessionId.ToString(), userId);
             var result = await SessionPlayersTable.ExecuteAsync(operation);
 
             // Modify entry
-            SessionPlayerTableEntry playerEntry = result.Result as SessionPlayerTableEntry;
+            NationTableEntry playerEntry = result.Result as NationTableEntry;
             playerEntry.CompletedPhase = phaseId;
 
             // Write entry back (fails on write conflict)

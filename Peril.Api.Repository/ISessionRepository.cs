@@ -9,7 +9,7 @@ namespace Peril.Api.Repository
     {
         Task<IEnumerable<ISession>> GetSessions();
 
-        Task<IEnumerable<String>> GetSessionPlayers(Guid session);
+        Task<IEnumerable<IPlayer>> GetSessionPlayers(Guid session);
 
         Task<Guid> CreateSession(String userId);
 

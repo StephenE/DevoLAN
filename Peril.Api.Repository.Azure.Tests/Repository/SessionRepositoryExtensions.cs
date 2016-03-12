@@ -19,9 +19,9 @@ namespace Peril.Api.Repository.Azure.Tests.Repository
             return newSession;
         }
 
-        static internal async Task<SessionPlayerTableEntry> SetupAddPlayer(this SessionRepository repository, Guid sessionId, String userId)
+        static internal async Task<NationTableEntry> SetupAddPlayer(this SessionRepository repository, Guid sessionId, String userId)
         {
-            SessionPlayerTableEntry newSessionPlayerEntry = new SessionPlayerTableEntry(sessionId, userId);
+            NationTableEntry newSessionPlayerEntry = new NationTableEntry(sessionId, userId);
 
             TableOperation insertOperation = TableOperation.InsertOrReplace(newSessionPlayerEntry);
             await repository.SessionPlayersTable.ExecuteAsync(insertOperation);

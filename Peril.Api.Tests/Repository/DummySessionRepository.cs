@@ -24,13 +24,13 @@ namespace Peril.Api.Tests.Repository
             return newId;
         }
 
-        public async Task<IEnumerable<String>> GetSessionPlayers(Guid sessionId)
+        public async Task<IEnumerable<IPlayer>> GetSessionPlayers(Guid sessionId)
         {
             DummySession foundSession = SessionMap[sessionId];
             if (foundSession != null)
             {
                 return from player in foundSession.Players
-                       select player.UserId;
+                       select player;
             }
             else
             {

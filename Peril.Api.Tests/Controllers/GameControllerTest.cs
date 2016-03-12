@@ -198,6 +198,7 @@ namespace Peril.Api.Tests.Controllers
             Assert.IsNotNull(result);
             Assert.AreEqual(1, result.Count());
             Assert.AreEqual(primaryUser.OwnerId, result.First().UserId);
+            Assert.AreEqual(primaryUser.OwnerId, result.First().Name);
         }
 
         [TestMethod]

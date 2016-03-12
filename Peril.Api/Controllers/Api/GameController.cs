@@ -97,7 +97,7 @@ namespace Peril.Api.Controllers.Api
             }
             catch(Exception error)
             {
-                throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.InternalServerError, ReasonPhrase = error.Message });
+                throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.InternalServerError, ReasonPhrase = "An exception occured while creating the regions" });
             }
 
             return new Models.Session { GameId = sessionGuid };
@@ -110,8 +110,8 @@ namespace Peril.Api.Controllers.Api
             ISession session = await SessionRepository.GetSessionOrThrow(sessionId)
                                                       .IsPhaseTypeOrThrow(SessionPhase.NotStarted);
 
-            IEnumerable<String> playerIds = await SessionRepository.GetSessionPlayers(sessionId);
-            var existingEntry = playerIds.Where(playerId => playerId == User.Identity.GetUserId());
+            IEnumerable<IPlayer> playerIds = await SessionRepository.GetSessionPlayers(sessionId);
+            var existingEntry = playerIds.Where(playerId => playerId.UserId == User.Identity.GetUserId());
             if (existingEntry.Count() == 0)
             {
                 await SessionRepository.JoinSession(sessionId, User.Identity.GetUserId());
@@ -125,10 +125,10 @@ namespace Peril.Api.Controllers.Api
             ISession session = await SessionRepository.GetSessionOrThrow(sessionId);
 
             // Resolve player ids into IPlayer structures
-            IEnumerable<String> playerIds = await SessionRepository.GetSessionPlayers(sessionId);
-            return from playerId in playerIds
-                    join user in UserRepository.Users on playerId equals user.Id
-                    select new Player { UserId = playerId, Name = user.UserName };
+            IEnumerable<IPlayer> playerIds = await SessionRepository.GetSessionPlayers(sessionId);
+            return from player in playerIds
+                    join user in UserRepository.Users on player.UserId equals user.Id
+                    select new Player { UserId = player.UserId, Name = user.UserName, Colour = player.Colour };
         }
 
         // POST /api/Game/PostEndPhase

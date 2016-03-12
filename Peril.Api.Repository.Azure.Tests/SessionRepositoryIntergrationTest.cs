@@ -53,11 +53,11 @@ namespace Peril.Api.Repository.Azure.Tests
             Assert.AreEqual(Guid.Empty, resultStronglyTyped.PhaseId);
             Assert.AreEqual(SessionPhase.NotStarted, resultStronglyTyped.PhaseType);
 
-            operation = TableOperation.Retrieve<SessionPlayerTableEntry>(newSessionGuid.ToString(), dummyUserId);
+            operation = TableOperation.Retrieve<NationTableEntry>(newSessionGuid.ToString(), dummyUserId);
             result = await repository.SessionPlayersTable.ExecuteAsync(operation);
             Assert.IsNotNull(result.Result);
-            Assert.IsInstanceOfType(result.Result, typeof(SessionPlayerTableEntry));
-            SessionPlayerTableEntry resultPlayerStronglyTyped = result.Result as SessionPlayerTableEntry;
+            Assert.IsInstanceOfType(result.Result, typeof(NationTableEntry));
+            NationTableEntry resultPlayerStronglyTyped = result.Result as NationTableEntry;
             Assert.AreEqual(newSessionGuid, resultPlayerStronglyTyped.SessionId);
             Assert.AreEqual(dummyUserId, resultPlayerStronglyTyped.UserId);
             Assert.AreEqual(Guid.Empty, resultPlayerStronglyTyped.CompletedPhase);
@@ -75,12 +75,12 @@ namespace Peril.Api.Repository.Azure.Tests
             await repository.SetupSession(validGuid, dummyUserId);
 
             // Act
-            IEnumerable<String> sessionPlayers = await repository.GetSessionPlayers(validGuid);
+            IEnumerable<IPlayer> sessionPlayers = await repository.GetSessionPlayers(validGuid);
 
             // Assert
             Assert.IsNotNull(sessionPlayers);
             Assert.AreEqual(1, sessionPlayers.Count());
-            Assert.AreEqual(dummyUserId, sessionPlayers.First());
+            Assert.AreEqual(dummyUserId, sessionPlayers.First().UserId);
         }
 
         [TestMethod]
@@ -122,12 +122,12 @@ namespace Peril.Api.Repository.Azure.Tests
             Assert.AreEqual(SessionPhase.NotStarted, session.PhaseType);
 
             // Act
-            IEnumerable<String> sessionPlayers = await repository.GetSessionPlayers(validGuid);
+            IEnumerable<IPlayer> sessionPlayers = await repository.GetSessionPlayers(validGuid);
 
             // Assert
             Assert.IsNotNull(sessionPlayers);
             Assert.AreEqual(1, sessionPlayers.Count());
-            Assert.AreEqual(dummyUserId, sessionPlayers.First());
+            Assert.AreEqual(dummyUserId, sessionPlayers.First().UserId);
         }
 
         [TestMethod]
@@ -161,11 +161,11 @@ namespace Peril.Api.Repository.Azure.Tests
             await repository.JoinSession(validGuid, dummyUserId);
 
             // Assert
-            var operation = TableOperation.Retrieve<SessionPlayerTableEntry>(validGuid.ToString(), dummyUserId);
+            var operation = TableOperation.Retrieve<NationTableEntry>(validGuid.ToString(), dummyUserId);
             var result = await repository.SessionPlayersTable.ExecuteAsync(operation);
             Assert.IsNotNull(result.Result);
-            Assert.IsInstanceOfType(result.Result, typeof(SessionPlayerTableEntry));
-            SessionPlayerTableEntry resultPlayerStronglyTyped = result.Result as SessionPlayerTableEntry;
+            Assert.IsInstanceOfType(result.Result, typeof(NationTableEntry));
+            NationTableEntry resultPlayerStronglyTyped = result.Result as NationTableEntry;
             Assert.AreEqual(validGuid, resultPlayerStronglyTyped.SessionId);
             Assert.AreEqual(dummyUserId, resultPlayerStronglyTyped.UserId);
             Assert.AreEqual(Guid.Empty, resultPlayerStronglyTyped.CompletedPhase);
@@ -187,11 +187,11 @@ namespace Peril.Api.Repository.Azure.Tests
             await repository.MarkPlayerCompletedPhase(validGuid, dummyUserId, validGuid);
 
             // Assert
-            var operation = TableOperation.Retrieve<SessionPlayerTableEntry>(validGuid.ToString(), dummyUserId);
+            var operation = TableOperation.Retrieve<NationTableEntry>(validGuid.ToString(), dummyUserId);
             var result = await repository.SessionPlayersTable.ExecuteAsync(operation);
             Assert.IsNotNull(result.Result);
-            Assert.IsInstanceOfType(result.Result, typeof(SessionPlayerTableEntry));
-            SessionPlayerTableEntry resultPlayerStronglyTyped = result.Result as SessionPlayerTableEntry;
+            Assert.IsInstanceOfType(result.Result, typeof(NationTableEntry));
+            NationTableEntry resultPlayerStronglyTyped = result.Result as NationTableEntry;
             Assert.AreEqual(validGuid, resultPlayerStronglyTyped.CompletedPhase);
         }
 

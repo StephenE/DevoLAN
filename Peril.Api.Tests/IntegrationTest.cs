@@ -14,9 +14,12 @@ namespace Peril.Api.Tests
     {
         [TestMethod]
         [TestCategory("Integration")]
+        [DeploymentItem(@"Data\ValidWorldDefinition.xml", "WorldData")]
         public async Task IntegrationTestStartGame_WithTwoUsers()
         {
             ControllerMock primaryUser = new ControllerMock();
+            primaryUser.RegionRepository.WorldDefinitionPath = @"WorldData\ValidWorldDefinition.xml";
+
             ControllerMock secondaryUser = new ControllerMock(DummyUserRepository.RegisteredUserIds[1], primaryUser);
 
             // Create session using primary user
