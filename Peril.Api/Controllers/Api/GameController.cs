@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNet.Identity;
 using Peril.Api.Models;
 using Peril.Api.Repository;
+using Peril.Api.Repository.Model;
 using Peril.Core;
 using System;
 using System.Collections.Generic;
@@ -42,9 +43,9 @@ namespace Peril.Api.Controllers.Api
 
         // POST /api/Game/StartNewGame
         [Route("StartNewGame")]
-        public async Task<ISession> PostStartNewSession()
+        public async Task<ISession> PostStartNewSession(PlayerColour colour)
         {
-            Guid sessionGuid = await SessionRepository.CreateSession(User.Identity.GetUserId());
+            Guid sessionGuid = await SessionRepository.CreateSession(User.Identity.GetUserId(), colour);
 
             try
             {
@@ -105,16 +106,31 @@ namespace Peril.Api.Controllers.Api
 
         // POST /api/Game/JoinGame?gameId=guid-as-string
         [Route("JoinGame")]
-        public async Task PostJoinSession(Guid sessionId)
+        public async Task PostJoinSession(Guid sessionId, PlayerColour colour)
         {
-            ISession session = await SessionRepository.GetSessionOrThrow(sessionId)
+            ISessionData session = await SessionRepository.GetSessionOrThrow(sessionId)
                                                       .IsPhaseTypeOrThrow(SessionPhase.NotStarted);
 
             IEnumerable<IPlayer> playerIds = await SessionRepository.GetSessionPlayers(sessionId);
             var existingEntry = playerIds.Where(playerId => playerId.UserId == User.Identity.GetUserId());
             if (existingEntry.Count() == 0)
             {
-                await SessionRepository.JoinSession(sessionId, User.Identity.GetUserId());
+                try
+                {
+                    bool colourAvailable = await SessionRepository.ReservePlayerColour(session.GameId, session.CurrentEtag, colour);
+                    if (colourAvailable)
+                    {
+                        await SessionRepository.JoinSession(sessionId, User.Identity.GetUserId(), colour);
+                    }
+                    else
+                    {
+                        throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.NotAcceptable, ReasonPhrase = "Another player has already taken that colour" });
+                    }
+                }
+                catch (ConcurrencyException)
+                {
+                    throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.Conflict, ReasonPhrase = "There was a concurrent access conflict" });
+                }
             }
         }
 

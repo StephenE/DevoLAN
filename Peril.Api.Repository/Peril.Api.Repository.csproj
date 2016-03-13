@@ -57,6 +57,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ConcurrencyException.cs" />
     <Compile Include="Model\ApplicationUser.cs" />
     <Compile Include="ICommandQueue.cs" />
     <Compile Include="Model\INationData.cs" />
@@ -65,6 +66,7 @@
     <Compile Include="Model\IRegionData.cs" />
     <Compile Include="ISessionRepository.cs" />
     <Compile Include="IUserRepository.cs" />
+    <Compile Include="Model\ISessionData.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

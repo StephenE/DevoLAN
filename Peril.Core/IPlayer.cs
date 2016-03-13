@@ -11,7 +11,13 @@ namespace Peril.Core
         Orange,
         Yellow,
         Purple,
-        Pink
+        Pink,
+        Grey,
+        Maroon,
+        Lime,
+        Aqua,
+        Navy,
+        Fuchsia
     }
 
     public interface IPlayer

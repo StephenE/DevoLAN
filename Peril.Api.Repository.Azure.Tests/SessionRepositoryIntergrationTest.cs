@@ -3,6 +3,7 @@ using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
 using Peril.Api.Repository.Azure.Model;
 using Peril.Api.Repository.Azure.Tests.Repository;
+using Peril.Api.Repository.Model;
 using Peril.Core;
 using System;
 using System.Collections.Generic;
@@ -39,7 +40,7 @@ namespace Peril.Api.Repository.Azure.Tests
             String dummyUserId = "DummyUserId";
 
             // Act
-            Guid newSessionGuid = await repository.CreateSession(dummyUserId);
+            Guid newSessionGuid = await repository.CreateSession(dummyUserId, PlayerColour.Black);
 
             // Assert
             Assert.IsNotNull(newSessionGuid);
@@ -149,6 +150,73 @@ namespace Peril.Api.Repository.Azure.Tests
         [TestMethod]
         [TestCategory("Integration")]
         [TestCategory("SessionRepository")]
+        public async Task IntegrationTestReservePlayerColour()
+        {
+            // Arrange
+            SessionRepository repository = new SessionRepository(DevelopmentStorageAccountConnectionString);
+            Guid validGuid = new Guid("E5894BE3-6074-4516-93FB-BC851C1E4246");
+            ISessionData sessionData = await repository.SetupSession(validGuid, "CreatingUser");
+
+            // Act
+            bool isReserved = await repository.ReservePlayerColour(validGuid, sessionData.CurrentEtag, PlayerColour.Blue);
+
+            // Assert
+            Assert.AreEqual(true, isReserved);
+            TableOperation operation = TableOperation.Retrieve<SessionTableEntry>(validGuid.ToString(), "CreatingUser");
+            TableResult result = await SessionTable.ExecuteAsync(operation);
+            Assert.IsNotNull(result.Result);
+            Assert.IsInstanceOfType(result.Result, typeof(SessionTableEntry));
+            SessionTableEntry resultStronglyTyped = result.Result as SessionTableEntry;
+            Assert.IsTrue(resultStronglyTyped.IsColourUsed(PlayerColour.Blue));
+            Assert.AreNotEqual(resultStronglyTyped.CurrentEtag, sessionData.CurrentEtag);
+        }
+
+        [TestMethod]
+        [TestCategory("Integration")]
+        [TestCategory("SessionRepository")]
+        public async Task IntegrationTestReservePlayerColour_WithTakenColour()
+        {
+            // Arrange
+            SessionRepository repository = new SessionRepository(DevelopmentStorageAccountConnectionString);
+            Guid validGuid = new Guid("BFB365F0-25FF-40A7-84B6-4177B3FC7080");
+            ISessionData sessionData = await repository.SetupSession(validGuid, "CreatingUser");
+            await repository.ReservePlayerColour(validGuid, sessionData.CurrentEtag, PlayerColour.Blue);
+            sessionData = await repository.GetSession(validGuid);
+
+            // Act
+            bool isReserved = await repository.ReservePlayerColour(validGuid, sessionData.CurrentEtag, PlayerColour.Blue);
+
+            // Assert
+            Assert.AreEqual(false, isReserved);
+        }
+
+        [TestMethod]
+        [TestCategory("Integration")]
+        [TestCategory("SessionRepository")]
+        public async Task IntegrationTestReservePlayerColour_WithIncorrectEtag()
+        {
+            // Arrange
+            SessionRepository repository = new SessionRepository(DevelopmentStorageAccountConnectionString);
+            Guid validGuid = new Guid("BFB365F0-25FF-40A7-84B6-4177B3FC7080");
+            await repository.SetupSession(validGuid, "CreatingUser");
+
+            // Act
+            Task<bool> isReserved = repository.ReservePlayerColour(validGuid, "Invalid ETAG", PlayerColour.Blue);
+
+            // Assert
+            try
+            {
+                await isReserved;
+                Assert.Fail("Expected exception to be thrown");
+            }
+            catch(ConcurrencyException)
+            {
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("Integration")]
+        [TestCategory("SessionRepository")]
         public async Task IntegrationTestJoinSession()
         {
             // Arrange
@@ -158,7 +226,7 @@ namespace Peril.Api.Repository.Azure.Tests
             await repository.SetupSession(validGuid, "CreatingUser");
 
             // Act
-            await repository.JoinSession(validGuid, dummyUserId);
+            await repository.JoinSession(validGuid, dummyUserId, PlayerColour.Black);
 
             // Assert
             var operation = TableOperation.Retrieve<NationTableEntry>(validGuid.ToString(), dummyUserId);

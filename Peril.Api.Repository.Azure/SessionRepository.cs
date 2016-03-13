@@ -1,10 +1,13 @@
 ﻿using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
 using Peril.Api.Repository.Azure.Model;
+using Peril.Api.Repository.Model;
 using Peril.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Peril.Api.Repository.Azure
@@ -21,7 +24,7 @@ namespace Peril.Api.Repository.Azure
             SessionPlayersTable.CreateIfNotExists();
         }
 
-        public async Task<Guid> CreateSession(String userId)
+        public async Task<Guid> CreateSession(String userId, PlayerColour colour)
         {
             // Create a new table entry
             Guid newSessionGuid = Guid.NewGuid();
@@ -32,7 +35,7 @@ namespace Peril.Api.Repository.Azure
             await SessionTable.ExecuteAsync(insertOperation);
 
             // Add the player to the session
-            await JoinSession(newSessionGuid, userId);
+            await JoinSession(newSessionGuid, userId, colour);
 
             // Return the new session GUID
             return newSessionGuid;
@@ -59,7 +62,7 @@ namespace Peril.Api.Repository.Azure
             return results;
         }
 
-        public async Task<IEnumerable<ISession>> GetSessions()
+        public async Task<IEnumerable<ISessionData>> GetSessions()
         {
             // Doing a full query like this is very expensive, as if we ever need to support more than a couple of sessions
             // then we should probably maintain a list of open sessions in the database
@@ -81,7 +84,7 @@ namespace Peril.Api.Repository.Azure
             return results;
         }
 
-        public async Task<ISession> GetSession(Guid sessionId)
+        public async Task<ISessionData> GetSession(Guid sessionId)
         {
             TableQuery<SessionTableEntry> query = new TableQuery<SessionTableEntry>()
                 .Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, sessionId.ToString()));
@@ -90,10 +93,52 @@ namespace Peril.Api.Repository.Azure
             return results.FirstOrDefault();
         }
 
-        public async Task JoinSession(Guid sessionId, String userId)
+        public async Task<bool> ReservePlayerColour(Guid sessionId, String sessionEtag, PlayerColour colour)
+        {
+            ISessionData sessionData = await GetSession(sessionId);
+            SessionTableEntry session = sessionData as SessionTableEntry;
+
+            if(!session.IsColourUsed(colour))
+            {
+                if(session.ETag == sessionEtag)
+                {
+                    try
+                    {
+                        session.AddUsedColour(colour);
+
+                        // Write entry back (fails on write conflict)
+                        TableOperation insertOperation = TableOperation.Replace(session);
+                        await SessionTable.ExecuteAsync(insertOperation);
+
+                        return true;
+                    }
+                    catch(StorageException exception)
+                    {
+                        if (exception.RequestInformation.HttpStatusCode == (int)HttpStatusCode.PreconditionFailed)
+                        {
+                            throw new ConcurrencyException();
+                        }
+                        else
+                        {
+                            throw exception;
+                        }
+                    }
+                }
+                else
+                {
+                    throw new ConcurrencyException();
+                }
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public async Task JoinSession(Guid sessionId, String userId, PlayerColour colour)
         {
             // Create a new table entry
-            NationTableEntry newSessionPlayerEntry = new NationTableEntry(sessionId, userId);
+            NationTableEntry newSessionPlayerEntry = new NationTableEntry(sessionId, userId) { ColourId = (Int32)colour };
 
             // Kick off the insert operation
             TableOperation insertOperation = TableOperation.Insert(newSessionPlayerEntry);
@@ -111,8 +156,22 @@ namespace Peril.Api.Repository.Azure
             playerEntry.CompletedPhase = phaseId;
 
             // Write entry back (fails on write conflict)
-            TableOperation insertOperation = TableOperation.Replace(playerEntry);
-            await SessionPlayersTable.ExecuteAsync(insertOperation);
+            try
+            {
+                TableOperation insertOperation = TableOperation.Replace(playerEntry);
+                await SessionPlayersTable.ExecuteAsync(insertOperation);
+            }
+            catch (StorageException exception)
+            {
+                if (exception.RequestInformation.HttpStatusCode == (int)HttpStatusCode.PreconditionFailed)
+                {
+                    throw new ConcurrencyException();
+                }
+                else
+                {
+                    throw exception;
+                }
+            }
         }
 
         private CloudStorageAccount StorageAccount { get; set; }

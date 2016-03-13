@@ -23,11 +23,11 @@ namespace Peril.Api.Tests
             ControllerMock secondaryUser = new ControllerMock(DummyUserRepository.RegisteredUserIds[1], primaryUser);
 
             // Create session using primary user
-            ISession sessionDetails = await primaryUser.GameController.PostStartNewSession();
+            ISession sessionDetails = await primaryUser.GameController.PostStartNewSession(PlayerColour.Black);
             Assert.IsNotNull(sessionDetails);
 
             // Join session using secondary user
-            await secondaryUser.GameController.PostJoinSession(sessionDetails.GameId);
+            await secondaryUser.GameController.PostJoinSession(sessionDetails.GameId, PlayerColour.Green);
 
             // Assert all players in session
             var playersInSession = await primaryUser.GameController.GetPlayers(sessionDetails.GameId);

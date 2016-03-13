@@ -59,7 +59,7 @@ namespace Peril.Api.Tests.Controllers
             primaryUser.RegionRepository.WorldDefinitionPath = @"WorldData\ValidWorldDefinition.xml";
 
             // Act
-            ISession result = await primaryUser.GameController.PostStartNewSession();
+            ISession result = await primaryUser.GameController.PostStartNewSession(PlayerColour.Black);
 
             // Assert
             Assert.IsNotNull(result);
@@ -67,6 +67,7 @@ namespace Peril.Api.Tests.Controllers
             Assert.AreEqual(Guid.Empty, result.PhaseId);
             Assert.AreEqual(SessionPhase.NotStarted, result.PhaseType);
             Assert.AreEqual("DummyUser", primaryUser.SessionRepository.Sessions.Where(session => session.GameId == result.GameId).First().Players.First().UserId);
+            Assert.AreEqual(PlayerColour.Black, primaryUser.SessionRepository.Sessions.Where(session => session.GameId == result.GameId).First().Players.First().Colour);
             Assert.AreEqual(6, primaryUser.RegionRepository.RegionData.Count);
         }
 
@@ -80,7 +81,7 @@ namespace Peril.Api.Tests.Controllers
 
             // Act
             Guid invalidGuid = new Guid("3286C8E6-B510-4F7F-AAE0-9EF827459E7E");
-            Task result = primaryUser.GameController.PostJoinSession(invalidGuid);
+            Task result = primaryUser.GameController.PostJoinSession(invalidGuid, PlayerColour.Black);
 
             // Assert
             try
@@ -105,18 +106,19 @@ namespace Peril.Api.Tests.Controllers
             primaryUser.SetupDummySession(validGuid, DummyUserRepository.RegisteredUserIds[1]);
 
             // Act
-            Task result = primaryUser.GameController.PostJoinSession(validGuid);
+            Task result = primaryUser.GameController.PostJoinSession(validGuid, PlayerColour.Blue);
 
             // Assert
             await result;
             Assert.AreEqual(2, primaryUser.SessionRepository.Sessions.Where(session => session.GameId == validGuid).First().Players.Count);
             Assert.AreEqual(1, primaryUser.SessionRepository.Sessions.Where(session => session.GameId == validGuid).First().Players.Where(player => player.UserId == "DummyUser").Count());
+            Assert.AreEqual(PlayerColour.Blue, primaryUser.SessionRepository.Sessions.Where(session => session.GameId == validGuid).First().Players.Where(player => player.UserId == "DummyUser").First().Colour);
         }
 
         [TestMethod]
         [TestCategory("Unit")]
         [TestCategory("GameController")]
-        public async Task TestJoinSession_WithValidGuid_WithAlreadyInSession()
+        public async Task TestJoinSession_WithAlreadyInSession()
         {
             // Arrange
             Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
@@ -124,11 +126,67 @@ namespace Peril.Api.Tests.Controllers
             primaryUser.SetupDummySession(validGuid);
 
             // Act
-            Task result = primaryUser.GameController.PostJoinSession(validGuid);
+            Task result = primaryUser.GameController.PostJoinSession(validGuid, PlayerColour.Blue);
 
             // Assert
             await result;
             Assert.AreEqual(1, primaryUser.SessionRepository.Sessions.Where(session => session.GameId == validGuid).First().Players.Count());
+        }
+
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("GameController")]
+        public async Task TestJoinSession_WithDuplicateColour()
+        {
+            // Arrange
+            Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
+            ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(validGuid, DummyUserRepository.RegisteredUserIds[1]);
+
+            // Act
+            Task result = primaryUser.GameController.PostJoinSession(validGuid, PlayerColour.Black);
+
+            // Assert
+            try
+            {
+                await result;
+                Assert.Fail("Expected exception to be thrown");
+            }
+            catch (HttpResponseException exception)
+            {
+                Assert.AreEqual(HttpStatusCode.NotAcceptable, exception.Response.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("GameController")]
+        public async Task TestJoinSession_WithConcurrentOperation()
+        {
+            // Arrange
+            Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
+            ControllerMock primaryUser = new ControllerMock();
+            ControllerMock secondaryUser = new ControllerMock(DummyUserRepository.RegisteredUserIds[1], primaryUser);
+            primaryUser.SetupDummySession(validGuid, DummyUserRepository.RegisteredUserIds[2]);
+            TaskCompletionSource<bool> blockConcurrentOperations = new TaskCompletionSource<bool>();
+            primaryUser.SessionRepository.StorageDelaySimulationTask = blockConcurrentOperations.Task;
+
+            // Act
+            Task result = primaryUser.GameController.PostJoinSession(validGuid, PlayerColour.Blue);
+            Task secondResult = secondaryUser.GameController.PostJoinSession(validGuid, PlayerColour.Blue);
+            blockConcurrentOperations.SetResult(true);
+
+            // Assert
+            try
+            {
+                await result;
+                await secondResult;
+                Assert.Fail("Expected exception to be thrown");
+            }
+            catch (HttpResponseException exception)
+            {
+                Assert.AreEqual(HttpStatusCode.Conflict, exception.Response.StatusCode);
+            }
         }
 
         [TestMethod]
@@ -143,7 +201,7 @@ namespace Peril.Api.Tests.Controllers
                        .SetupSessionPhase(SessionPhase.Reinforcements);
 
             // Act
-            Task result = primaryUser.GameController.PostJoinSession(validGuid);
+            Task result = primaryUser.GameController.PostJoinSession(validGuid, PlayerColour.Black);
 
             // Assert
             try

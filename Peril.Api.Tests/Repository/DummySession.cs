@@ -1,16 +1,18 @@
-﻿using Peril.Core;
+﻿using Peril.Api.Repository.Model;
+using Peril.Core;
 using System;
 using System.Collections.Generic;
 
 namespace Peril.Api.Tests.Repository
 {
-    class DummySession : ISession
+    class DummySession : ISessionData
     {
         public DummySession()
         {
             Players = new List<DummyPlayer>();
             PhaseId = Guid.Empty;
             PhaseType = SessionPhase.NotStarted;
+            GenerateNewEtag();
         }
 
         public Guid GameId { get; set; }
@@ -21,6 +23,8 @@ namespace Peril.Api.Tests.Repository
 
         public SessionPhase PhaseType { get; set; }
 
+        public String CurrentEtag { get; set; }
+
         #region - Test Setup Helpers -
         internal DummySession SetupSessionPhase(SessionPhase round)
         {
@@ -29,9 +33,15 @@ namespace Peril.Api.Tests.Repository
             return this;
         }
 
-        internal DummySession SetupAddPlayer(String userId)
+        internal DummySession SetupAddPlayer(String userId, PlayerColour colour)
         {
-            Players.Add(new DummyPlayer(userId));
+            Players.Add(new DummyPlayer(userId) { Colour = colour });
+            return this;
+        }
+
+        internal DummySession GenerateNewEtag()
+        {
+            CurrentEtag = Guid.NewGuid().ToString();
             return this;
         }
         #endregion

@@ -1,4 +1,5 @@
 ﻿using Peril.Api.Repository;
+using Peril.Api.Repository.Model;
 using Peril.Core;
 using System;
 using System.Collections.Generic;
@@ -82,9 +83,9 @@ namespace Peril.Api.Models
             return region;
         }
 
-        static public async Task<ISession> GetSessionOrThrow(this ISessionRepository repository, IRegionData region)
+        static public async Task<ISessionData> GetSessionOrThrow(this ISessionRepository repository, IRegionData region)
         {
-            ISession session = await repository.GetSession(region.SessionId);
+            ISessionData session = await repository.GetSession(region.SessionId);
             if (session == null)
             {
                 throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.NotFound, ReasonPhrase = "No session found for the provided region" });
