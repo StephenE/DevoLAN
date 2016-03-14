@@ -164,12 +164,73 @@ namespace Peril.Api.Controllers.Api
         {
             ISession session = await SessionRepository.GetSessionOrThrow(sessionId)
                                                       .IsPhaseIdOrThrow(phaseId)
-                                                      .IsUserIdJoinedOrThrow(SessionRepository, User.Identity.GetUserId());
+                                                      .IsSessionOwnerOrThrow(User.Identity.GetUserId());
 
-            // Check for concurrent action [Conflict]
-            // Only allowed by session owner [Forbidden]
+            switch(session.PhaseType)
+            {
+                case SessionPhase.NotStarted:
+                {
+                    IEnumerable<IRegionData> regions = await RegionRepository.GetRegions(session.GameId);
+                    IEnumerable<IPlayer> players = await SessionRepository.GetSessionPlayers(session.GameId);
+                    await DistributeInitialRegions(regions, players);
+                    break;
+                }
+                default:
+                {
+                    throw new NotImplementedException("Not done yet");
+                }
+            }
+            
             // Check all players ready (unless force == true)
-            throw new NotImplementedException("Not done yet");
+        }
+
+        private async Task DistributeInitialRegions(IEnumerable<IRegionData> availableRegions, IEnumerable<IPlayer> availablePlayers)
+        {
+            Dictionary<Guid, String> assignedRegions = new Dictionary<Guid, String>();
+
+            // Calculate how many regions each player should get and how many (if any) extra regions there will be
+            int numberOfRegions = availableRegions.Count();
+            int numberOfPlayers = availablePlayers.Count();
+            int minimumNumberOfRegionsPerPlayer = numberOfRegions / numberOfPlayers;
+            int extraRegions = numberOfRegions - (minimumNumberOfRegionsPerPlayer * numberOfPlayers);
+            Random random = new Random();
+
+            // Build a list of regions to be distributed, ordered by their continent size (largest first)
+            var regionsGroupedByContinent = from regionData in availableRegions
+                                            group regionData by regionData.ContinentId into continent
+                                            orderby continent.Count() descending
+                                            select continent;
+
+            List<IRegionData> regionsToBeAssigned = new List<IRegionData>();
+            foreach(var continent in regionsGroupedByContinent)
+            {
+                List<IRegionData> continentRegions = continent.ToList();
+                continentRegions.Shuffle(random);
+                regionsToBeAssigned.AddRange(continentRegions);
+            }
+
+            // Distribute "extra" regions. These will be on the largest continent, so this should balance the fact you get an extra region
+            List<IPlayer> playersToBeAssigned = availablePlayers.ToList();
+            playersToBeAssigned.Shuffle(random);
+            int regionIndex = 0;
+            for(int counter = 0; counter < extraRegions; ++counter, ++regionIndex)
+            {
+                IRegionData region = regionsToBeAssigned[regionIndex];
+                IPlayer player = playersToBeAssigned[counter];
+                assignedRegions[region.RegionId] = player.UserId;
+            }
+
+            // Distribute the remaining regions in a round robin fashion
+            for (int roundCounter = 0; roundCounter < minimumNumberOfRegionsPerPlayer; ++roundCounter)
+            {
+                playersToBeAssigned.Shuffle(random);
+                for (int playerCounter = 0; playerCounter < playersToBeAssigned.Count; ++playerCounter, ++regionIndex)
+                {
+                    IRegionData region = regionsToBeAssigned[regionIndex];
+                    IPlayer player = playersToBeAssigned[playerCounter];
+                    assignedRegions[region.RegionId] = player.UserId;
+                }
+            }
         }
 
         private IRegionRepository RegionRepository { get; set; }

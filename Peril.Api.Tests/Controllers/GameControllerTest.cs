@@ -66,6 +66,7 @@ namespace Peril.Api.Tests.Controllers
             Assert.IsNotNull(result.GameId);
             Assert.AreEqual(Guid.Empty, result.PhaseId);
             Assert.AreEqual(SessionPhase.NotStarted, result.PhaseType);
+            Assert.AreEqual("DummyUser", primaryUser.SessionRepository.Sessions.Where(session => session.GameId == result.GameId).First().OwnerId);
             Assert.AreEqual("DummyUser", primaryUser.SessionRepository.Sessions.Where(session => session.GameId == result.GameId).First().Players.First().UserId);
             Assert.AreEqual(PlayerColour.Black, primaryUser.SessionRepository.Sessions.Where(session => session.GameId == result.GameId).First().Players.First().Colour);
             Assert.AreEqual(6, primaryUser.RegionRepository.RegionData.Count);

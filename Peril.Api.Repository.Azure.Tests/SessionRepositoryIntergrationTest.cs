@@ -50,7 +50,7 @@ namespace Peril.Api.Repository.Azure.Tests
             Assert.IsNotNull(result.Result);
             Assert.IsInstanceOfType(result.Result, typeof(SessionTableEntry));
             SessionTableEntry resultStronglyTyped = result.Result as SessionTableEntry;
-            Assert.AreEqual(dummyUserId, resultStronglyTyped.OwnerUserId);
+            Assert.AreEqual(dummyUserId, resultStronglyTyped.OwnerId);
             Assert.AreEqual(Guid.Empty, resultStronglyTyped.PhaseId);
             Assert.AreEqual(SessionPhase.NotStarted, resultStronglyTyped.PhaseType);
 

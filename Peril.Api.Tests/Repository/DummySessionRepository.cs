@@ -5,10 +5,7 @@ using Peril.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
 using System.Threading.Tasks;
-using System.Web.Http;
 
 namespace Peril.Api.Tests.Repository
 {
@@ -24,7 +21,7 @@ namespace Peril.Api.Tests.Repository
         public async Task<Guid> CreateSession(String userId, PlayerColour colour)
         {
             Guid newId = Guid.NewGuid();
-            SessionMap[newId] = new DummySession { GameId = newId };
+            SessionMap[newId] = new DummySession { GameId = newId, OwnerId = userId };
             await JoinSession(newId, userId, colour);
             return newId;
         }
@@ -133,7 +130,7 @@ namespace Peril.Api.Tests.Repository
         #region - Test Setup Helpers -
         internal DummySession SetupDummySession(Guid sessionId, String ownerId, PlayerColour colour)
         {
-            DummySession session = new DummySession { GameId = sessionId };
+            DummySession session = new DummySession { GameId = sessionId, OwnerId = ownerId };
             session.SetupAddPlayer(ownerId, colour);
             SessionMap[sessionId] = session;
             return session;

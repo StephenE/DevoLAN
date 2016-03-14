@@ -15,6 +15,8 @@ namespace Peril.Api.Tests.Repository
             GenerateNewEtag();
         }
 
+        public String OwnerId { get; set; }
+
         public Guid GameId { get; set; }
 
         public List<DummyPlayer> Players { get;set; }

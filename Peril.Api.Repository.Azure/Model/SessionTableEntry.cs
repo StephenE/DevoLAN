@@ -24,7 +24,7 @@ namespace Peril.Api.Repository.Azure.Model
         }
 
         public Guid GameId { get { return Guid.Parse(PartitionKey); } }
-        public String OwnerUserId { get { return RowKey; } }
+        public String OwnerId { get { return RowKey; } }
         public String CurrentEtag { get { return ETag; } }
 
         public Guid PhaseId { get; set; }
