@@ -63,6 +63,7 @@
     <Compile Include="Model\INationData.cs" />
     <Compile Include="INationRepository.cs" />
     <Compile Include="IRegionRepository.cs" />
+    <Compile Include="Model\OwnershipChange.cs" />
     <Compile Include="Model\IRegionData.cs" />
     <Compile Include="ISessionRepository.cs" />
     <Compile Include="IUserRepository.cs" />

@@ -76,7 +76,7 @@ namespace Peril.Api.Models
         static public async Task<ISessionData> IsSessionOwnerOrThrow(this Task<ISessionData> sessionTask, String userId)
         {
             ISessionData session = await sessionTask;
-            if (session.OwnerId == userId)
+            if (session.OwnerId != userId)
             {
                 throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.Unauthorized, ReasonPhrase = "Only the session owner is allowed to take this action" });
             }

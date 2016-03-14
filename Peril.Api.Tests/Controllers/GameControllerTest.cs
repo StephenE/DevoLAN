@@ -260,6 +260,7 @@ namespace Peril.Api.Tests.Controllers
             Assert.AreEqual(primaryUser.OwnerId, result.First().Name);
         }
 
+        #region - PostEndPhase -
         [TestMethod]
         [TestCategory("Unit")]
         [TestCategory("GameController")]
@@ -355,5 +356,150 @@ namespace Peril.Api.Tests.Controllers
                 Assert.AreEqual(HttpStatusCode.Unauthorized, exception.Response.StatusCode);
             }
         }
+        #endregion
+
+        #region - AdvanceNextPhase -
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("GameController")]
+        public async Task TestAdvanceNextPhase_WithInvalidGuid()
+        {
+            // Arrange
+            Guid invalidGuid = new Guid("3286C8E6-B510-4F7F-AAE0-9EF827459E7E");
+            ControllerMock primaryUser = new ControllerMock();
+
+            // Act
+            Task result = primaryUser.GameController.PostAdvanceNextPhase(invalidGuid, invalidGuid, true);
+
+            // Assert
+            try
+            {
+                await result;
+                Assert.Fail("Expected exception to be thrown");
+            }
+            catch (HttpResponseException exception)
+            {
+                Assert.AreEqual(HttpStatusCode.NotFound, exception.Response.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("GameController")]
+        public async Task TestAdvanceNextPhase_WithInvalidPhaseId()
+        {
+            // Arrange
+            Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
+            Guid invalidGuid = new Guid("3286C8E6-B510-4F7F-AAE0-9EF827459E7E");
+            ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(validGuid);
+
+            // Act
+            Task result = primaryUser.GameController.PostAdvanceNextPhase(validGuid, invalidGuid, true);
+
+            // Assert
+            try
+            {
+                await result;
+                Assert.Fail("Expected exception to be thrown");
+            }
+            catch (HttpResponseException exception)
+            {
+                Assert.AreEqual(HttpStatusCode.ExpectationFailed, exception.Response.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("GameController")]
+        public async Task TestAdvanceNextPhase_WithNotOwner()
+        {
+            // Arrange
+            Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
+            ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(validGuid, DummyUserRepository.RegisteredUserIds[1]);
+
+            // Act
+            Task result = primaryUser.GameController.PostAdvanceNextPhase(validGuid, primaryUser.SessionRepository.SessionMap[validGuid].PhaseId, true);
+
+            // Assert
+            try
+            {
+                await result;
+                Assert.Fail("Expected exception to be thrown");
+            }
+            catch (HttpResponseException exception)
+            {
+                Assert.AreEqual(HttpStatusCode.Unauthorized, exception.Response.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("GameController")]
+        public async Task TestAdvanceNextPhase_WithPlayersNotReady()
+        {
+            // Arrange
+            Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
+            ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(validGuid)
+                       .SetupAddPlayer(DummyUserRepository.RegisteredUserIds[1], PlayerColour.Blue);
+
+            // Act
+            Task result = primaryUser.GameController.PostAdvanceNextPhase(validGuid, primaryUser.SessionRepository.SessionMap[validGuid].PhaseId, false);
+
+            // Assert
+            try
+            {
+                await result;
+                Assert.Fail("Expected exception to be thrown");
+            }
+            catch (HttpResponseException exception)
+            {
+                Assert.AreEqual(HttpStatusCode.ExpectationFailed, exception.Response.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("GameController")]
+        public async Task TestAdvanceNextPhase_WithTwoPlayers()
+        {
+            // Arrange
+            Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
+            ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(validGuid)
+                       .SetupAddPlayer(DummyUserRepository.RegisteredUserIds[1], PlayerColour.Blue)
+                       .SetupDummyWorldAsTree();
+            Guid currentSessionPhaseId = primaryUser.SessionRepository.SessionMap[validGuid].PhaseId;
+
+            // Act
+            await primaryUser.GameController.PostAdvanceNextPhase(validGuid, currentSessionPhaseId, true);
+
+            // Assert
+            Assert.AreEqual(SessionPhase.Reinforcements, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
+            Assert.AreNotEqual(currentSessionPhaseId, primaryUser.SessionRepository.SessionMap[validGuid].PhaseId);
+            Dictionary<String, int> regionsPerPlayer = new Dictionary<String, int>();
+            foreach(var regionEntry in primaryUser.RegionRepository.RegionData)
+            {
+                Assert.AreEqual(1U, regionEntry.Value.TroopCount);
+                if (regionsPerPlayer.ContainsKey(regionEntry.Value.OwnerId))
+                {
+                    regionsPerPlayer[regionEntry.Value.OwnerId] += 1;
+                }
+                else
+                {
+                    regionsPerPlayer[regionEntry.Value.OwnerId] = 1;
+                }
+            }
+            Assert.AreEqual(2, regionsPerPlayer.Count);
+            var regionsPerPlayerQuery = from entry in regionsPerPlayer
+                                        group entry by entry.Value into regionGroups
+                                        orderby regionGroups.Key ascending
+                                        select regionGroups;
+            Assert.AreEqual(2, regionsPerPlayerQuery.First().Key);
+            Assert.AreEqual(3, regionsPerPlayerQuery.Last().Key);
+        }
+        #endregion
     }
 }

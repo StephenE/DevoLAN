@@ -166,13 +166,16 @@ namespace Peril.Api.Controllers.Api
                                                       .IsPhaseIdOrThrow(phaseId)
                                                       .IsSessionOwnerOrThrow(User.Identity.GetUserId());
 
-            switch(session.PhaseType)
+            // Check all players ready (unless force == true)
+
+            // Run phase specific update logic
+            switch (session.PhaseType)
             {
                 case SessionPhase.NotStarted:
                 {
                     IEnumerable<IRegionData> regions = await RegionRepository.GetRegions(session.GameId);
                     IEnumerable<IPlayer> players = await SessionRepository.GetSessionPlayers(session.GameId);
-                    await DistributeInitialRegions(regions, players);
+                    await DistributeInitialRegions(session.GameId, regions, players);
                     break;
                 }
                 default:
@@ -180,13 +183,13 @@ namespace Peril.Api.Controllers.Api
                     throw new NotImplementedException("Not done yet");
                 }
             }
-            
-            // Check all players ready (unless force == true)
+
+            // Move to next phase
         }
 
-        private async Task DistributeInitialRegions(IEnumerable<IRegionData> availableRegions, IEnumerable<IPlayer> availablePlayers)
+        private async Task DistributeInitialRegions(Guid sessiondId, IEnumerable<IRegionData> availableRegions, IEnumerable<IPlayer> availablePlayers)
         {
-            Dictionary<Guid, String> assignedRegions = new Dictionary<Guid, String>();
+            Dictionary<Guid, OwnershipChange> assignedRegions = new Dictionary<Guid, OwnershipChange>();
 
             // Calculate how many regions each player should get and how many (if any) extra regions there will be
             int numberOfRegions = availableRegions.Count();
@@ -217,7 +220,7 @@ namespace Peril.Api.Controllers.Api
             {
                 IRegionData region = regionsToBeAssigned[regionIndex];
                 IPlayer player = playersToBeAssigned[counter];
-                assignedRegions[region.RegionId] = player.UserId;
+                assignedRegions[region.RegionId] = new OwnershipChange(player.UserId, 1);
             }
 
             // Distribute the remaining regions in a round robin fashion
@@ -228,9 +231,11 @@ namespace Peril.Api.Controllers.Api
                 {
                     IRegionData region = regionsToBeAssigned[regionIndex];
                     IPlayer player = playersToBeAssigned[playerCounter];
-                    assignedRegions[region.RegionId] = player.UserId;
+                    assignedRegions[region.RegionId] = new OwnershipChange(player.UserId, 1);
                 }
             }
+
+            await RegionRepository.AssignRegionOwnership(sessiondId, assignedRegions);
         }
 
         private IRegionRepository RegionRepository { get; set; }

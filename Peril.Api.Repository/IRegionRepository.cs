@@ -1,9 +1,12 @@
-﻿using System;
+﻿using Peril.Api.Repository.Model;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Peril.Api.Repository
 {
+    
+
     public interface IRegionRepository
     {
         String WorldDefinitionPath { get; }
@@ -13,5 +16,7 @@ namespace Peril.Api.Repository
         Task<IRegionData> GetRegion(Guid sessionId, Guid regionId);
 
         Task<IEnumerable<IRegionData>> GetRegions(Guid sessionId);
+
+        Task AssignRegionOwnership(Guid sessionId, Dictionary<Guid, OwnershipChange> ownershipChanges);
     }
 }

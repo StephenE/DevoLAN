@@ -1,6 +1,7 @@
 ﻿using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
 using Peril.Api.Repository.Azure.Model;
+using Peril.Api.Repository.Model;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -59,6 +60,11 @@ namespace Peril.Api.Repository.Azure
             while (continuationToken != null);
 
             return results;
+        }
+
+        public async Task AssignRegionOwnership(Guid sessionId, Dictionary<Guid, OwnershipChange> ownershipChanges)
+        {
+            throw new NotImplementedException("Not implemented");
         }
 
         private CloudStorageAccount StorageAccount { get; set; }

@@ -174,5 +174,11 @@ namespace Peril.Api.Tests.Repository
             setupContext.DummySession.SetupSessionPhase(phase);
             return setupContext;
         }
+
+        static public ControllerMockSetupContext SetupAddPlayer(this ControllerMockSetupContext setupContext, String userId, PlayerColour colour)
+        {
+            setupContext.DummySession.SetupAddPlayer(userId, colour);
+            return setupContext;
+        }
     }
 }

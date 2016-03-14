@@ -12,9 +12,9 @@ namespace Peril.Api.Tests.Repository
             RegionId = regionId;
             ContinentId = continentId;
             OwnerId = initialOwner;
-            TroopCount = 1;
+            TroopCount = 0;
             TroopsCommittedToPhase = 0;
-            CurrentEtag = "Initial-Etag";
+            GenerateNewEtag();
         }
 
         public Guid RegionId { get; private set; }
@@ -42,6 +42,12 @@ namespace Peril.Api.Tests.Repository
         {
             ConnectedRegionIds.Add(otherRegion.RegionId);
             otherRegion.ConnectedRegionIds.Add(RegionId);
+            return this;
+        }
+
+        internal DummyRegionData GenerateNewEtag()
+        {
+            CurrentEtag = Guid.NewGuid().ToString();
             return this;
         }
         #endregion

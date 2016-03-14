@@ -1,4 +1,5 @@
 ﻿using Peril.Api.Repository;
+using Peril.Api.Repository.Model;
 using Peril.Api.Tests.Controllers;
 using System;
 using System.Collections.Generic;
@@ -42,6 +43,31 @@ namespace Peril.Api.Tests.Repository
             return from region in RegionData
                    where region.Value.SessionId == sessionId
                    select region.Value;
+        }
+
+        public async Task AssignRegionOwnership(Guid sessionId, Dictionary<Guid, OwnershipChange> ownershipChanges)
+        {
+            foreach(var change in ownershipChanges)
+            {
+                if (RegionData.ContainsKey(change.Key))
+                {
+                    DummyRegionData regionData = RegionData[change.Key];
+                    if(regionData.SessionId == sessionId)
+                    {
+                        regionData.OwnerId = change.Value.UserId;
+                        regionData.TroopCount = change.Value.TroopCount;
+                        regionData.GenerateNewEtag();
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("Region id does not exist in the specified session");
+                    }
+                }
+                else
+                {
+                    throw new InvalidOperationException("Invalid region id specified");
+                }
+            }
         }
 
         #region - Test Setup Helpers -
