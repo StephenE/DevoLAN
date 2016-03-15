@@ -2,39 +2,75 @@
 using Peril.Api.Tests.Controllers;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Peril.Api.Tests.Repository
 {
     class DummyNationRepository : INationRepository
     {
-        public DummyNationRepository()
+        public DummyNationRepository(DummySessionRepository sessionRepository)
         {
-            NationData = new Dictionary<string, DummyNationData>();
+            SessionRepository = sessionRepository;
         }
 
-        public async Task<INationData> GetNation(string userId)
+        public async Task<INationData> GetNation(Guid sessionId, string userId)
         {
-            if(NationData.ContainsKey(userId))
+            DummySession foundSession = SessionRepository.SessionMap[sessionId];
+            if (foundSession != null)
             {
-                return NationData[userId];
+                var query = from player in foundSession.Players
+                            where player.UserId == userId
+                            select player;
+                return query.FirstOrDefault();
             }
             else
             {
-                return null;
+                throw new InvalidOperationException("Called GetNation with a non-existent GUID");
             }
         }
 
-        #region - Test Setup Helpers -
-        internal DummyNationData SetupDummyNation(Guid sessionId, String ownerId)
+        public async Task<IEnumerable<INationData>> GetNations(Guid sessionId)
         {
-            DummyNationData nation = new DummyNationData(ownerId);
-            NationData[ownerId] = nation;
-            return nation;
+            DummySession foundSession = SessionRepository.SessionMap[sessionId];
+            if (foundSession != null)
+            {
+                return from player in foundSession.Players
+                       select player;
+            }
+            else
+            {
+                throw new InvalidOperationException("Called GetNations with a non-existent GUID");
+            }
         }
-        #endregion
 
-        public Dictionary<String, DummyNationData> NationData { get; private set; }
+        public async Task MarkPlayerCompletedPhase(Guid sessionId, String userId, Guid phaseId)
+        {
+            DummySession foundSession = SessionRepository.SessionMap[sessionId];
+            if (foundSession != null)
+            {
+                DummyNationData foundPlayer = foundSession.Players.Find(player => player.UserId == userId);
+                if (foundPlayer != null)
+                {
+                    foundPlayer.CompletedPhase = phaseId;
+                }
+                else
+                {
+                    throw new InvalidOperationException("Called MarkPlayerCompletedPhase with a non-existent user id");
+                }
+            }
+            else
+            {
+                throw new InvalidOperationException("Called JoinSession with a non-existent GUID");
+            }
+        }
+
+        public async Task SetAvailableReinforcements(Guid sessionId, Dictionary<String, UInt32> reinforcements)
+        {
+            throw new NotImplementedException("Not implemented");
+        }
+
+        private DummySessionRepository SessionRepository;
     }
 
     static class ControllerMockNationRepositoryExtensions
@@ -46,7 +82,7 @@ namespace Peril.Api.Tests.Repository
 
         static public ControllerMockSetupContext SetupAvailableReinforcements(this ControllerMockSetupContext setupContext, String userId, UInt32 availableReinforcements)
         {
-            setupContext.ControllerMock.NationRepository.NationData[userId].AvailableReinforcements = availableReinforcements;
+            // setupContext.ControllerMock.NationRepository.GetNation(setupContext.DummySession.GameId, userId).AvailableReinforcements = availableReinforcements;
             return setupContext;
         }
     }

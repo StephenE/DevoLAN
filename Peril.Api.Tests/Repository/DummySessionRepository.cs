@@ -26,20 +26,6 @@ namespace Peril.Api.Tests.Repository
             return newId;
         }
 
-        public async Task<IEnumerable<IPlayer>> GetSessionPlayers(Guid sessionId)
-        {
-            DummySession foundSession = SessionMap[sessionId];
-            if (foundSession != null)
-            {
-                return from player in foundSession.Players
-                       select player;
-            }
-            else
-            {
-                throw new InvalidOperationException("Called GetSessionPlayers with a non-existant GUID");
-            }
-        }
-
         public async Task<IEnumerable<ISessionData>> GetSessions()
         {
             return Sessions;
@@ -96,29 +82,8 @@ namespace Peril.Api.Tests.Repository
             DummySession foundSession = SessionMap[sessionId];
             if(foundSession != null)
             {
-                foundSession.Players.Add(new DummyPlayer(userId) { Colour = colour });
+                foundSession.Players.Add(new DummyNationData(userId) { Colour = colour });
                 foundSession.GenerateNewEtag();
-            }
-            else
-            {
-                throw new InvalidOperationException("Called JoinSession with a non-existant GUID");
-            }
-        }
-
-        public async Task MarkPlayerCompletedPhase(Guid sessionId, String userId, Guid phaseId)
-        {
-            DummySession foundSession = SessionMap[sessionId];
-            if (foundSession != null)
-            {
-                DummyPlayer foundPlayer = foundSession.Players.Find(player => player.UserId == userId);
-                if(foundPlayer != null)
-                {
-                    foundPlayer.CompletedPhase = phaseId;
-                }
-                else
-                {
-                    throw new InvalidOperationException("Called MarkPlayerCompletedPhase with a non-existant user id");
-                }
             }
             else
             {
@@ -185,7 +150,6 @@ namespace Peril.Api.Tests.Repository
         static public ControllerMockSetupContext SetupDummySession(this ControllerMock controller, Guid sessionId, String ownerId, PlayerColour colour)
         {
             DummySession session = controller.SessionRepository.SetupDummySession(sessionId, ownerId, colour);
-            controller.NationRepository.SetupDummyNation(session.GameId, ownerId);
             return new ControllerMockSetupContext { ControllerMock = controller, DummySession = session };
         }
 

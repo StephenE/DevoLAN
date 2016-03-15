@@ -18,8 +18,9 @@ namespace Peril.Api.Controllers.Api
     [RoutePrefix("api/Game")]
     public class GameController : ApiController
     {
-        public GameController(IRegionRepository regionRepository, ISessionRepository sessionRepository, IUserRepository userRepository)
+        public GameController(INationRepository nationRepository, IRegionRepository regionRepository, ISessionRepository sessionRepository, IUserRepository userRepository)
         {
+            NationRepository = nationRepository;
             RegionRepository = regionRepository;
             SessionRepository = sessionRepository;
             UserRepository = userRepository;
@@ -111,9 +112,8 @@ namespace Peril.Api.Controllers.Api
             ISessionData session = await SessionRepository.GetSessionOrThrow(sessionId)
                                                       .IsPhaseTypeOrThrow(SessionPhase.NotStarted);
 
-            IEnumerable<IPlayer> playerIds = await SessionRepository.GetSessionPlayers(sessionId);
-            var existingEntry = playerIds.Where(playerId => playerId.UserId == User.Identity.GetUserId());
-            if (existingEntry.Count() == 0)
+            INationData nationData = await NationRepository.GetNation(sessionId, User.Identity.GetUserId());
+            if (nationData == null)
             {
                 try
                 {
@@ -141,10 +141,10 @@ namespace Peril.Api.Controllers.Api
             ISession session = await SessionRepository.GetSessionOrThrow(sessionId);
 
             // Resolve player ids into IPlayer structures
-            IEnumerable<IPlayer> playerIds = await SessionRepository.GetSessionPlayers(sessionId);
-            return from player in playerIds
-                    join user in UserRepository.Users on player.UserId equals user.Id
-                    select new Player { UserId = player.UserId, Name = user.UserName, Colour = player.Colour };
+            IEnumerable<INationData> nations = await NationRepository.GetNations(sessionId);
+            return from nation in nations
+                    join user in UserRepository.Users on nation.UserId equals user.Id
+                    select new Player { UserId = nation.UserId, Name = user.UserName, Colour = nation.Colour };
         }
 
         // POST /api/Game/PostEndPhase
@@ -153,9 +153,9 @@ namespace Peril.Api.Controllers.Api
         {
             ISession session = await SessionRepository.GetSessionOrThrow(sessionId)
                                                       .IsPhaseIdOrThrow(phaseId)
-                                                      .IsUserIdJoinedOrThrow(SessionRepository, User.Identity.GetUserId());
+                                                      .IsUserIdJoinedOrThrow(NationRepository, User.Identity.GetUserId());
 
-            await SessionRepository.MarkPlayerCompletedPhase(sessionId, User.Identity.GetUserId(), phaseId);
+            await NationRepository.MarkPlayerCompletedPhase(sessionId, User.Identity.GetUserId(), phaseId);
         }
 
         // POST /api/Game/PostAdvanceNextPhase
@@ -175,8 +175,8 @@ namespace Peril.Api.Controllers.Api
                 case SessionPhase.NotStarted:
                 {
                     IEnumerable<IRegionData> regions = await RegionRepository.GetRegions(session.GameId);
-                    IEnumerable<IPlayer> players = await SessionRepository.GetSessionPlayers(session.GameId);
-                    await DistributeInitialRegions(session.GameId, regions, players);
+                    IEnumerable<INationData> nations = await NationRepository.GetNations(session.GameId);
+                    await DistributeInitialRegions(session.GameId, regions, nations);
                     nextPhase = SessionPhase.Reinforcements;
                     break;
                 }
@@ -190,7 +190,7 @@ namespace Peril.Api.Controllers.Api
             await SessionRepository.SetSessionPhase(sessionId, session.PhaseId, nextPhase);
         }
 
-        private async Task DistributeInitialRegions(Guid sessiondId, IEnumerable<IRegionData> availableRegions, IEnumerable<IPlayer> availablePlayers)
+        private async Task DistributeInitialRegions(Guid sessiondId, IEnumerable<IRegionData> availableRegions, IEnumerable<INationData> availablePlayers)
         {
             Dictionary<Guid, OwnershipChange> assignedRegions = new Dictionary<Guid, OwnershipChange>();
 
@@ -216,13 +216,13 @@ namespace Peril.Api.Controllers.Api
             }
 
             // Distribute "extra" regions. These will be on the largest continent, so this should balance the fact you get an extra region
-            List<IPlayer> playersToBeAssigned = availablePlayers.ToList();
+            List<INationData> playersToBeAssigned = availablePlayers.ToList();
             playersToBeAssigned.Shuffle(random);
             int regionIndex = 0;
             for(int counter = 0; counter < extraRegions; ++counter, ++regionIndex)
             {
                 IRegionData region = regionsToBeAssigned[regionIndex];
-                IPlayer player = playersToBeAssigned[counter];
+                INationData player = playersToBeAssigned[counter];
                 assignedRegions[region.RegionId] = new OwnershipChange(player.UserId, 1);
             }
 
@@ -233,7 +233,7 @@ namespace Peril.Api.Controllers.Api
                 for (int playerCounter = 0; playerCounter < playersToBeAssigned.Count; ++playerCounter, ++regionIndex)
                 {
                     IRegionData region = regionsToBeAssigned[regionIndex];
-                    IPlayer player = playersToBeAssigned[playerCounter];
+                    INationData player = playersToBeAssigned[playerCounter];
                     assignedRegions[region.RegionId] = new OwnershipChange(player.UserId, 1);
                 }
             }
@@ -241,6 +241,7 @@ namespace Peril.Api.Controllers.Api
             await RegionRepository.AssignRegionOwnership(sessiondId, assignedRegions);
         }
 
+        private INationRepository NationRepository { get; set; }
         private IRegionRepository RegionRepository { get; set; }
         private ISessionRepository SessionRepository { get; set; }
         private IUserRepository UserRepository { get; set; }

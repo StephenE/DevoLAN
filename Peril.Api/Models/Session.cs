@@ -62,11 +62,11 @@ namespace Peril.Api.Models
             return session;
         }
 
-        static public async Task<ISessionData> IsUserIdJoinedOrThrow(this Task<ISessionData> sessionTask, ISessionRepository repository, String userId)
+        static public async Task<ISessionData> IsUserIdJoinedOrThrow(this Task<ISessionData> sessionTask, INationRepository repository, String userId)
         {
             ISessionData session = await sessionTask;
-            IEnumerable<IPlayer> playersInSession = await repository.GetSessionPlayers(session.GameId);
-            if (playersInSession.Where(player => player.UserId == userId).Count() != 1)
+            INationData playerInSession = await repository.GetNation(session.GameId, userId);
+            if (playerInSession == null)
             {
                 throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.Unauthorized, ReasonPhrase = "You have not joined the specified session" });
             }

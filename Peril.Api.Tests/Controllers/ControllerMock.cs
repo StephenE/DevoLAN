@@ -16,10 +16,11 @@ namespace Peril.Api.Tests.Controllers
             OwnerId = userId;
 
             CommandQueue = new DummyCommandQueue();
-            NationRepository = new DummyNationRepository();
             RegionRepository = new DummyRegionRepository();
             SessionRepository = new DummySessionRepository();
             UserRepository = new DummyUserRepository();
+
+            NationRepository = new DummyNationRepository(SessionRepository);
 
             CreateControllers();
         }
@@ -52,7 +53,7 @@ namespace Peril.Api.Tests.Controllers
 
         public GameController CreateGameController(String userId)
         {
-            GameController controller = new GameController(RegionRepository, SessionRepository, UserRepository);
+            GameController controller = new GameController(NationRepository, RegionRepository, SessionRepository, UserRepository);
             controller.ControllerContext.RequestContext.Principal = UserRepository.GetPrincipal(userId);
             return controller;
         }
@@ -73,7 +74,7 @@ namespace Peril.Api.Tests.Controllers
 
         public WorldController CreateWorldController(String userId)
         {
-            WorldController controller = new WorldController(RegionRepository, SessionRepository);
+            WorldController controller = new WorldController(NationRepository, RegionRepository, SessionRepository);
             controller.ControllerContext.RequestContext.Principal = controller.ControllerContext.RequestContext.Principal = UserRepository.GetPrincipal(userId);
             return controller;
         }

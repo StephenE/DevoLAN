@@ -9,7 +9,7 @@ namespace Peril.Api.Tests.Repository
     {
         public DummySession()
         {
-            Players = new List<DummyPlayer>();
+            Players = new List<DummyNationData>();
             PhaseId = Guid.Empty;
             PhaseType = SessionPhase.NotStarted;
             GenerateNewEtag();
@@ -19,7 +19,7 @@ namespace Peril.Api.Tests.Repository
 
         public Guid GameId { get; set; }
 
-        public List<DummyPlayer> Players { get;set; }
+        public List<DummyNationData> Players { get;set; }
 
         public Guid PhaseId { get; set; }
 
@@ -37,7 +37,7 @@ namespace Peril.Api.Tests.Repository
 
         internal DummySession SetupAddPlayer(String userId, PlayerColour colour)
         {
-            Players.Add(new DummyPlayer(userId) { Colour = colour });
+            Players.Add(new DummyNationData(userId) { Colour = colour });
             return this;
         }
 

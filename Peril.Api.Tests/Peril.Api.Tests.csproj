@@ -122,7 +122,6 @@
     <Compile Include="Repository\DummyCommandQueue.cs" />
     <Compile Include="Repository\DummyNationData.cs" />
     <Compile Include="Repository\DummyNationRepository.cs" />
-    <Compile Include="Repository\DummyPlayer.cs" />
     <Compile Include="Repository\DummyRegionData.cs" />
     <Compile Include="Repository\DummyRegionRepository.cs" />
     <Compile Include="Repository\DummySession.cs" />

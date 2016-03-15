@@ -14,8 +14,9 @@ namespace Peril.Api.Controllers.Api
     [RoutePrefix("api/World")]
     public class WorldController : ApiController
     {
-        public WorldController(IRegionRepository regionRepository, ISessionRepository sessionRepository)
+        public WorldController(INationRepository nationRepository, IRegionRepository regionRepository, ISessionRepository sessionRepository)
         {
+            NationRepository = nationRepository;
             RegionRepository = regionRepository;
             SessionRepository = sessionRepository;
         }
@@ -25,7 +26,7 @@ namespace Peril.Api.Controllers.Api
         public async Task<IEnumerable<IRegion>> GetRegionList(Guid sessionId)
         {
             ISession session = await SessionRepository.GetSessionOrThrow(sessionId)
-                                                      .IsUserIdJoinedOrThrow(SessionRepository, User.Identity.GetUserId());
+                                                      .IsUserIdJoinedOrThrow(NationRepository, User.Identity.GetUserId());
 
             IEnumerable<IRegionData> regionData = await RegionRepository.GetRegions(session.GameId);
             return from region in regionData
@@ -53,6 +54,7 @@ namespace Peril.Api.Controllers.Api
             throw new NotImplementedException("Not implemented");
         }
 
+        private INationRepository NationRepository { get; set; }
         private IRegionRepository RegionRepository { get; set; }
         private ISessionRepository SessionRepository { get; set; }
     }
