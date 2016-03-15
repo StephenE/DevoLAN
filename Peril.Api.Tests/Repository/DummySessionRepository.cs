@@ -125,6 +125,26 @@ namespace Peril.Api.Tests.Repository
                 throw new InvalidOperationException("Called JoinSession with a non-existant GUID");
             }
         }
+
+        public async Task SetSessionPhase(Guid sessionId, Guid currentPhaseId, SessionPhase newPhase)
+        {
+            DummySession foundSession = SessionMap[sessionId];
+            if (foundSession != null)
+            {
+                if (foundSession.PhaseId == currentPhaseId)
+                {
+                    foundSession.SetupSessionPhase(newPhase);
+                }
+                else
+                {
+                    throw new ConcurrencyException();
+                }
+            }
+            else
+            {
+                throw new InvalidOperationException("Called JoinSession with a non-existant GUID");
+            }
+        }
         #endregion
 
         #region - Test Setup Helpers -

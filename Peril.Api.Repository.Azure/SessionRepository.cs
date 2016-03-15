@@ -174,6 +174,11 @@ namespace Peril.Api.Repository.Azure
             }
         }
 
+        public async Task SetSessionPhase(Guid sessionId, Guid currentPhaseId, SessionPhase newPhase)
+        {
+            throw new NotImplementedException("Not implemented");
+        }
+
         private CloudStorageAccount StorageAccount { get; set; }
         private CloudTableClient TableClient { get; set; }
         public CloudTable SessionTable { get; set; }

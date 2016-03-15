@@ -21,5 +21,7 @@ namespace Peril.Api.Repository
         Task JoinSession(Guid sessionId, String userId, PlayerColour colour);
 
         Task MarkPlayerCompletedPhase(Guid sessionId, String userId, Guid phaseId);
+
+        Task SetSessionPhase(Guid sessionId, Guid currentPhaseId, SessionPhase newPhase);
     }
 }

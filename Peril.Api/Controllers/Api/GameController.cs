@@ -169,6 +169,7 @@ namespace Peril.Api.Controllers.Api
             // Check all players ready (unless force == true)
 
             // Run phase specific update logic
+            SessionPhase nextPhase = SessionPhase.NotStarted;
             switch (session.PhaseType)
             {
                 case SessionPhase.NotStarted:
@@ -176,6 +177,7 @@ namespace Peril.Api.Controllers.Api
                     IEnumerable<IRegionData> regions = await RegionRepository.GetRegions(session.GameId);
                     IEnumerable<IPlayer> players = await SessionRepository.GetSessionPlayers(session.GameId);
                     await DistributeInitialRegions(session.GameId, regions, players);
+                    nextPhase = SessionPhase.Reinforcements;
                     break;
                 }
                 default:
@@ -185,6 +187,7 @@ namespace Peril.Api.Controllers.Api
             }
 
             // Move to next phase
+            await SessionRepository.SetSessionPhase(sessionId, session.PhaseId, nextPhase);
         }
 
         private async Task DistributeInitialRegions(Guid sessiondId, IEnumerable<IRegionData> availableRegions, IEnumerable<IPlayer> availablePlayers)

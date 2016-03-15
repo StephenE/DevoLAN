@@ -479,6 +479,7 @@ namespace Peril.Api.Tests.Controllers
             // Assert
             Assert.AreEqual(SessionPhase.Reinforcements, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
             Assert.AreNotEqual(currentSessionPhaseId, primaryUser.SessionRepository.SessionMap[validGuid].PhaseId);
+            Assert.Fail("Need to validate the number of reinforcements now available to deploy");
             Dictionary<String, int> regionsPerPlayer = new Dictionary<String, int>();
             foreach(var regionEntry in primaryUser.RegionRepository.RegionData)
             {
