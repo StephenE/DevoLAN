@@ -177,6 +177,13 @@ namespace Peril.Api.Controllers.Api
                     IEnumerable<IRegionData> regions = await RegionRepository.GetRegions(session.GameId);
                     IEnumerable<INationData> nations = await NationRepository.GetNations(session.GameId);
                     await DistributeInitialRegions(session.GameId, regions, nations);
+                    Dictionary<String, UInt32> initialReinforcements = new Dictionary<string, uint>();
+                    foreach(INationData nation in nations)
+                    {
+                        // For the moment, just give all players 20 starting troops
+                        initialReinforcements[nation.UserId] = 20;
+                    }
+                    await NationRepository.SetAvailableReinforcements(session.GameId, initialReinforcements);
                     nextPhase = SessionPhase.Reinforcements;
                     break;
                 }

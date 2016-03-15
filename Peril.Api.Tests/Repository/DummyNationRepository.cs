@@ -67,7 +67,26 @@ namespace Peril.Api.Tests.Repository
 
         public async Task SetAvailableReinforcements(Guid sessionId, Dictionary<String, UInt32> reinforcements)
         {
-            throw new NotImplementedException("Not implemented");
+            DummySession foundSession = SessionRepository.SessionMap[sessionId];
+            if (foundSession != null)
+            {
+                foreach (var playerEntry in reinforcements)
+                {
+                    DummyNationData foundPlayer = foundSession.Players.Find(player => player.UserId == playerEntry.Key);
+                    if (foundPlayer != null)
+                    {
+                        foundPlayer.AvailableReinforcements = playerEntry.Value;
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("Called MarkPlayerCompletedPhase with a non-existent user id");
+                    }
+                }
+            }
+            else
+            {
+                throw new InvalidOperationException("Called JoinSession with a non-existent GUID");
+            }
         }
 
         private DummySessionRepository SessionRepository;
@@ -82,7 +101,8 @@ namespace Peril.Api.Tests.Repository
 
         static public ControllerMockSetupContext SetupAvailableReinforcements(this ControllerMockSetupContext setupContext, String userId, UInt32 availableReinforcements)
         {
-            // setupContext.ControllerMock.NationRepository.GetNation(setupContext.DummySession.GameId, userId).AvailableReinforcements = availableReinforcements;
+            var task = setupContext.ControllerMock.NationRepository.SetAvailableReinforcements(setupContext.DummySession.GameId, new Dictionary<String, UInt32>() { { userId, availableReinforcements } });
+            task.Wait();
             return setupContext;
         }
     }
