@@ -211,6 +211,29 @@ namespace Peril.Api.Repository.Azure.Tests
             Assert.AreEqual(Guid.Empty, resultPlayerStronglyTyped.CompletedPhase);
         }
 
+        [TestMethod]
+        [TestCategory("Integration")]
+        [TestCategory("SessionRepository")]
+        public async Task IntegrationTestSetSessionPhase()
+        {
+            // Arrange
+            SessionRepository repository = new SessionRepository(DevelopmentStorageAccountConnectionString);
+            Guid validGuid = new Guid("46DAC828-3EFC-45E2-9294-B39AE9403DAA");
+            ISession sessionDetails = await repository.SetupSession(validGuid, "CreatingUser");
+
+            // Act
+            await repository.SetSessionPhase(validGuid, sessionDetails.PhaseId, SessionPhase.Reinforcements);
+
+            // Assert
+            TableOperation operation = TableOperation.Retrieve<SessionTableEntry>(validGuid.ToString(), "CreatingUser");
+            TableResult result = await SessionTable.ExecuteAsync(operation);
+            Assert.IsNotNull(result.Result);
+            Assert.IsInstanceOfType(result.Result, typeof(SessionTableEntry));
+            SessionTableEntry resultStronglyTyped = result.Result as SessionTableEntry;
+            Assert.AreNotEqual(sessionDetails.PhaseId, resultStronglyTyped.PhaseId);
+            Assert.AreEqual(SessionPhase.Reinforcements, resultStronglyTyped.PhaseType);
+        }
+
         static private String DevelopmentStorageAccountConnectionString
         {
             get { return "UseDevelopmentStorage=true"; }

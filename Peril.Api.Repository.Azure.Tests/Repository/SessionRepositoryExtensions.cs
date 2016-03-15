@@ -32,7 +32,7 @@ namespace Peril.Api.Repository.Azure.Tests.Repository
         static internal async Task<SessionTableEntry> SetupSessionPhase(this Task<SessionTableEntry> sessionTableEntryTask, SessionRepository repository, SessionPhase round)
         {
             var sessionTableEntry = await sessionTableEntryTask;
-            sessionTableEntry.PhaseType = round;
+            sessionTableEntry.RawPhaseType = (Int32)round;
             sessionTableEntry.PhaseId = Guid.NewGuid();
 
             TableOperation insertOperation = TableOperation.Replace(sessionTableEntry);

@@ -133,7 +133,7 @@ namespace Peril.Api.Repository.Azure
                 try
                 {
                     session.PhaseId = Guid.NewGuid();
-                    session.PhaseType = newPhase;
+                    session.RawPhaseType = (Int32)newPhase;
 
                     // Write entry back (fails on write conflict)
                     TableOperation insertOperation = TableOperation.Replace(session);

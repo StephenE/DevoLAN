@@ -14,7 +14,7 @@ namespace Peril.Api.Repository.Azure.Model
             PartitionKey = sessionId.ToString();
             RowKey = ownerId;
             PhaseId = Guid.Empty;
-            PhaseType = SessionPhase.NotStarted;
+            RawPhaseType = (Int32)SessionPhase.NotStarted;
             m_ColoursInUse = new List<PlayerColour>();
         }
 
@@ -26,9 +26,11 @@ namespace Peril.Api.Repository.Azure.Model
         public Guid GameId { get { return Guid.Parse(PartitionKey); } }
         public String OwnerId { get { return RowKey; } }
         public String CurrentEtag { get { return ETag; } }
+        public SessionPhase PhaseType { get { return (SessionPhase)RawPhaseType; } }
 
         public Guid PhaseId { get; set; }
-        public SessionPhase PhaseType { get; set; }
+        public Int32 RawPhaseType { get; set; }
+        
         public String ColoursInUse
         {
             get

@@ -91,7 +91,7 @@ namespace Peril.Api.Repository.Azure.Tests
         [TestMethod]
         [TestCategory("Integration")]
         [TestCategory("NationRepository")]
-        public async Task IntegrationMarkPlayerCompletedPhase()
+        public async Task IntegrationTestMarkPlayerCompletedPhase()
         {
             // Arrange
             NationRepository repository = new NationRepository(DevelopmentStorageAccountConnectionString);
@@ -116,7 +116,7 @@ namespace Peril.Api.Repository.Azure.Tests
         [TestMethod]
         [TestCategory("Integration")]
         [TestCategory("NationRepository")]
-        public async Task IntegrationSetAvailableReinforcements()
+        public async Task IntegrationTestSetAvailableReinforcements()
         {
             // Arrange
             NationRepository repository = new NationRepository(DevelopmentStorageAccountConnectionString);
@@ -145,7 +145,7 @@ namespace Peril.Api.Repository.Azure.Tests
         [TestMethod]
         [TestCategory("Integration")]
         [TestCategory("NationRepository")]
-        public async Task IntegrationSetAvailableReinforcements_WithMultipleUsers()
+        public async Task IntegrationTestSetAvailableReinforcements_WithMultipleUsers()
         {
             // Arrange
             NationRepository repository = new NationRepository(DevelopmentStorageAccountConnectionString);
