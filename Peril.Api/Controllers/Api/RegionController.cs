@@ -29,7 +29,7 @@ namespace Peril.Api.Controllers.Api
         {
             IRegionData region = await RegionRepository.GetRegionOrThrow(sessionId, regionId);
             ISession session = await SessionRepository.GetSessionOrThrow(region)
-                                                      .IsUserIdJoinedOrThrow(SessionRepository, User.Identity.GetUserId());
+                                                      .IsUserIdJoinedOrThrow(NationRepository, User.Identity.GetUserId());
 
             return new Region(region);
         }
@@ -41,9 +41,9 @@ namespace Peril.Api.Controllers.Api
             IRegionData region = await RegionRepository.GetRegionOrThrow(sessionId, regionId)
                                                        .IsRegionOwnerOrThrow(User.Identity.GetUserId());
             ISession session = await SessionRepository.GetSessionOrThrow(region)
-                                                      .IsUserIdJoinedOrThrow(SessionRepository, User.Identity.GetUserId())
+                                                      .IsUserIdJoinedOrThrow(NationRepository, User.Identity.GetUserId())
                                                       .IsPhaseTypeOrThrow(SessionPhase.Reinforcements);
-            INationData nation = await NationRepository.GetNation(User.Identity.GetUserId());
+            INationData nation = await NationRepository.GetNation(sessionId, User.Identity.GetUserId());
 
             if(nation.AvailableReinforcements < numberOfTroops)
             {
@@ -62,7 +62,7 @@ namespace Peril.Api.Controllers.Api
             IRegionData sourceRegion = await RegionRepository.GetRegionOrThrow(sessionId, regionId)
                                                        .IsRegionOwnerOrThrow(User.Identity.GetUserId());
             ISession session = await SessionRepository.GetSessionOrThrow(sourceRegion)
-                                                      .IsUserIdJoinedOrThrow(SessionRepository, User.Identity.GetUserId())
+                                                      .IsUserIdJoinedOrThrow(NationRepository, User.Identity.GetUserId())
                                                       .IsPhaseTypeOrThrow(SessionPhase.CombatOrders);
             IRegionData targetRegion = await RegionRepository.GetRegionOrThrow(session.GameId, targetRegionId)
                                                              .IsNotRegionOwnerOrThrow(User.Identity.GetUserId())
@@ -85,12 +85,12 @@ namespace Peril.Api.Controllers.Api
             IRegionData sourceRegion = await RegionRepository.GetRegionOrThrow(sessionId, regionId)
                                                        .IsRegionOwnerOrThrow(User.Identity.GetUserId());
             ISession session = await SessionRepository.GetSessionOrThrow(sourceRegion)
-                                                      .IsUserIdJoinedOrThrow(SessionRepository, User.Identity.GetUserId())
+                                                      .IsUserIdJoinedOrThrow(NationRepository, User.Identity.GetUserId())
                                                       .IsPhaseTypeOrThrow(SessionPhase.Redeployment);
             IRegionData targetRegion = await RegionRepository.GetRegionOrThrow(session.GameId, targetRegionId)
                                                              .IsRegionOwnerOrThrow(User.Identity.GetUserId())
                                                              .IsRegionConnectedOrThrow(sourceRegion.RegionId);
-            INationData nation = await NationRepository.GetNation(User.Identity.GetUserId());
+            INationData nation = await NationRepository.GetNation(sessionId, User.Identity.GetUserId());
 
             if (sourceRegion.TroopCount <= numberOfTroops)
             {

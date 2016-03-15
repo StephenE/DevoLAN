@@ -1,7 +1,7 @@
 ﻿using Peril.Api.Repository;
 using System;
-using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Peril.Api.Tests.Repository
 {
@@ -14,7 +14,7 @@ namespace Peril.Api.Tests.Repository
             DummyRedeployQueue = new List<DummyRedeploy>();
         }
 
-        public async Task<Guid> DeployReinforcements(Guid phaseId, string nationEtag, Guid targetRegion, uint numberOfTroops)
+        public Task<Guid> DeployReinforcements(Guid phaseId, string nationEtag, Guid targetRegion, uint numberOfTroops)
         {
             Guid operationId = Guid.NewGuid();
             DummyDeployReinforcementsQueue.Add(new DummyDeployReinforcements
@@ -25,10 +25,10 @@ namespace Peril.Api.Tests.Repository
                 TargetRegion = targetRegion,
                 NumberOfTroops = numberOfTroops
             });
-            return operationId;
+            return Task.FromResult(operationId);
         }
 
-        public async Task<Guid> OrderAttack(Guid phaseId, Guid sourceRegion, string sourceRegionEtag, Guid targetRegion, uint numberOfTroops)
+        public Task<Guid> OrderAttack(Guid phaseId, Guid sourceRegion, string sourceRegionEtag, Guid targetRegion, uint numberOfTroops)
         {
             Guid operationId = Guid.NewGuid();
             DummyOrderAttackQueue.Add(new DummyOrderAttack
@@ -40,10 +40,10 @@ namespace Peril.Api.Tests.Repository
                 TargetRegion = targetRegion,
                 NumberOfTroops = numberOfTroops
             });
-            return operationId;
+            return Task.FromResult(operationId);
         }
 
-        public async Task<Guid> Redeploy(Guid phaseId, string nationEtag, Guid sourceRegion, Guid targetRegion, uint numberOfTroops)
+        public Task<Guid> Redeploy(Guid phaseId, string nationEtag, Guid sourceRegion, Guid targetRegion, uint numberOfTroops)
         {
             Guid operationId = Guid.NewGuid();
             DummyRedeployQueue.Add(new DummyRedeploy
@@ -54,7 +54,7 @@ namespace Peril.Api.Tests.Repository
                 TargetRegion = targetRegion,
                 NumberOfTroops = numberOfTroops
             });
-            return operationId;
+            return Task.FromResult(operationId);
         }
 
         public List<DummyDeployReinforcements> DummyDeployReinforcementsQueue { get; set; }

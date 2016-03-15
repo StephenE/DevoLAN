@@ -4,6 +4,8 @@ using Peril.Api.Repository.Azure.Model;
 using Peril.Api.Repository.Model;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace Peril.Api.Repository.Azure
@@ -64,7 +66,41 @@ namespace Peril.Api.Repository.Azure
 
         public async Task AssignRegionOwnership(Guid sessionId, Dictionary<Guid, OwnershipChange> ownershipChanges)
         {
-            throw new NotImplementedException("Not implemented");
+            // Fetch all regions (quicker than fetching only what we need, one by one)
+            var regions = await GetRegions(sessionId);
+
+            // Get NationTableEntry for every player that needs updating
+            var updateOperations = from ownershipChange in ownershipChanges
+                                   join region in regions.Cast<RegionTableEntry>() on ownershipChange.Key equals region.RegionId
+                                   select new { Region = region, NewOwner = ownershipChange.Value.UserId, NewTroopCount = (Int32)ownershipChange.Value.TroopCount };
+
+            // Modify entries as required
+            TableBatchOperation batchOperation = new TableBatchOperation();
+            foreach (var operation in updateOperations)
+            {
+                RegionTableEntry regionEntry = operation.Region;
+                regionEntry.OwnerId = operation.NewOwner;
+                regionEntry.StoredTroopCount = operation.NewTroopCount;
+                regionEntry.StoredTroopsCommittedToPhase = 0;
+                batchOperation.Replace(regionEntry);
+            }
+
+            // Write entry back (fails on write conflict)
+            try
+            {
+                await RegionTable.ExecuteBatchAsync(batchOperation);
+            }
+            catch (StorageException exception)
+            {
+                if (exception.RequestInformation.HttpStatusCode == (int)HttpStatusCode.PreconditionFailed)
+                {
+                    throw new ConcurrencyException();
+                }
+                else
+                {
+                    throw exception;
+                }
+            }
         }
 
         private CloudStorageAccount StorageAccount { get; set; }

@@ -26,34 +26,20 @@ namespace Peril.Api.Tests.Repository
             return newId;
         }
 
-        public async Task<IEnumerable<IPlayer>> GetSessionPlayers(Guid sessionId)
+        public Task<IEnumerable<ISessionData>> GetSessions()
         {
-            DummySession foundSession = SessionMap[sessionId];
-            if (foundSession != null)
-            {
-                return from player in foundSession.Players
-                       select player;
-            }
-            else
-            {
-                throw new InvalidOperationException("Called GetSessionPlayers with a non-existant GUID");
-            }
+            return Task.FromResult<IEnumerable<ISessionData>>(Sessions);
         }
 
-        public async Task<IEnumerable<ISessionData>> GetSessions()
-        {
-            return Sessions;
-        }
-
-        public async Task<ISessionData> GetSession(Guid sessionId)
+        public Task<ISessionData> GetSession(Guid sessionId)
         {
             if(SessionMap.ContainsKey(sessionId))
             {
-                return SessionMap[sessionId];
+                return Task.FromResult<ISessionData>(SessionMap[sessionId]);
             }
             else
             {
-                return null;
+                return Task.FromResult<ISessionData>(null);
             }
         }
 
@@ -91,13 +77,14 @@ namespace Peril.Api.Tests.Repository
             }
         }
 
-        public async Task JoinSession(Guid sessionId, String userId, PlayerColour colour)
+        public Task JoinSession(Guid sessionId, String userId, PlayerColour colour)
         {
             DummySession foundSession = SessionMap[sessionId];
             if(foundSession != null)
             {
-                foundSession.Players.Add(new DummyPlayer(userId) { Colour = colour });
+                foundSession.Players.Add(new DummyNationData(userId) { Colour = colour });
                 foundSession.GenerateNewEtag();
+                return Task.FromResult(false);
             }
             else
             {
@@ -105,28 +92,7 @@ namespace Peril.Api.Tests.Repository
             }
         }
 
-        public async Task MarkPlayerCompletedPhase(Guid sessionId, String userId, Guid phaseId)
-        {
-            DummySession foundSession = SessionMap[sessionId];
-            if (foundSession != null)
-            {
-                DummyPlayer foundPlayer = foundSession.Players.Find(player => player.UserId == userId);
-                if(foundPlayer != null)
-                {
-                    foundPlayer.CompletedPhase = phaseId;
-                }
-                else
-                {
-                    throw new InvalidOperationException("Called MarkPlayerCompletedPhase with a non-existant user id");
-                }
-            }
-            else
-            {
-                throw new InvalidOperationException("Called JoinSession with a non-existant GUID");
-            }
-        }
-
-        public async Task SetSessionPhase(Guid sessionId, Guid currentPhaseId, SessionPhase newPhase)
+        public Task SetSessionPhase(Guid sessionId, Guid currentPhaseId, SessionPhase newPhase)
         {
             DummySession foundSession = SessionMap[sessionId];
             if (foundSession != null)
@@ -134,6 +100,7 @@ namespace Peril.Api.Tests.Repository
                 if (foundSession.PhaseId == currentPhaseId)
                 {
                     foundSession.SetupSessionPhase(newPhase);
+                    return Task.FromResult(false);
                 }
                 else
                 {
@@ -185,7 +152,6 @@ namespace Peril.Api.Tests.Repository
         static public ControllerMockSetupContext SetupDummySession(this ControllerMock controller, Guid sessionId, String ownerId, PlayerColour colour)
         {
             DummySession session = controller.SessionRepository.SetupDummySession(sessionId, ownerId, colour);
-            controller.NationRepository.SetupDummyNation(session.GameId, ownerId);
             return new ControllerMockSetupContext { ControllerMock = controller, DummySession = session };
         }
 

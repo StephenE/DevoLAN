@@ -2,6 +2,7 @@
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
 using Peril.Api.Repository.Azure.Model;
+using Peril.Api.Repository.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,7 +19,7 @@ namespace Peril.Api.Repository.Azure.Tests
             CloudStorageEmulatorShepherd shepherd = new CloudStorageEmulatorShepherd();
             shepherd.Start();
 
-            StorageAccount = CloudStorageAccount.Parse(DevelopmentStorageAccountConnectionString);
+            StorageAccount = CloudStorageAccount.DevelopmentStorageAccount;
             TableClient = StorageAccount.CreateCloudTableClient();
 
             RegionRepository repository = new RegionRepository(DevelopmentStorageAccountConnectionString);
@@ -116,6 +117,39 @@ namespace Peril.Api.Repository.Azure.Tests
             Assert.IsTrue(regionData.Count() >= 2, "Expected at least two regions");
             Assert.AreEqual(1, regionData.Where(region => region.RegionId == dummyRegionId).Count());
             Assert.AreEqual(1, regionData.Where(region => region.RegionId == secondDummyRegionId).Count());
+        }
+
+        [TestMethod]
+        [TestCategory("Integration")]
+        [TestCategory("RegionRepository")]
+        public async Task IntegrationTestAssignRegionOwnership()
+        {
+            // Arrange
+            RegionRepository repository = new RegionRepository(DevelopmentStorageAccountConnectionString);
+            Guid dummySessionId = new Guid("7C76A14F-DA7F-4AEC-9AF4-DDC77C6122CD");
+            Guid dummyRegionId = new Guid("CBDF6EBE-5F91-4ADF-AC30-D149D8E5F8EB");
+            Guid secondDummyRegionId = new Guid("336312D8-F219-4C9B-B3FE-F4B39602E28D");
+            Guid dummyContinentId = new Guid("DE167712-0CE6-455C-83EA-CB2A6936F1BE");
+            await repository.CreateRegion(dummySessionId, dummyRegionId, dummyContinentId, "DummyRegion", new List<Guid>());
+            await repository.CreateRegion(dummySessionId, secondDummyRegionId, dummyContinentId, "DummyRegion2", new List<Guid>());
+
+            // Act
+            await repository.AssignRegionOwnership(dummySessionId, new Dictionary<Guid, OwnershipChange>
+            {
+                { dummyRegionId, new OwnershipChange("DummyUser", 10) },
+                { secondDummyRegionId, new OwnershipChange("DummyUser2", 20) }
+            });
+
+            // Assert
+            IEnumerable<IRegionData> regionData = await repository.GetRegions(dummySessionId);
+            Assert.IsNotNull(regionData);
+            Assert.AreEqual(2, regionData.Count());
+            Assert.AreEqual("DummyUser", regionData.Where(region => region.RegionId == dummyRegionId).First().OwnerId);
+            Assert.AreEqual(10U, regionData.Where(region => region.RegionId == dummyRegionId).First().TroopCount);
+            Assert.AreEqual(0U, regionData.Where(region => region.RegionId == dummyRegionId).First().TroopsCommittedToPhase);
+            Assert.AreEqual("DummyUser2", regionData.Where(region => region.RegionId == secondDummyRegionId).First().OwnerId);
+            Assert.AreEqual(20U, regionData.Where(region => region.RegionId == secondDummyRegionId).First().TroopCount);
+            Assert.AreEqual(0U, regionData.Where(region => region.RegionId == secondDummyRegionId).First().TroopsCommittedToPhase);
         }
 
         static private String DevelopmentStorageAccountConnectionString

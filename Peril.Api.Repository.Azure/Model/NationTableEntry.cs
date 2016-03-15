@@ -4,7 +4,7 @@ using System;
 
 namespace Peril.Api.Repository.Azure.Model
 {
-    public class NationTableEntry : TableEntity, IPlayer
+    public class NationTableEntry : TableEntity, INationData
     {
         public NationTableEntry(Guid sessionId, String userId)
         {
@@ -12,6 +12,7 @@ namespace Peril.Api.Repository.Azure.Model
             RowKey = userId.ToString();
             CompletedPhase = Guid.Empty;
             ColourId = 0;
+            AvailableReinforcementsRaw = 0;
         }
 
         public NationTableEntry()
@@ -19,24 +20,16 @@ namespace Peril.Api.Repository.Azure.Model
 
         }
 
-        public Guid SessionId
-        {
-            get { return Guid.Parse(PartitionKey); }
-        }
-
-        public String UserId
-        {
-            get { return RowKey; }
-        }
+        public Guid SessionId { get { return Guid.Parse(PartitionKey); } }
+        public String UserId { get { return RowKey; } }
+        public String CurrentEtag { get { return ETag; } }
+        public uint AvailableReinforcements { get { return (UInt32)AvailableReinforcementsRaw; } }
 
         public Guid CompletedPhase { get; set; }
 
         public Int32 ColourId { get; set; }
 
-        public String Name
-        {
-            get { throw new NotImplementedException("Name property is stored in the accounts database, not the Azure table"); }
-        }
+        public Int32 AvailableReinforcementsRaw { get; set; }
 
         public PlayerColour Colour
         {
