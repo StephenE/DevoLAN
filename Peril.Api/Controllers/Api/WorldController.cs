@@ -35,7 +35,7 @@ namespace Peril.Api.Controllers.Api
 
         // GET /api/World/Combat
         [Route("Combat")]
-        public async Task<IEnumerable<ICombat>> GetCombat()
+        public Task<IEnumerable<ICombat>> GetCombat()
         {
             // Check taking part in session [Forbidden]
             // Is allowed?
@@ -45,7 +45,7 @@ namespace Peril.Api.Controllers.Api
 
         // POST /api/World/Combat
         [Route("CombatResult")]
-        public async Task<ICombatResult> GetCombatResult(Guid combatId)
+        public Task<ICombatResult> GetCombatResult(Guid combatId)
         {
             // Check taking part in session [Forbidden]
             // Is allowed?

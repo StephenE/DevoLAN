@@ -17,35 +17,38 @@ namespace Peril.Api.Tests.Repository
 
         public String WorldDefinitionPath { get; set; }
 
-        public async Task CreateRegion(Guid sessionId, Guid regionId, Guid continentId, String name, IEnumerable<Guid> connectedRegions)
+        public Task CreateRegion(Guid sessionId, Guid regionId, Guid continentId, String name, IEnumerable<Guid> connectedRegions)
         {
             RegionData[regionId] = new DummyRegionData(sessionId, regionId, continentId, String.Empty);
             foreach(Guid connectedRegion in connectedRegions)
             {
                 RegionData[regionId].ConnectedRegionIds.Add(connectedRegion);
             }
+
+            return Task.FromResult(false);
         }
 
-        public async Task<IRegionData> GetRegion(Guid sessionId, Guid regionId)
+        public Task<IRegionData> GetRegion(Guid sessionId, Guid regionId)
         {
             if(RegionData.ContainsKey(regionId))
             {
-                return RegionData[regionId];
+                return Task.FromResult<IRegionData>(RegionData[regionId]);
             }
             else
             {
-                return null;
+                return Task.FromResult<IRegionData>(null);
             }
         }
 
-        public async Task<IEnumerable<IRegionData>> GetRegions(Guid sessionId)
+        public Task<IEnumerable<IRegionData>> GetRegions(Guid sessionId)
         {
-            return from region in RegionData
-                   where region.Value.SessionId == sessionId
-                   select region.Value;
+            IEnumerable<IRegionData> query = from region in RegionData
+                                               where region.Value.SessionId == sessionId
+                                               select region.Value;
+            return Task.FromResult(query);
         }
 
-        public async Task AssignRegionOwnership(Guid sessionId, Dictionary<Guid, OwnershipChange> ownershipChanges)
+        public Task AssignRegionOwnership(Guid sessionId, Dictionary<Guid, OwnershipChange> ownershipChanges)
         {
             foreach(var change in ownershipChanges)
             {
@@ -68,6 +71,8 @@ namespace Peril.Api.Tests.Repository
                     throw new InvalidOperationException("Invalid region id specified");
                 }
             }
+
+            return Task.FromResult(false);
         }
 
         #region - Test Setup Helpers -

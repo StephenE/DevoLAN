@@ -97,7 +97,7 @@ namespace Peril.Api.Controllers.Api
                 }
                 await Task.WhenAll(regionCreationOperations);
             }
-            catch(Exception error)
+            catch(Exception)
             {
                 throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.InternalServerError, ReasonPhrase = "An exception occured while creating the regions" });
             }

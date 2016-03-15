@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Peril.Api.Repository.Azure
@@ -20,7 +19,7 @@ namespace Peril.Api.Repository.Azure
             TableClient = StorageAccount.CreateCloudTableClient();
             SessionTable = TableClient.GetTableReference("Sessions");
             SessionTable.CreateIfNotExists();
-            SessionPlayersTable = TableClient.GetTableReference("SessionPlayers");
+            SessionPlayersTable = TableClient.GetTableReference(NationRepository.NationTableName);
             SessionPlayersTable.CreateIfNotExists();
         }
 
@@ -39,27 +38,6 @@ namespace Peril.Api.Repository.Azure
 
             // Return the new session GUID
             return newSessionGuid;
-        }
-
-        public async Task<IEnumerable<IPlayer>> GetSessionPlayers(Guid session)
-        {
-            List<IPlayer> results = new List<IPlayer>();
-            TableQuery<NationTableEntry> query = new TableQuery<NationTableEntry>()
-                .Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, session.ToString()));
-
-            // Initialize the continuation token to null to start from the beginning of the table.
-            TableContinuationToken continuationToken = null;
-
-            // Loop until the continuation token comes back as null
-            do
-            {
-                var queryResults = await SessionPlayersTable.ExecuteQuerySegmentedAsync(query, continuationToken);
-                continuationToken = queryResults.ContinuationToken;
-                results.AddRange(queryResults.Results);
-            }
-            while (continuationToken != null);
-
-            return results;
         }
 
         public async Task<IEnumerable<ISessionData>> GetSessions()
@@ -145,38 +123,38 @@ namespace Peril.Api.Repository.Azure
             await SessionPlayersTable.ExecuteAsync(insertOperation);
         }
 
-        public async Task MarkPlayerCompletedPhase(Guid sessionId, String userId, Guid phaseId)
-        {
-            // Fetch existing entry
-            var operation = TableOperation.Retrieve<NationTableEntry>(sessionId.ToString(), userId);
-            var result = await SessionPlayersTable.ExecuteAsync(operation);
-
-            // Modify entry
-            NationTableEntry playerEntry = result.Result as NationTableEntry;
-            playerEntry.CompletedPhase = phaseId;
-
-            // Write entry back (fails on write conflict)
-            try
-            {
-                TableOperation insertOperation = TableOperation.Replace(playerEntry);
-                await SessionPlayersTable.ExecuteAsync(insertOperation);
-            }
-            catch (StorageException exception)
-            {
-                if (exception.RequestInformation.HttpStatusCode == (int)HttpStatusCode.PreconditionFailed)
-                {
-                    throw new ConcurrencyException();
-                }
-                else
-                {
-                    throw exception;
-                }
-            }
-        }
-
         public async Task SetSessionPhase(Guid sessionId, Guid currentPhaseId, SessionPhase newPhase)
         {
-            throw new NotImplementedException("Not implemented");
+            ISessionData sessionData = await GetSession(sessionId);
+            SessionTableEntry session = sessionData as SessionTableEntry;
+
+            if (session.PhaseId == currentPhaseId)
+            {
+                try
+                {
+                    session.PhaseId = Guid.NewGuid();
+                    session.PhaseType = newPhase;
+
+                    // Write entry back (fails on write conflict)
+                    TableOperation insertOperation = TableOperation.Replace(session);
+                    await SessionTable.ExecuteAsync(insertOperation);
+                }
+                catch (StorageException exception)
+                {
+                    if (exception.RequestInformation.HttpStatusCode == (int)HttpStatusCode.PreconditionFailed)
+                    {
+                        throw new ConcurrencyException();
+                    }
+                    else
+                    {
+                        throw exception;
+                    }
+                }
+            }
+            else
+            {
+                throw new ConcurrencyException();
+            }
         }
 
         private CloudStorageAccount StorageAccount { get; set; }

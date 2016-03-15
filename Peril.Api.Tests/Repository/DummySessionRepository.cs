@@ -26,20 +26,20 @@ namespace Peril.Api.Tests.Repository
             return newId;
         }
 
-        public async Task<IEnumerable<ISessionData>> GetSessions()
+        public Task<IEnumerable<ISessionData>> GetSessions()
         {
-            return Sessions;
+            return Task.FromResult<IEnumerable<ISessionData>>(Sessions);
         }
 
-        public async Task<ISessionData> GetSession(Guid sessionId)
+        public Task<ISessionData> GetSession(Guid sessionId)
         {
             if(SessionMap.ContainsKey(sessionId))
             {
-                return SessionMap[sessionId];
+                return Task.FromResult<ISessionData>(SessionMap[sessionId]);
             }
             else
             {
-                return null;
+                return Task.FromResult<ISessionData>(null);
             }
         }
 
@@ -77,13 +77,14 @@ namespace Peril.Api.Tests.Repository
             }
         }
 
-        public async Task JoinSession(Guid sessionId, String userId, PlayerColour colour)
+        public Task JoinSession(Guid sessionId, String userId, PlayerColour colour)
         {
             DummySession foundSession = SessionMap[sessionId];
             if(foundSession != null)
             {
                 foundSession.Players.Add(new DummyNationData(userId) { Colour = colour });
                 foundSession.GenerateNewEtag();
+                return Task.FromResult(false);
             }
             else
             {
@@ -91,7 +92,7 @@ namespace Peril.Api.Tests.Repository
             }
         }
 
-        public async Task SetSessionPhase(Guid sessionId, Guid currentPhaseId, SessionPhase newPhase)
+        public Task SetSessionPhase(Guid sessionId, Guid currentPhaseId, SessionPhase newPhase)
         {
             DummySession foundSession = SessionMap[sessionId];
             if (foundSession != null)
@@ -99,6 +100,7 @@ namespace Peril.Api.Tests.Repository
                 if (foundSession.PhaseId == currentPhaseId)
                 {
                     foundSession.SetupSessionPhase(newPhase);
+                    return Task.FromResult(false);
                 }
                 else
                 {

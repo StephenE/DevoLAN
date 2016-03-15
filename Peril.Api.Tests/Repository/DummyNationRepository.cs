@@ -14,7 +14,7 @@ namespace Peril.Api.Tests.Repository
             SessionRepository = sessionRepository;
         }
 
-        public async Task<INationData> GetNation(Guid sessionId, string userId)
+        public Task<INationData> GetNation(Guid sessionId, string userId)
         {
             DummySession foundSession = SessionRepository.SessionMap[sessionId];
             if (foundSession != null)
@@ -22,7 +22,7 @@ namespace Peril.Api.Tests.Repository
                 var query = from player in foundSession.Players
                             where player.UserId == userId
                             select player;
-                return query.FirstOrDefault();
+                return Task.FromResult<INationData>(query.FirstOrDefault());
             }
             else
             {
@@ -30,13 +30,14 @@ namespace Peril.Api.Tests.Repository
             }
         }
 
-        public async Task<IEnumerable<INationData>> GetNations(Guid sessionId)
+        public Task<IEnumerable<INationData>> GetNations(Guid sessionId)
         {
             DummySession foundSession = SessionRepository.SessionMap[sessionId];
             if (foundSession != null)
             {
-                return from player in foundSession.Players
-                       select player;
+                IEnumerable<INationData> results = from player in foundSession.Players
+                                                    select player;
+                return Task.FromResult(results);
             }
             else
             {
@@ -44,7 +45,7 @@ namespace Peril.Api.Tests.Repository
             }
         }
 
-        public async Task MarkPlayerCompletedPhase(Guid sessionId, String userId, Guid phaseId)
+        public Task MarkPlayerCompletedPhase(Guid sessionId, String userId, Guid phaseId)
         {
             DummySession foundSession = SessionRepository.SessionMap[sessionId];
             if (foundSession != null)
@@ -53,6 +54,7 @@ namespace Peril.Api.Tests.Repository
                 if (foundPlayer != null)
                 {
                     foundPlayer.CompletedPhase = phaseId;
+                    return Task.FromResult(false);
                 }
                 else
                 {
@@ -65,7 +67,7 @@ namespace Peril.Api.Tests.Repository
             }
         }
 
-        public async Task SetAvailableReinforcements(Guid sessionId, Dictionary<String, UInt32> reinforcements)
+        public Task SetAvailableReinforcements(Guid sessionId, Dictionary<String, UInt32> reinforcements)
         {
             DummySession foundSession = SessionRepository.SessionMap[sessionId];
             if (foundSession != null)
@@ -87,6 +89,8 @@ namespace Peril.Api.Tests.Repository
             {
                 throw new InvalidOperationException("Called JoinSession with a non-existent GUID");
             }
+
+            return Task.FromResult(false);
         }
 
         private DummySessionRepository SessionRepository;

@@ -18,7 +18,7 @@ namespace Peril.Api.Repository.Azure.Tests
             CloudStorageEmulatorShepherd shepherd = new CloudStorageEmulatorShepherd();
             shepherd.Start();
 
-            StorageAccount = CloudStorageAccount.Parse(DevelopmentStorageAccountConnectionString);
+            StorageAccount = CloudStorageAccount.DevelopmentStorageAccount;
             TableClient = StorageAccount.CreateCloudTableClient();
 
             RegionRepository repository = new RegionRepository(DevelopmentStorageAccountConnectionString);
