@@ -187,6 +187,9 @@ namespace Peril.Api.Controllers.Api
                     nextPhase = SessionPhase.Reinforcements;
                     break;
                 }
+                case SessionPhase.Reinforcements:
+                    // Get the queue of reinforcement operations
+                    break;
                 default:
                 {
                     throw new NotImplementedException("Not done yet");

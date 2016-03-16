@@ -14,7 +14,7 @@ namespace Peril.Api.Tests.Repository
             DummyRedeployQueue = new List<DummyRedeploy>();
         }
 
-        public Task<Guid> DeployReinforcements(Guid phaseId, string nationEtag, Guid targetRegion, uint numberOfTroops)
+        public Task<Guid> DeployReinforcements(Guid sessionId, Guid phaseId, string nationEtag, Guid targetRegion, uint numberOfTroops)
         {
             Guid operationId = Guid.NewGuid();
             DummyDeployReinforcementsQueue.Add(new DummyDeployReinforcements
@@ -28,7 +28,7 @@ namespace Peril.Api.Tests.Repository
             return Task.FromResult(operationId);
         }
 
-        public Task<Guid> OrderAttack(Guid phaseId, Guid sourceRegion, string sourceRegionEtag, Guid targetRegion, uint numberOfTroops)
+        public Task<Guid> OrderAttack(Guid sessionId, Guid phaseId, Guid sourceRegion, string sourceRegionEtag, Guid targetRegion, uint numberOfTroops)
         {
             Guid operationId = Guid.NewGuid();
             DummyOrderAttackQueue.Add(new DummyOrderAttack
@@ -43,7 +43,7 @@ namespace Peril.Api.Tests.Repository
             return Task.FromResult(operationId);
         }
 
-        public Task<Guid> Redeploy(Guid phaseId, string nationEtag, Guid sourceRegion, Guid targetRegion, uint numberOfTroops)
+        public Task<Guid> Redeploy(Guid sessionId, Guid phaseId, string nationEtag, Guid sourceRegion, Guid targetRegion, uint numberOfTroops)
         {
             Guid operationId = Guid.NewGuid();
             DummyRedeployQueue.Add(new DummyRedeploy
@@ -55,6 +55,11 @@ namespace Peril.Api.Tests.Repository
                 NumberOfTroops = numberOfTroops
             });
             return Task.FromResult(operationId);
+        }
+
+        public Task<ICommandQueueMessage> GetQueuedCommands(Guid sessionId)
+        {
+            throw new NotImplementedException();
         }
 
         public List<DummyDeployReinforcements> DummyDeployReinforcementsQueue { get; set; }

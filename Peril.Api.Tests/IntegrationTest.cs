@@ -15,7 +15,7 @@ namespace Peril.Api.Tests
         [TestMethod]
         [TestCategory("Integration")]
         [DeploymentItem(@"Data\ValidWorldDefinition.xml", "WorldData")]
-        [Ignore]
+        // [Ignore]
         public async Task IntegrationTestStartGame_WithTwoUsers()
         {
             ControllerMock primaryUser = new ControllerMock();
@@ -43,7 +43,7 @@ namespace Peril.Api.Tests
 
             // Move into combat phase (with primary user)
             sessionDetails = await primaryUser.GameController.GetSession(sessionDetails.GameId);
-            await primaryUser.GameController.PostAdvanceNextPhase(sessionDetails.GameId, sessionDetails.GameId, true);
+            await primaryUser.GameController.PostAdvanceNextPhase(sessionDetails.GameId, sessionDetails.PhaseId, true);
 
             // Issue random attack orders
             await RandomlyAttack(primaryUser, sessionDetails.GameId);
@@ -51,7 +51,7 @@ namespace Peril.Api.Tests
 
             // Move into resolution phase (with primary user)
             sessionDetails = await primaryUser.GameController.GetSession(sessionDetails.GameId);
-            await primaryUser.GameController.PostAdvanceNextPhase(sessionDetails.GameId, sessionDetails.GameId, true);
+            await primaryUser.GameController.PostAdvanceNextPhase(sessionDetails.GameId, sessionDetails.PhaseId, true);
 
             // Resolve combat
             await ResolveAllCombat(primaryUser, sessionDetails.GameId);
@@ -62,7 +62,7 @@ namespace Peril.Api.Tests
 
             // Move into victory phase (with primary user)
             sessionDetails = await primaryUser.GameController.GetSession(sessionDetails.GameId);
-            await primaryUser.GameController.PostAdvanceNextPhase(sessionDetails.GameId, sessionDetails.GameId, true);
+            await primaryUser.GameController.PostAdvanceNextPhase(sessionDetails.GameId, sessionDetails.PhaseId, true);
         }
 
         private async Task<IEnumerable<Guid>> GetCurrentlyOwnedRegions(ControllerMock user, Guid sessionId)
@@ -84,6 +84,7 @@ namespace Peril.Api.Tests
 
             // Get number of available troops
             UInt32 numberOfAvailableTroops = await user.NationController.GetReinforcements(sessionId);
+            Assert.AreNotEqual(0U, numberOfAvailableTroops);
 
             // Distribute troops over available regions
             while(numberOfAvailableTroops > 0)
