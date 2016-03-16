@@ -60,7 +60,7 @@ namespace Peril.Api.Tests.Controllers
 
         public NationController CreateNationController(String userId)
         {
-            NationController controller = new NationController();
+            NationController controller = new NationController(NationRepository, SessionRepository);
             controller.ControllerContext.RequestContext.Principal = controller.ControllerContext.RequestContext.Principal = UserRepository.GetPrincipal(userId);
             return controller;
         }

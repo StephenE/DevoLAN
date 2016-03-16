@@ -15,6 +15,7 @@ namespace Peril.Api.Tests
         [TestMethod]
         [TestCategory("Integration")]
         [DeploymentItem(@"Data\ValidWorldDefinition.xml", "WorldData")]
+        [Ignore]
         public async Task IntegrationTestStartGame_WithTwoUsers()
         {
             ControllerMock primaryUser = new ControllerMock();
@@ -82,7 +83,7 @@ namespace Peril.Api.Tests
             IEnumerable<Guid> ownedRegions = await GetCurrentlyOwnedRegions(user, sessionId);
 
             // Get number of available troops
-            UInt32 numberOfAvailableTroops = await user.NationController.GetReinforcements();
+            UInt32 numberOfAvailableTroops = await user.NationController.GetReinforcements(sessionId);
 
             // Distribute troops over available regions
             while(numberOfAvailableTroops > 0)

@@ -437,6 +437,7 @@ namespace Peril.Api.Tests.Controllers
         [TestMethod]
         [TestCategory("Unit")]
         [TestCategory("GameController")]
+        [Ignore]
         public async Task TestAdvanceNextPhase_WithPlayersNotReady()
         {
             // Arrange
