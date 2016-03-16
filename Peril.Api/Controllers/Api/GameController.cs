@@ -52,15 +52,16 @@ namespace Peril.Api.Controllers.Api
             try
             {
                 XDocument worldDefinition = XDocument.Load(RegionRepository.WorldDefinitionPath);
-                var regions = from continentXml in worldDefinition.Root.Elements("Continent")
-                              let continentId = Guid.NewGuid()
-                              from regionXml in continentXml.Elements("Region")
-                              select new Region
-                              {
-                                  RegionId = Guid.NewGuid(),
-                                  ContinentId = continentId,
-                                  Name = regionXml.Attribute("Name").Value
-                              };
+                var regionsList = from continentXml in worldDefinition.Root.Elements("Continent")
+                                  let continentId = Guid.NewGuid()
+                                  from regionXml in continentXml.Elements("Region")
+                                  select new Region
+                                  {
+                                      RegionId = Guid.NewGuid(),
+                                      ContinentId = continentId,
+                                      Name = regionXml.Attribute("Name").Value
+                                  };
+                List<Region> regions = regionsList.ToList();
 
                 Dictionary<String, Region> regionLookup = new Dictionary<string, Region>();
                 Dictionary<String, List<Guid>> regionConnectionsLookup = new Dictionary<string, List<Guid>>();

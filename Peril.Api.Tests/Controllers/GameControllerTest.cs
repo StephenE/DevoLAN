@@ -70,6 +70,14 @@ namespace Peril.Api.Tests.Controllers
             Assert.AreEqual("DummyUser", primaryUser.SessionRepository.Sessions.Where(session => session.GameId == result.GameId).First().Players.First().UserId);
             Assert.AreEqual(PlayerColour.Black, primaryUser.SessionRepository.Sessions.Where(session => session.GameId == result.GameId).First().Players.First().Colour);
             Assert.AreEqual(6, primaryUser.RegionRepository.RegionData.Count);
+            foreach(var regionDataEntry in primaryUser.RegionRepository.RegionData)
+            {
+                foreach(Guid connectedRegion in regionDataEntry.Value.ConnectedRegions)
+                {
+                    Assert.IsTrue(primaryUser.RegionRepository.RegionData.ContainsKey(connectedRegion), "Expected to find connected region");
+                    Assert.IsTrue(primaryUser.RegionRepository.RegionData[connectedRegion].ConnectedRegions.Contains(regionDataEntry.Key), "Expected connected region to include us as a connection");
+                }
+            }
         }
 
         [TestMethod]
