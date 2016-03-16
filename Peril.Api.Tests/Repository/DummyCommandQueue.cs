@@ -1,4 +1,6 @@
 ﻿using Peril.Api.Repository;
+using Peril.Api.Repository.Model;
+using Peril.Api.Tests.Controllers;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -14,21 +16,21 @@ namespace Peril.Api.Tests.Repository
             DummyRedeployQueue = new List<DummyRedeploy>();
         }
 
-        public Task<Guid> DeployReinforcements(Guid sessionId, Guid phaseId, string nationEtag, Guid targetRegion, uint numberOfTroops)
+        public Task<Guid> DeployReinforcements(Guid sessionId, Guid phaseId, Guid targetRegion, String regionEtag, UInt32 numberOfTroops)
         {
             Guid operationId = Guid.NewGuid();
             DummyDeployReinforcementsQueue.Add(new DummyDeployReinforcements
             {
                 OperationId = operationId,
                 PhaseId = phaseId,
-                NationEtag = nationEtag,
                 TargetRegion = targetRegion,
+                TargetRegionEtag = regionEtag,
                 NumberOfTroops = numberOfTroops
             });
             return Task.FromResult(operationId);
         }
 
-        public Task<Guid> OrderAttack(Guid sessionId, Guid phaseId, Guid sourceRegion, string sourceRegionEtag, Guid targetRegion, uint numberOfTroops)
+        public Task<Guid> OrderAttack(Guid sessionId, Guid phaseId, Guid sourceRegion, String sourceRegionEtag, Guid targetRegion, UInt32 numberOfTroops)
         {
             Guid operationId = Guid.NewGuid();
             DummyOrderAttackQueue.Add(new DummyOrderAttack
@@ -43,7 +45,7 @@ namespace Peril.Api.Tests.Repository
             return Task.FromResult(operationId);
         }
 
-        public Task<Guid> Redeploy(Guid sessionId, Guid phaseId, string nationEtag, Guid sourceRegion, Guid targetRegion, uint numberOfTroops)
+        public Task<Guid> Redeploy(Guid sessionId, Guid phaseId, String nationEtag, Guid sourceRegion, Guid targetRegion, UInt32 numberOfTroops)
         {
             Guid operationId = Guid.NewGuid();
             DummyRedeployQueue.Add(new DummyRedeploy
@@ -57,9 +59,25 @@ namespace Peril.Api.Tests.Repository
             return Task.FromResult(operationId);
         }
 
-        public Task<ICommandQueueMessage> GetQueuedCommands(Guid sessionId)
+        public Task<IEnumerable<ICommandQueueMessage>> GetQueuedCommands(Guid sessionId)
         {
-            throw new NotImplementedException();
+            List<ICommandQueueMessage> messages = new List<ICommandQueueMessage>();
+            messages.AddRange(DummyDeployReinforcementsQueue);
+            messages.AddRange(DummyOrderAttackQueue);
+            messages.AddRange(DummyRedeployQueue);
+
+            return Task.FromResult<IEnumerable<ICommandQueueMessage>>(messages);
+        }
+
+        public Task RemoveCommands(Guid sessionId, IEnumerable<Guid> operationIds)
+        {
+            foreach (Guid operationId in operationIds)
+            {
+                DummyDeployReinforcementsQueue.RemoveAll(message => message.OperationId == operationId);
+                DummyOrderAttackQueue.RemoveAll(message => message.OperationId == operationId);
+                DummyRedeployQueue.RemoveAll(message => message.OperationId == operationId);
+            }
+            return Task.FromResult(false);
         }
 
         public List<DummyDeployReinforcements> DummyDeployReinforcementsQueue { get; set; }
@@ -67,18 +85,22 @@ namespace Peril.Api.Tests.Repository
         public List<DummyRedeploy> DummyRedeployQueue { get; set; }
     }
 
-    class DummyDeployReinforcements
+    class DummyDeployReinforcements : IDeployReinforcementsMessage
     {
+        public CommandQueueMessageType MessageType { get { return CommandQueueMessageType.Reinforce; } }
         public Guid OperationId { get; set; }
+        public Guid SessionId { get; set; }
         public Guid PhaseId { get; set; }
-        public String NationEtag { get; set; }
         public Guid TargetRegion { get; set; }
+        public String TargetRegionEtag { get; set; }
         public UInt32 NumberOfTroops { get; set; }
     }
 
-    class DummyOrderAttack
+    class DummyOrderAttack : IOrderAttackMessage
     {
+        public CommandQueueMessageType MessageType { get { return CommandQueueMessageType.Attack; } }
         public Guid OperationId { get; set; }
+        public Guid SessionId { get; set; }
         public Guid PhaseId { get; set; }
         public Guid SourceRegion { get; set; }
         public String SourceRegionEtag { get; set; }
@@ -86,12 +108,30 @@ namespace Peril.Api.Tests.Repository
         public UInt32 NumberOfTroops { get; set; }
     }
 
-    class DummyRedeploy
+    class DummyRedeploy : IRedeployMessage
     {
+        public CommandQueueMessageType MessageType { get { return CommandQueueMessageType.Redeploy; } }
+        public Guid SessionId { get; set; }
         public Guid OperationId { get; set; }
         public Guid PhaseId { get; set; }
         public Guid SourceRegion { get; set; }
         public Guid TargetRegion { get; set; }
         public UInt32 NumberOfTroops { get; set; }
+    }
+
+    static class ControllerMockCommandQueueExtensions
+    {
+        static public ControllerMockSetupContext QueueDeployReinforcements(this ControllerMockSetupContext setupContext, Guid regionId, UInt32 numberOfTroops)
+        {
+            setupContext.ControllerMock.CommandQueue.DummyDeployReinforcementsQueue.Add(new DummyDeployReinforcements
+            {
+                OperationId = Guid.NewGuid(),
+                PhaseId = setupContext.DummySession.PhaseId,
+                TargetRegion = regionId,
+                TargetRegionEtag = setupContext.ControllerMock.RegionRepository.RegionData[regionId].CurrentEtag,
+                NumberOfTroops = numberOfTroops
+            });
+            return setupContext;
+        }
     }
 }

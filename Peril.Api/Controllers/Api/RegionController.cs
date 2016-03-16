@@ -51,7 +51,7 @@ namespace Peril.Api.Controllers.Api
             }
             else
             {
-                return await CommandQueue.DeployReinforcements(session.GameId, session.PhaseId, nation.CurrentEtag, region.RegionId, numberOfTroops);
+                return await CommandQueue.DeployReinforcements(session.GameId, session.PhaseId, region.RegionId, region.CurrentEtag, numberOfTroops);
             }
         }
 

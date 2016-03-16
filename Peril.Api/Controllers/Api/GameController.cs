@@ -18,8 +18,9 @@ namespace Peril.Api.Controllers.Api
     [RoutePrefix("api/Game")]
     public class GameController : ApiController
     {
-        public GameController(INationRepository nationRepository, IRegionRepository regionRepository, ISessionRepository sessionRepository, IUserRepository userRepository)
+        public GameController(ICommandQueue commandQueue, INationRepository nationRepository, IRegionRepository regionRepository, ISessionRepository sessionRepository, IUserRepository userRepository)
         {
+            CommandQueue = commandQueue;
             NationRepository = nationRepository;
             RegionRepository = regionRepository;
             SessionRepository = sessionRepository;
@@ -174,9 +175,9 @@ namespace Peril.Api.Controllers.Api
             {
                 case SessionPhase.NotStarted:
                 {
-                    IEnumerable<IRegionData> regions = await RegionRepository.GetRegions(session.GameId);
-                    IEnumerable<INationData> nations = await NationRepository.GetNations(session.GameId);
-                    await DistributeInitialRegions(session.GameId, regions, nations);
+                    var regions = RegionRepository.GetRegions(session.GameId);
+                    var nations = await NationRepository.GetNations(session.GameId);
+                    await DistributeInitialRegions(session.GameId, await regions, nations);
                     Dictionary<String, UInt32> initialReinforcements = new Dictionary<string, uint>();
                     foreach(INationData nation in nations)
                     {
@@ -188,8 +189,26 @@ namespace Peril.Api.Controllers.Api
                     break;
                 }
                 case SessionPhase.Reinforcements:
-                    // Get the queue of reinforcement operations
+                {
+                    var regions = RegionRepository.GetRegions(session.GameId);
+                    var nationsTask = NationRepository.GetNations(session.GameId);
+                    IEnumerable<ICommandQueueMessage> pendingMessages = await CommandQueue.GetQueuedCommands(session.GameId);
+                    IEnumerable<IDeployReinforcementsMessage> pendingReinforcementMessages = pendingMessages.GetCommandsFromPhase(session.PhaseId)
+                                                                                                            .GetQueuedDeployReinforcementsCommands();
+
+                    IEnumerable<INationData> nations = await nationsTask;
+                    await ProcessReinforcementMessages(session.GameId, await regions, nations, pendingReinforcementMessages);
+
+                    // Reset all players to 0 reinforcements
+                    Dictionary<String, UInt32> initialReinforcements = new Dictionary<string, uint>();
+                    foreach (INationData nation in nations)
+                    {
+                        initialReinforcements[nation.UserId] = 0;
+                    }
+                    await NationRepository.SetAvailableReinforcements(session.GameId, initialReinforcements);
+                    nextPhase = SessionPhase.CombatOrders;
                     break;
+                }
                 default:
                 {
                     throw new NotImplementedException("Not done yet");
@@ -200,7 +219,7 @@ namespace Peril.Api.Controllers.Api
             await SessionRepository.SetSessionPhase(sessionId, session.PhaseId, nextPhase);
         }
 
-        private async Task DistributeInitialRegions(Guid sessiondId, IEnumerable<IRegionData> availableRegions, IEnumerable<INationData> availablePlayers)
+        private async Task DistributeInitialRegions(Guid sessionId, IEnumerable<IRegionData> availableRegions, IEnumerable<INationData> availablePlayers)
         {
             Dictionary<Guid, OwnershipChange> assignedRegions = new Dictionary<Guid, OwnershipChange>();
 
@@ -248,9 +267,52 @@ namespace Peril.Api.Controllers.Api
                 }
             }
 
-            await RegionRepository.AssignRegionOwnership(sessiondId, assignedRegions);
+            await RegionRepository.AssignRegionOwnership(sessionId, assignedRegions);
         }
 
+        private async Task ProcessReinforcementMessages(Guid sessionId, IEnumerable<IRegionData> availableRegions, IEnumerable<INationData> players, IEnumerable<IDeployReinforcementsMessage> messages)
+        {
+            Dictionary<Guid, OwnershipChange> assignedRegions = new Dictionary<Guid, OwnershipChange>();
+            Dictionary<String, UInt32> playerLookup = players.ToDictionary(nationData => nationData.UserId, nationData => nationData.AvailableReinforcements);
+            Dictionary<Guid, IRegionData> regionLookup = availableRegions.ToDictionary(regionData => regionData.RegionId);
+
+            foreach (IDeployReinforcementsMessage message in messages)
+            {
+                // Sanity check: Ignore messages for unknown regions & players
+                if(regionLookup.ContainsKey(message.TargetRegion))
+                {
+                    IRegionData regionData = regionLookup[message.TargetRegion];
+
+                    // Sanity check: Region ETag must still match
+                    if (regionData.CurrentEtag == message.TargetRegionEtag)
+                    {
+                        // Sanity check: Player must have enough troops remaining
+                        if (playerLookup[regionData.OwnerId] >= message.NumberOfTroops)
+                        {
+                            if (assignedRegions.ContainsKey(regionData.RegionId))
+                            {
+                                // Already an entry for this region, so merge
+                                assignedRegions[regionData.RegionId].TroopCount += message.NumberOfTroops;
+                            }
+                            else
+                            {
+                                // New entry for this region, so add
+                                assignedRegions[regionData.RegionId] = new OwnershipChange(regionData.OwnerId, regionData.TroopCount + message.NumberOfTroops);
+                            }
+
+                            playerLookup[regionData.OwnerId] -= message.NumberOfTroops;
+                        }
+                    }
+                }
+            }
+
+            if (assignedRegions.Count > 0)
+            {
+                await RegionRepository.AssignRegionOwnership(sessionId, assignedRegions);
+            }
+        }
+
+        private ICommandQueue CommandQueue { get; set; }
         private INationRepository NationRepository { get; set; }
         private IRegionRepository RegionRepository { get; set; }
         private ISessionRepository SessionRepository { get; set; }
