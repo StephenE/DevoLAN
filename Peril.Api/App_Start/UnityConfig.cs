@@ -15,6 +15,7 @@ namespace Peril.Api
             var container = new UnityContainer();
 
             // register all components
+            container.RegisterType<ICommandQueue, CommandQueue>(new InjectionConstructor(ConfigurationManager.AppSettings["StorageConnectionString"]));
             container.RegisterType<INationRepository, NationRepository>(new InjectionConstructor(ConfigurationManager.AppSettings["StorageConnectionString"]));
             container.RegisterType<IRegionRepository, RegionRepository>(new InjectionConstructor(ConfigurationManager.AppSettings["StorageConnectionString"]));
             container.RegisterType<ISessionRepository, SessionRepository>(new InjectionConstructor(ConfigurationManager.AppSettings["StorageConnectionString"]));

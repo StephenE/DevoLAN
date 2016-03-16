@@ -5,8 +5,6 @@ using System.Threading.Tasks;
 
 namespace Peril.Api.Repository
 {
-
-
     public interface ICommandQueue
     {
         Task<Guid> DeployReinforcements(Guid sessionId, Guid phaseId, Guid targetRegion, String targetRegionEtag, UInt32 numberOfTroops);

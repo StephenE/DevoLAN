@@ -207,6 +207,7 @@ namespace Peril.Api.Controllers.Api
                         initialReinforcements[nation.UserId] = 0;
                     }
                     await NationRepository.SetAvailableReinforcements(session.GameId, initialReinforcements);
+                    await CommandQueue.RemoveCommands(session.GameId, pendingMessages.Select(message => message.OperationId));
                     nextPhase = SessionPhase.CombatOrders;
                     break;
                 }

@@ -117,7 +117,6 @@ namespace Peril.Api.Repository.Azure
 
         private CloudStorageAccount StorageAccount { get; set; }
         private CloudTableClient TableClient { get; set; }
-        public CloudTable SessionTable { get; set; }
         public CloudTable SessionPlayersTable { get; set; }
     }
 }

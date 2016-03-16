@@ -552,6 +552,9 @@ namespace Peril.Api.Tests.Controllers
             Assert.AreEqual(1U, primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionD].TroopCount);
             Assert.AreEqual(primaryUser.OwnerId, primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionE].OwnerId);
             Assert.AreEqual(0U, primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionE].TroopCount);
+            Assert.AreEqual(0, primaryUser.CommandQueue.DummyDeployReinforcementsQueue.Count);
+            Assert.AreEqual(0, primaryUser.CommandQueue.DummyOrderAttackQueue.Count);
+            Assert.AreEqual(0, primaryUser.CommandQueue.DummyRedeployQueue.Count);
         }
         #endregion
     }
