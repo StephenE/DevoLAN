@@ -70,6 +70,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommandQueue.cs" />
+    <Compile Include="Model\CommandQueueTableEntry.cs" />
     <Compile Include="Model\RegionTableEntry.cs" />
     <Compile Include="Model\NationTableEntry.cs" />
     <Compile Include="Model\SessionTableEntry.cs" />
