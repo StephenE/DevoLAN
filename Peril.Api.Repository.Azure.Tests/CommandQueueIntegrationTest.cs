@@ -2,12 +2,10 @@
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
 using Peril.Api.Repository.Azure.Model;
-using Peril.Api.Repository.Azure.Tests.Repository;
 using Peril.Api.Repository.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Peril.Api.Repository.Azure.Tests
@@ -30,7 +28,7 @@ namespace Peril.Api.Repository.Azure.Tests
 
         [TestMethod]
         [TestCategory("Integration")]
-        [TestCategory("NationRepository")]
+        [TestCategory("CommandQueue")]
         public async Task IntegrationTestCreateReinforceMessage()
         {
             // Arrange
@@ -55,7 +53,7 @@ namespace Peril.Api.Repository.Azure.Tests
 
         [TestMethod]
         [TestCategory("Integration")]
-        [TestCategory("NationRepository")]
+        [TestCategory("CommandQueue")]
         public async Task IntegrationTestOrderAttack()
         {
             // Arrange
@@ -78,6 +76,83 @@ namespace Peril.Api.Repository.Azure.Tests
             Assert.AreEqual("DummyEtag", queuedCommand.SourceRegionEtag);
             Assert.AreEqual(targetRegionGuid, queuedCommand.TargetRegion);
             Assert.AreEqual(5U, queuedCommand.NumberOfTroops);
+        }
+
+        [TestMethod]
+        [TestCategory("Integration")]
+        [TestCategory("CommandQueue")]
+        public async Task IntegrationTestRedeploy()
+        {
+            // Arrange
+            CommandQueue repository = new CommandQueue(DevelopmentStorageAccountConnectionString);
+            Guid targetRegionGuid = new Guid("8449A25B-363D-4F01-B3D9-7EF8C5D42047");
+
+            // Act
+            Guid operationGuid = await repository.Redeploy(SessionGuid, SessionPhaseGuid, String.Empty, RegionGuid, targetRegionGuid, 5U);
+
+            // Assert
+            var operation = TableOperation.Retrieve<CommandQueueTableEntry>(SessionGuid.ToString(), operationGuid.ToString());
+            var result = await CommandTable.ExecuteAsync(operation);
+            CommandQueueTableEntry queuedCommand = result.Result as CommandQueueTableEntry;
+            Assert.IsNotNull(queuedCommand);
+            Assert.AreEqual(operationGuid, queuedCommand.OperationId);
+            Assert.AreEqual(SessionGuid, queuedCommand.SessionId);
+            Assert.AreEqual(SessionPhaseGuid, queuedCommand.PhaseId);
+            Assert.AreEqual(CommandQueueMessageType.Redeploy, queuedCommand.MessageType);
+            Assert.AreEqual(RegionGuid, queuedCommand.SourceRegion);
+            Assert.AreEqual(targetRegionGuid, queuedCommand.TargetRegion);
+            Assert.AreEqual(5U, queuedCommand.NumberOfTroops);
+        }
+
+        [TestMethod]
+        [TestCategory("Integration")]
+        [TestCategory("CommandQueue")]
+        public async Task IntegrationTestGetQueuedCommands()
+        {
+            // Arrange
+            CommandQueue repository = new CommandQueue(DevelopmentStorageAccountConnectionString);
+            Guid operationGuid = await repository.DeployReinforcements(SessionGuid, SessionPhaseGuid, RegionGuid, "DummyEtag", 10U);
+            Guid secondOperationGuid = await repository.DeployReinforcements(SessionGuid, SessionPhaseGuid, RegionGuid, "DummyEtag", 5U);
+
+            // Act
+            IEnumerable<ICommandQueueMessage> pendingMessages = await repository.GetQueuedCommands(SessionGuid, SessionPhaseGuid);
+
+            // Assert
+            Assert.IsNotNull(pendingMessages);
+            Assert.IsTrue(2 <= pendingMessages.Count());
+            foreach(IDeployReinforcementsMessage message in pendingMessages)
+            {
+                Assert.AreEqual(SessionGuid, message.SessionId);
+                Assert.AreEqual(SessionPhaseGuid, message.PhaseId);
+                if (message.OperationId == operationGuid)
+                {
+                    Assert.AreEqual(CommandQueueMessageType.Reinforce, message.MessageType);
+                    Assert.AreEqual(10U, message.NumberOfTroops);
+                }
+                else if (message.OperationId == secondOperationGuid)
+                {
+                    Assert.AreEqual(CommandQueueMessageType.Reinforce, message.MessageType);
+                    Assert.AreEqual(5U, message.NumberOfTroops);
+                }
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("Integration")]
+        [TestCategory("CommandQueue")]
+        public async Task IntegrationTestRemoveCommands()
+        {
+            // Arrange
+            CommandQueue repository = new CommandQueue(DevelopmentStorageAccountConnectionString);
+            Guid sessionPhaseId = Guid.NewGuid();
+            CloudTable randomCommandTable = CommandQueue.GetCommandQueueTableForSessionPhase(TableClient, sessionPhaseId);
+            randomCommandTable.CreateIfNotExists();
+
+            // Act
+            await repository.RemoveCommands(sessionPhaseId);
+
+            // Assert
+            Assert.IsFalse(randomCommandTable.Exists());
         }
 
         static private String DevelopmentStorageAccountConnectionString
