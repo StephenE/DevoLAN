@@ -115,6 +115,7 @@
   <ItemGroup>
     <Compile Include="Controllers\ControllerMock.cs" />
     <Compile Include="Controllers\GameControllerTest.cs" />
+    <Compile Include="Controllers\NationControllerTest.cs" />
     <Compile Include="Controllers\RegionControllerTest.cs" />
     <Compile Include="Controllers\WorldControllerTest.cs" />
     <Compile Include="IntegrationTest.cs" />

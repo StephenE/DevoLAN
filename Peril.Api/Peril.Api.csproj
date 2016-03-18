@@ -238,6 +238,7 @@
     <Compile Include="Models\AccountBindingModels.cs" />
     <Compile Include="Models\AccountViewModels.cs" />
     <Compile Include="Models\AttackDetails.cs" />
+    <Compile Include="Models\CommandQueueMessage.cs" />
     <Compile Include="Models\IdentityModels.cs" />
     <Compile Include="Models\Player.cs" />
     <Compile Include="Models\Region.cs" />

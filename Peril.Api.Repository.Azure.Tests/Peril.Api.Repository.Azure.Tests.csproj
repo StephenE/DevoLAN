@@ -79,6 +79,7 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="CommandQueueIntegrationTest.cs" />
     <Compile Include="NationRepositoryIntegrationTest.cs" />
     <Compile Include="RegionRepositoryIntergrationTest.cs" />
     <Compile Include="Repository\CloudStorageEmulatorShepherd.cs" />

@@ -51,7 +51,7 @@ namespace Peril.Api.Controllers.Api
             }
             else
             {
-                return await CommandQueue.DeployReinforcements(session.PhaseId, nation.CurrentEtag, region.RegionId, numberOfTroops);
+                return await CommandQueue.DeployReinforcements(session.GameId, session.PhaseId, region.RegionId, region.CurrentEtag, numberOfTroops);
             }
         }
 
@@ -74,7 +74,7 @@ namespace Peril.Api.Controllers.Api
             }
             else
             {
-                return await CommandQueue.OrderAttack(session.PhaseId, sourceRegion.RegionId, sourceRegion.CurrentEtag, targetRegion.RegionId, numberOfTroops);
+                return await CommandQueue.OrderAttack(session.GameId, session.PhaseId, sourceRegion.RegionId, sourceRegion.CurrentEtag, targetRegion.RegionId, numberOfTroops);
             }
         }
 
@@ -98,7 +98,7 @@ namespace Peril.Api.Controllers.Api
             }
             else
             {
-                return await CommandQueue.Redeploy(session.PhaseId, nation.CurrentEtag, sourceRegion.RegionId, targetRegion.RegionId, numberOfTroops);
+                return await CommandQueue.Redeploy(session.GameId, session.PhaseId, nation.CurrentEtag, sourceRegion.RegionId, targetRegion.RegionId, numberOfTroops);
             }
         }
 
