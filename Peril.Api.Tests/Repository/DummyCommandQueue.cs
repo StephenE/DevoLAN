@@ -3,6 +3,7 @@ using Peril.Api.Repository.Model;
 using Peril.Api.Tests.Controllers;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Peril.Api.Tests.Repository
@@ -59,24 +60,23 @@ namespace Peril.Api.Tests.Repository
             return Task.FromResult(operationId);
         }
 
-        public Task<IEnumerable<ICommandQueueMessage>> GetQueuedCommands(Guid sessionId)
+        public Task<IEnumerable<ICommandQueueMessage>> GetQueuedCommands(Guid sessionId, Guid sessionPhaseId)
         {
             List<ICommandQueueMessage> messages = new List<ICommandQueueMessage>();
             messages.AddRange(DummyDeployReinforcementsQueue);
             messages.AddRange(DummyOrderAttackQueue);
             messages.AddRange(DummyRedeployQueue);
 
-            return Task.FromResult<IEnumerable<ICommandQueueMessage>>(messages);
+            return Task.FromResult<IEnumerable<ICommandQueueMessage>>(from message in messages
+                                                                      where message.PhaseId == sessionPhaseId
+                                                                      select message);
         }
 
-        public Task RemoveCommands(Guid sessionId, IEnumerable<Guid> operationIds)
+        public Task RemoveCommands(Guid sessionPhaseId)
         {
-            foreach (Guid operationId in operationIds)
-            {
-                DummyDeployReinforcementsQueue.RemoveAll(message => message.OperationId == operationId);
-                DummyOrderAttackQueue.RemoveAll(message => message.OperationId == operationId);
-                DummyRedeployQueue.RemoveAll(message => message.OperationId == operationId);
-            }
+            DummyDeployReinforcementsQueue.RemoveAll(message => message.PhaseId == sessionPhaseId);
+            DummyOrderAttackQueue.RemoveAll(message => message.PhaseId == sessionPhaseId);
+            DummyRedeployQueue.RemoveAll(message => message.PhaseId == sessionPhaseId);
             return Task.FromResult(false);
         }
 

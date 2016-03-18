@@ -193,7 +193,7 @@ namespace Peril.Api.Controllers.Api
                 {
                     var regions = RegionRepository.GetRegions(session.GameId);
                     var nationsTask = NationRepository.GetNations(session.GameId);
-                    IEnumerable<ICommandQueueMessage> pendingMessages = await CommandQueue.GetQueuedCommands(session.GameId);
+                    IEnumerable<ICommandQueueMessage> pendingMessages = await CommandQueue.GetQueuedCommands(session.GameId, session.PhaseId);
                     IEnumerable<IDeployReinforcementsMessage> pendingReinforcementMessages = pendingMessages.GetCommandsFromPhase(session.PhaseId)
                                                                                                             .GetQueuedDeployReinforcementsCommands();
 
@@ -207,7 +207,7 @@ namespace Peril.Api.Controllers.Api
                         initialReinforcements[nation.UserId] = 0;
                     }
                     await NationRepository.SetAvailableReinforcements(session.GameId, initialReinforcements);
-                    await CommandQueue.RemoveCommands(session.GameId, pendingMessages.Select(message => message.OperationId));
+                    await CommandQueue.RemoveCommands(session.PhaseId);
                     nextPhase = SessionPhase.CombatOrders;
                     break;
                 }

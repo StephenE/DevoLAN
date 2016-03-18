@@ -13,8 +13,8 @@ namespace Peril.Api.Repository
 
         Task<Guid> Redeploy(Guid sessionId, Guid phaseId, String nationEtag, Guid sourceRegion, Guid targetRegion, UInt32 numberOfTroops);
 
-        Task<IEnumerable<ICommandQueueMessage>> GetQueuedCommands(Guid sessionId);
+        Task<IEnumerable<ICommandQueueMessage>> GetQueuedCommands(Guid sessionId, Guid sessionPhaseId);
 
-        Task RemoveCommands(Guid sessionId, IEnumerable<Guid> operationIds);
+        Task RemoveCommands(Guid sessionId);
     }
 }

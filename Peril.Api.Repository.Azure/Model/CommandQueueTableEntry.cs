@@ -61,7 +61,7 @@ namespace Peril.Api.Repository.Azure.Model
         public Guid SessionId { get { return Guid.Parse(PartitionKey); } }
         public Guid OperationId { get { return Guid.Parse(RowKey); } }
         public CommandQueueMessageType MessageType { get { return (CommandQueueMessageType)RawMessageType; } }
-        public UInt32 NumberOfTroops { get { return (UInt32)NumberOfTroops; } }
+        public UInt32 NumberOfTroops { get { return (UInt32)RawNumberOfTroops; } }
 
         public Guid PhaseId { get; set; }
         public Guid TargetRegion { get; set; }

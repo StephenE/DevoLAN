@@ -222,6 +222,29 @@ namespace Peril.Api.Repository.Azure.Tests
             ISession sessionDetails = await repository.SetupSession(validGuid, "CreatingUser");
 
             // Act
+            await repository.SetSessionPhase(validGuid, sessionDetails.PhaseId, SessionPhase.SpoilsOfWar);
+
+            // Assert
+            TableOperation operation = TableOperation.Retrieve<SessionTableEntry>(validGuid.ToString(), "CreatingUser");
+            TableResult result = await SessionTable.ExecuteAsync(operation);
+            Assert.IsNotNull(result.Result);
+            Assert.IsInstanceOfType(result.Result, typeof(SessionTableEntry));
+            SessionTableEntry resultStronglyTyped = result.Result as SessionTableEntry;
+            Assert.AreNotEqual(sessionDetails.PhaseId, resultStronglyTyped.PhaseId);
+            Assert.AreEqual(SessionPhase.SpoilsOfWar, resultStronglyTyped.PhaseType);
+        }
+
+        [TestMethod]
+        [TestCategory("Integration")]
+        [TestCategory("SessionRepository")]
+        public async Task IntegrationTestSetSessionPhase_WithCreateCommandQueueTable()
+        {
+            // Arrange
+            SessionRepository repository = new SessionRepository(DevelopmentStorageAccountConnectionString);
+            Guid validGuid = new Guid("ADECC70C-7964-4648-9E4C-F4C71EA4502A");
+            ISession sessionDetails = await repository.SetupSession(validGuid, "CreatingUser");
+
+            // Act
             await repository.SetSessionPhase(validGuid, sessionDetails.PhaseId, SessionPhase.Reinforcements);
 
             // Assert
@@ -232,6 +255,8 @@ namespace Peril.Api.Repository.Azure.Tests
             SessionTableEntry resultStronglyTyped = result.Result as SessionTableEntry;
             Assert.AreNotEqual(sessionDetails.PhaseId, resultStronglyTyped.PhaseId);
             Assert.AreEqual(SessionPhase.Reinforcements, resultStronglyTyped.PhaseType);
+            CloudTable commandQueueTable = CommandQueue.GetCommandQueueTableForSessionPhase(TableClient, resultStronglyTyped.PhaseId);
+            Assert.AreEqual(true, await commandQueueTable.ExistsAsync());
         }
 
         static private String DevelopmentStorageAccountConnectionString
