@@ -58,6 +58,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ConcurrencyException.cs" />
+    <Compile Include="IWorldRepository.cs" />
     <Compile Include="Model\ApplicationUser.cs" />
     <Compile Include="ICommandQueue.cs" />
     <Compile Include="Model\ICommandQueueMessage.cs" />

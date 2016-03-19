@@ -35,7 +35,7 @@ namespace Peril.Api.Controllers.Api
 
         // GET /api/World/Combat
         [Route("Combat")]
-        public Task<IEnumerable<ICombat>> GetCombat()
+        public Task<IEnumerable<ICombat>> GetCombat(Guid sessionId)
         {
             // Check taking part in session [Forbidden]
             // Is allowed?
