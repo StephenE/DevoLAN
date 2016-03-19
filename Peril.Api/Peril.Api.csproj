@@ -254,7 +254,10 @@
     <Content Include="Content\bootstrap.css" />
     <Content Include="Content\bootstrap.min.css" />
     <Content Include="Content\images\bckMap.jpg" />
+    <Content Include="Content\parts\board.html" />
+    <Content Include="Content\parts\login.html" />
     <Content Include="Content\peril.css" />
+    <Content Include="Content\peril.js" />
     <Content Include="Content\WorldDefinition.xml" />
     <Content Include="favicon.ico" />
     <Content Include="fonts\glyphicons-halflings-regular.svg" />
