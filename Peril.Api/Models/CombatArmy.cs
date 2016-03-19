@@ -3,7 +3,7 @@ using System;
 
 namespace Peril.Api.Models
 {
-    class CombatArmy : ICombatArmy
+    public class CombatArmy : ICombatArmy
     {
         public CombatArmy(ICombatArmy army)
         {

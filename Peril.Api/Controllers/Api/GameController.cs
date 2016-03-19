@@ -221,6 +221,15 @@ namespace Peril.Api.Controllers.Api
                     await CommandQueue.RemoveCommands(session.PhaseId);
                     break;
                 }
+                case SessionPhase.BorderClashes:
+                {
+                    var borderClashes = WorldRepository.GetCombat(session.GameId, CombatType.BorderClash);
+                    await ResolveCombat(session.GameId, await borderClashes);
+                    // Update remaining combat (surviving army needs)
+                    // Delete border clashes?
+                    nextPhase = SessionPhase.MassInvasions;
+                    break;
+                }
                 default:
                 {
                     throw new NotImplementedException("Not done yet");
@@ -447,9 +456,23 @@ namespace Peril.Api.Controllers.Api
             }
 
             // Store combat
-            await WorldRepository.AddCombat(resolvedCombat);
+            await WorldRepository.AddCombat(sessionId, resolvedCombat);
 
             return nextSessionPhase;
+        }
+
+        private async Task ResolveCombat(Guid sessionId, IEnumerable<ICombat> pendingCombat)
+        {
+            List<ICombatResult> combatResults = new List<ICombatResult>();
+            foreach(ICombat combat in pendingCombat)
+            {
+                combatResults.Add(CombatResult.GenerateForCombat(combat, WorldRepository.GetRandomNumberGenerator(1, 6)));
+            }
+
+            if (combatResults.Count > 0)
+            {
+                await WorldRepository.AddCombatResults(sessionId, combatResults);
+            }
         }
 
         private ICommandQueue CommandQueue { get; set; }

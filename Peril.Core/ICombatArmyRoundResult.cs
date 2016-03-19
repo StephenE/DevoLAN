@@ -7,8 +7,10 @@ namespace Peril.Core
     {
         Guid OriginRegionId { get; }
 
-        Guid OwnerUserId { get; }
+        String OwnerUserId { get; }
 
         IEnumerable<UInt32> RolledResults { get; }
+
+        UInt32 TroopsLost { get; }
     }
 }

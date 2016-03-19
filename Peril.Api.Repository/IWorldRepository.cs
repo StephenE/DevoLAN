@@ -9,6 +9,12 @@ namespace Peril.Api.Repository
     {
         Task<IEnumerable<ICombat>> GetCombat(Guid sessionId);
 
-        Task AddCombat(IEnumerable<Tuple<CombatType, IEnumerable<ICombatArmy>>> armies);
+        Task<IEnumerable<ICombat>> GetCombat(Guid sessionId, CombatType type);
+
+        Task AddCombat(Guid sessionId, IEnumerable<Tuple<CombatType, IEnumerable<ICombatArmy>>> armies);
+
+        Task AddCombatResults(Guid sessionId, IEnumerable<ICombatResult> results);
+
+        IEnumerable<Int32> GetRandomNumberGenerator(int minimum, int maximum);
     }
 }

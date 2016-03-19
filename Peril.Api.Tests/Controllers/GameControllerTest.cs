@@ -765,16 +765,16 @@ namespace Peril.Api.Tests.Controllers
                        .SetupRegionTroops(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 7)
                        .SetupSessionPhase(SessionPhase.BorderClashes)
                        .SetupBorderClash(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 4, ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 3);
-                        // TODO: Rig dice rolls so that D beats A, taking 1 loss
+            // Rig dice rolls so that D beats A, taking 1 loss
+            primaryUser.WorldRepository.NumberGeneratorInjections.AddRange(new int[] { 4, 4, 6, 5, 5, 5, 1, 1, 2, 6 });
             Guid currentSessionPhaseId = primaryUser.SessionRepository.SessionMap[validGuid].PhaseId;
 
             // Act
             await primaryUser.GameController.PostAdvanceNextPhase(validGuid, currentSessionPhaseId, true);
 
             // Assert
-            Assert.AreEqual(SessionPhase.Invasions, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
+            Assert.AreEqual(SessionPhase.MassInvasions, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
             Assert.AreNotEqual(currentSessionPhaseId, primaryUser.SessionRepository.SessionMap[validGuid].PhaseId);
-            Assert.AreEqual(0, primaryUser.WorldRepository.BorderClashes.Count());
             Assert.AreEqual(2, primaryUser.WorldRepository.Invasions.Count());
 
             var invasionOfA = primaryUser.GetInvasion(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA);
@@ -787,6 +787,8 @@ namespace Peril.Api.Tests.Controllers
             Assert.AreEqual(CombatType.Invasion, invasionOfD.ResolutionType);
             Assert.AreEqual(1, invasionOfD.InvolvedArmies.Count());
             AssertCombat.IsDefending(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 4, primaryUser.OwnerId, invasionOfD);
+
+            Assert.Fail("Need to verify combat results");
         }
 
         [TestMethod]
@@ -805,16 +807,16 @@ namespace Peril.Api.Tests.Controllers
                        .SetupRegionTroops(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 7)
                        .SetupSessionPhase(SessionPhase.BorderClashes)
                        .SetupBorderClash(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 4, ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 3);
-                        // TODO: Rig dice rolls so that D & A draw, each losing all troops
+            // Rig dice rolls so that D & A draw, each losing all troops
+            primaryUser.WorldRepository.NumberGeneratorInjections.AddRange(new int[] { 1, 2, 3, 2, 2, 3, 6, 6 });
             Guid currentSessionPhaseId = primaryUser.SessionRepository.SessionMap[validGuid].PhaseId;
 
             // Act
             await primaryUser.GameController.PostAdvanceNextPhase(validGuid, currentSessionPhaseId, true);
 
             // Assert
-            Assert.AreEqual(SessionPhase.Invasions, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
+            Assert.AreEqual(SessionPhase.MassInvasions, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
             Assert.AreNotEqual(currentSessionPhaseId, primaryUser.SessionRepository.SessionMap[validGuid].PhaseId);
-            Assert.AreEqual(0, primaryUser.WorldRepository.BorderClashes.Count());
             Assert.AreEqual(2, primaryUser.WorldRepository.Invasions.Count());
 
             var invasionOfA = primaryUser.GetInvasion(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA);
@@ -826,6 +828,8 @@ namespace Peril.Api.Tests.Controllers
             Assert.AreEqual(CombatType.Invasion, invasionOfD.ResolutionType);
             Assert.AreEqual(1, invasionOfD.InvolvedArmies.Count());
             AssertCombat.IsDefending(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 4, primaryUser.OwnerId, invasionOfD);
+
+            Assert.Fail("Need to verify combat results");
         }
 
         [TestMethod]
@@ -844,7 +848,8 @@ namespace Peril.Api.Tests.Controllers
                        .SetupRegionTroops(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 7)
                        .SetupSessionPhase(SessionPhase.BorderClashes)
                        .SetupMassInvasionWithBorderClash(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 4, ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 6, ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 3);
-                        // TODO: Rig dice rolls so that D beats A, taking 1 loss
+            // Rig dice rolls so that D beats A, taking 1 loss
+            primaryUser.WorldRepository.NumberGeneratorInjections.AddRange(new int[] { 1, 1, 6, 2, 2, 3, 1, 1, 6, 6 });
             Guid currentSessionPhaseId = primaryUser.SessionRepository.SessionMap[validGuid].PhaseId;
 
             // Act
@@ -853,11 +858,10 @@ namespace Peril.Api.Tests.Controllers
             // Assert
             Assert.AreEqual(SessionPhase.MassInvasions, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
             Assert.AreNotEqual(currentSessionPhaseId, primaryUser.SessionRepository.SessionMap[validGuid].PhaseId);
-            Assert.AreEqual(0, primaryUser.WorldRepository.BorderClashes.Count());
             Assert.AreEqual(1, primaryUser.WorldRepository.MassInvasions.Count());
             Assert.AreEqual(1, primaryUser.WorldRepository.Invasions.Count());
 
-            var invasionOfA = primaryUser.GetInvasion(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA);
+            var invasionOfA = primaryUser.GetMassInvasion(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA);
             Assert.AreEqual(CombatType.MassInvasion, invasionOfA.ResolutionType);
             Assert.AreEqual(3, invasionOfA.InvolvedArmies.Count());
             AssertCombat.IsAttacking(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 2, primaryUser.OwnerId, invasionOfA);
@@ -868,6 +872,8 @@ namespace Peril.Api.Tests.Controllers
             Assert.AreEqual(CombatType.Invasion, invasionOfD.ResolutionType);
             Assert.AreEqual(2, invasionOfD.InvolvedArmies.Count());
             AssertCombat.IsDefending(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 4, primaryUser.OwnerId, invasionOfD);
+
+            Assert.Fail("Need to verify combat results");
         }
 
         [TestMethod]
@@ -886,7 +892,8 @@ namespace Peril.Api.Tests.Controllers
                        .SetupRegionTroops(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 7)
                        .SetupSessionPhase(SessionPhase.BorderClashes)
                        .SetupMassInvasionWithBorderClash(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 4, ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 6, ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 3);
-                        // TODO: Rig dice rolls so that A beats D, taking 1 loss
+            // Rig dice rolls so that A beats D, taking 1 loss
+            primaryUser.WorldRepository.NumberGeneratorInjections.AddRange(new int[] { 6, 6, 1, 2, 2, 3, 1, 6, 1, 3 });
             Guid currentSessionPhaseId = primaryUser.SessionRepository.SessionMap[validGuid].PhaseId;
 
             // Act
@@ -895,11 +902,10 @@ namespace Peril.Api.Tests.Controllers
             // Assert
             Assert.AreEqual(SessionPhase.MassInvasions, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
             Assert.AreNotEqual(currentSessionPhaseId, primaryUser.SessionRepository.SessionMap[validGuid].PhaseId);
-            Assert.AreEqual(0, primaryUser.WorldRepository.BorderClashes.Count());
             Assert.AreEqual(1, primaryUser.WorldRepository.MassInvasions.Count());
             Assert.AreEqual(1, primaryUser.WorldRepository.Invasions.Count());
 
-            var invasionOfA = primaryUser.GetInvasion(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA);
+            var invasionOfA = primaryUser.GetMassInvasion(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA);
             Assert.AreEqual(CombatType.MassInvasion, invasionOfA.ResolutionType);
             Assert.AreEqual(2, invasionOfA.InvolvedArmies.Count());
             AssertCombat.IsAttacking(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 6, primaryUser.OwnerId, invasionOfA);
@@ -910,6 +916,8 @@ namespace Peril.Api.Tests.Controllers
             Assert.AreEqual(2, invasionOfD.InvolvedArmies.Count());
             AssertCombat.IsAttacking(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 3, DummyUserRepository.RegisteredUserIds[1], invasionOfD);
             AssertCombat.IsDefending(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 4, primaryUser.OwnerId, invasionOfD);
+
+            Assert.Fail("Need to verify combat results");
         }
         #endregion
     }

@@ -17,6 +17,8 @@ namespace Peril.Api.Tests.Repository
             MassInvasions = new Dictionary<Guid, DummyCombat>();
             Invasions = new Dictionary<Guid, DummyCombat>();
             SpoilsOfWar = new Dictionary<Guid, DummyCombat>();
+            NumberGeneratorInjections = new List<int>();
+            NumberGenerator = new Random(0);
         }
 
         public Task<IEnumerable<ICombat>> GetCombat(Guid sessionId)
@@ -28,7 +30,24 @@ namespace Peril.Api.Tests.Repository
             return Task.FromResult<IEnumerable<ICombat>>(combat);
         }
 
-        public Task AddCombat(IEnumerable<Tuple<CombatType, IEnumerable<ICombatArmy>>> armies)
+        public Task<IEnumerable<ICombat>> GetCombat(Guid sessionId, CombatType combatType)
+        {
+            switch(combatType)
+            {
+                case CombatType.BorderClash:
+                    return Task.FromResult<IEnumerable<ICombat>>(BorderClashes.Values);
+                case CombatType.MassInvasion:
+                    return Task.FromResult<IEnumerable<ICombat>>(MassInvasions.Values);
+                case CombatType.Invasion:
+                    return Task.FromResult<IEnumerable<ICombat>>(Invasions.Values);
+                case CombatType.SpoilsOfWar:
+                    return Task.FromResult<IEnumerable<ICombat>>(SpoilsOfWar.Values);
+            }
+
+            throw new InvalidOperationException();
+        }
+
+        public Task AddCombat(Guid sessionId, IEnumerable<Tuple<CombatType, IEnumerable<ICombatArmy>>> armies)
         {
             foreach(var combatData in armies)
             {
@@ -57,10 +76,32 @@ namespace Peril.Api.Tests.Repository
             return Task.FromResult(false);
         }
 
+        public Task AddCombatResults(Guid sessionId, IEnumerable<ICombatResult> results)
+        {
+            throw new NotImplementedException("Not implemented");
+        }
+
+        public IEnumerable<Int32> GetRandomNumberGenerator(int minimum, int maximum)
+        {
+            if (NumberGeneratorInjections.Count > 0)
+            {
+                while (NumberGeneratorInjections.Count > 0)
+                {
+                    yield return NumberGeneratorInjections.Last();
+                    NumberGeneratorInjections.RemoveAt(NumberGeneratorInjections.Count - 1);
+                }
+                Assert.Fail("Ran out of pre-generated random numbers");
+            }
+
+            yield return NumberGenerator.Next(minimum, maximum);
+        }
+
         public Dictionary<Guid, DummyCombat> BorderClashes { get; private set; }
         public Dictionary<Guid, DummyCombat> MassInvasions { get; private set; }
         public Dictionary<Guid, DummyCombat> Invasions { get; private set; }
         public Dictionary<Guid, DummyCombat> SpoilsOfWar { get; private set; }
+        public Random NumberGenerator { get; set; }
+        public List<int> NumberGeneratorInjections { get; set; }
     }
 
     static class ControllerMockWorldRepositoryExtensions
@@ -135,6 +176,17 @@ namespace Peril.Api.Tests.Repository
             combat.SetupAddArmy(targetRegion, setupContext.ControllerMock.RegionRepository.RegionData[targetRegion].OwnerId, CombatArmyMode.Defending, 0);
             setupContext.ControllerMock.WorldRepository.SpoilsOfWar[combatId] = combat;
             return setupContext;
+        }
+
+        static public ICombat GetMassInvasion(this ControllerMock controller, Guid defendingRegion)
+        {
+            var query = from combatEntry in controller.WorldRepository.MassInvasions
+                        let combat = combatEntry.Value
+                        let defendingArmy = combat.InvolvedArmies.Where(army => army.ArmyMode == CombatArmyMode.Defending).FirstOrDefault()
+                        where defendingArmy.OriginRegionId == defendingRegion
+                        select combat;
+
+            return query.FirstOrDefault();
         }
 
         static public ICombat GetInvasion(this ControllerMock controller, Guid defendingRegion)
