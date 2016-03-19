@@ -120,6 +120,8 @@
     <Compile Include="Controllers\WorldControllerTest.cs" />
     <Compile Include="IntegrationTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Repository\DummyCombat.cs" />
+    <Compile Include="Repository\DummyCombatArmy.cs" />
     <Compile Include="Repository\DummyCommandQueue.cs" />
     <Compile Include="Repository\DummyNationData.cs" />
     <Compile Include="Repository\DummyNationRepository.cs" />

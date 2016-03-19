@@ -42,8 +42,8 @@ namespace Peril.Api.Controllers.Api
                                                       .IsUserIdJoinedOrThrow(NationRepository, User.Identity.GetUserId());
 
             IEnumerable<ICombat> combatData = await WorldRepository.GetCombat(session.GameId);
-
-            throw new NotImplementedException("Not implemented");
+            return from combat in combatData
+                   select new Combat(combat);
         }
 
         // POST /api/World/Combat

@@ -13,42 +13,68 @@ namespace Peril.Api.Tests.Repository
     {
         public DummyWorldRepository()
         {
-            BorderClashes = new Dictionary<Guid, ICombat>();
-            MassInvasions = new Dictionary<Guid, ICombat>();
-            Invasions = new Dictionary<Guid, ICombat>();
-            SpoilsOfWar = new Dictionary<Guid, ICombat>();
+            BorderClashes = new Dictionary<Guid, DummyCombat>();
+            MassInvasions = new Dictionary<Guid, DummyCombat>();
+            Invasions = new Dictionary<Guid, DummyCombat>();
+            SpoilsOfWar = new Dictionary<Guid, DummyCombat>();
         }
 
         public Task<IEnumerable<ICombat>> GetCombat(Guid sessionId)
         {
-            throw new NotImplementedException();
+            List<ICombat> combat = BorderClashes.Select(combatPair => combatPair.Value as ICombat).ToList();
+            combat.AddRange(MassInvasions.Select(combatPair => combatPair.Value));
+            combat.AddRange(Invasions.Select(combatPair => combatPair.Value));
+            combat.AddRange(SpoilsOfWar.Select(combatPair => combatPair.Value));
+            return Task.FromResult<IEnumerable<ICombat>>(combat);
         }
 
-        public Dictionary<Guid, ICombat> BorderClashes { get; private set; }
-        public Dictionary<Guid, ICombat> MassInvasions { get; private set; }
-        public Dictionary<Guid, ICombat> Invasions { get; private set; }
-        public Dictionary<Guid, ICombat> SpoilsOfWar { get; private set; }
+        public Dictionary<Guid, DummyCombat> BorderClashes { get; private set; }
+        public Dictionary<Guid, DummyCombat> MassInvasions { get; private set; }
+        public Dictionary<Guid, DummyCombat> Invasions { get; private set; }
+        public Dictionary<Guid, DummyCombat> SpoilsOfWar { get; private set; }
     }
 
     static class ControllerMockWorldRepositoryExtensions
     {
         static public ControllerMockSetupContext SetupBorderClash(this ControllerMockSetupContext setupContext, Guid attackingRegion, UInt32 attackingTroops, Guid secondAttackingRegion, UInt32 secondAttackingTroops)
         {
+            Guid combatId = Guid.NewGuid();
+            DummyCombat combat = new DummyCombat(combatId, CombatType.BorderClash);
+            combat.SetupAddArmy(attackingRegion, setupContext.ControllerMock.RegionRepository.RegionData[attackingRegion].OwnerId, CombatArmyMode.Attacking, attackingTroops);
+            combat.SetupAddArmy(secondAttackingRegion, setupContext.ControllerMock.RegionRepository.RegionData[secondAttackingRegion].OwnerId, CombatArmyMode.Attacking, secondAttackingTroops);
+            setupContext.ControllerMock.WorldRepository.BorderClashes[combatId] = combat;
             return setupContext;
         }
 
         static public ControllerMockSetupContext SetupMassInvasion(this ControllerMockSetupContext setupContext, Guid targetRegion, UInt32 defendingTroops, Guid attackingRegion, UInt32 attackingTroops, Guid secondAttackingRegion, UInt32 secondAttackingTroops)
         {
+            Guid combatId = Guid.NewGuid();
+            DummyCombat combat = new DummyCombat(combatId, CombatType.MassInvasion);
+            combat.SetupAddArmy(attackingRegion, setupContext.ControllerMock.RegionRepository.RegionData[attackingRegion].OwnerId, CombatArmyMode.Attacking, attackingTroops);
+            combat.SetupAddArmy(secondAttackingRegion, setupContext.ControllerMock.RegionRepository.RegionData[secondAttackingRegion].OwnerId, CombatArmyMode.Attacking, secondAttackingTroops);
+            combat.SetupAddArmy(targetRegion, setupContext.ControllerMock.RegionRepository.RegionData[targetRegion].OwnerId, CombatArmyMode.Defending, defendingTroops);
+            setupContext.ControllerMock.WorldRepository.MassInvasions[combatId] = combat;
             return setupContext;
         }
 
         static public ControllerMockSetupContext SetupInvasion(this ControllerMockSetupContext setupContext, Guid attackingRegion, UInt32 attackingTroops, Guid defendingRegion, UInt32 defendingTroops)
         {
+            Guid combatId = Guid.NewGuid();
+            DummyCombat combat = new DummyCombat(combatId, CombatType.Invasion);
+            combat.SetupAddArmy(attackingRegion, setupContext.ControllerMock.RegionRepository.RegionData[attackingRegion].OwnerId, CombatArmyMode.Attacking, attackingTroops);
+            combat.SetupAddArmy(defendingRegion, setupContext.ControllerMock.RegionRepository.RegionData[defendingRegion].OwnerId, CombatArmyMode.Defending, defendingTroops);
+            setupContext.ControllerMock.WorldRepository.Invasions[combatId] = combat;
             return setupContext;
         }
 
         static public ControllerMockSetupContext SetupSpoilsOfWar(this ControllerMockSetupContext setupContext, Guid targetRegion, Guid attackingRegion, UInt32 attackingTroops, Guid secondAttackingRegion, UInt32 secondAttackingTroops)
         {
+            Guid combatId = Guid.NewGuid();
+            DummyCombat combat = new DummyCombat(combatId, CombatType.SpoilsOfWar);
+            combat.SetupAddArmy(attackingRegion, setupContext.ControllerMock.RegionRepository.RegionData[attackingRegion].OwnerId, CombatArmyMode.Attacking, attackingTroops);
+            combat.SetupAddArmy(secondAttackingRegion, setupContext.ControllerMock.RegionRepository.RegionData[secondAttackingRegion].OwnerId, CombatArmyMode.Attacking, secondAttackingTroops);
+            combat.SetupAddArmy(targetRegion, setupContext.ControllerMock.RegionRepository.RegionData[targetRegion].OwnerId, CombatArmyMode.Defending, 0);
+            setupContext.ControllerMock.WorldRepository.SpoilsOfWar[combatId] = combat;
             return setupContext;
         }
 
