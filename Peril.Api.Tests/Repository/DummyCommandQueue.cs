@@ -133,5 +133,19 @@ namespace Peril.Api.Tests.Repository
             });
             return setupContext;
         }
+
+        static public ControllerMockSetupContext QueueAttack(this ControllerMockSetupContext setupContext, Guid sourceRegionId, Guid targetRegionId, UInt32 numberOfTroops)
+        {
+            setupContext.ControllerMock.CommandQueue.DummyOrderAttackQueue.Add(new DummyOrderAttack
+            {
+                OperationId = Guid.NewGuid(),
+                PhaseId = setupContext.DummySession.PhaseId,
+                SourceRegion = sourceRegionId,
+                SourceRegionEtag = setupContext.ControllerMock.RegionRepository.RegionData[sourceRegionId].CurrentEtag,
+                TargetRegion = targetRegionId,
+                NumberOfTroops = numberOfTroops
+            });
+            return setupContext;
+        }
     }
 }
