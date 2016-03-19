@@ -432,20 +432,17 @@ namespace Peril.Api.Controllers.Api
                     }
                 }
 
-                // Don't add a combat yet if all attackers are involved in border clashes
-                if (involvedArmies.Count > 0)
+                // Add a combat even if all attackers are involved in border clashes (we'll skip it later)
+                // Add the defending army
+                var defendingRegionData = sourceRegions[targetRegionPair.Key];
+                involvedArmies.Add(new CombatArmy(targetRegionPair.Key, defendingRegionData.OwnerId, CombatArmyMode.Defending, defendingRegionData.TroopCount));
+
+                resolvedCombat.Add(Tuple.Create(combatType, involvedArmies.AsEnumerable()));
+
+                // Update the next session phase if required
+                if(nextSessionPhase == SessionPhase.Redeployment || nextSessionPhase == SessionPhase.Invasions)
                 {
-                    // Add the defending army
-                    var defendingRegionData = sourceRegions[targetRegionPair.Key];
-                    involvedArmies.Add(new CombatArmy(targetRegionPair.Key, defendingRegionData.OwnerId, CombatArmyMode.Defending, defendingRegionData.TroopCount));
-
-                    resolvedCombat.Add(Tuple.Create(combatType, involvedArmies.AsEnumerable()));
-
-                    // Update the next session phase if required
-                    if(nextSessionPhase == SessionPhase.Redeployment || nextSessionPhase == SessionPhase.Invasions)
-                    {
-                        nextSessionPhase = combatType == CombatType.MassInvasion ? SessionPhase.MassInvasions : SessionPhase.Invasions;
-                    }
+                    nextSessionPhase = combatType == CombatType.MassInvasion ? SessionPhase.MassInvasions : SessionPhase.Invasions;
                 }
             }
 

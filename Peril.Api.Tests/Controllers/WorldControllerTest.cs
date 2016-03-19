@@ -172,6 +172,8 @@ namespace Peril.Api.Tests.Controllers
             primaryUser.SetupDummySession(SessionGuid)
                        .SetupDummyWorldAsTree()
                        .SetupRegionOwnership(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, DummyUserRepository.RegisteredUserIds[1])
+                       .SetupRegionTroops(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 7)
+                       .SetupRegionTroops(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 2)
                        .SetupBorderClash(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 5, ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 1);
 
             // Act
@@ -179,11 +181,23 @@ namespace Peril.Api.Tests.Controllers
 
             // Assert
             Assert.IsNotNull(result);
-            Assert.AreEqual(1, result.Count());
-            Assert.AreEqual(CombatType.BorderClash, result.First().ResolutionType);
-            Assert.AreEqual(2, result.First().InvolvedArmies.Count());
-            AssertCombat.IsAttacking(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 5, primaryUser.OwnerId, result.First());
-            AssertCombat.IsAttacking(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 1, DummyUserRepository.RegisteredUserIds[1], result.First());
+            Assert.AreEqual(3, result.Count());
+
+            var borderClash = result.Where(combat => combat.ResolutionType == CombatType.BorderClash).FirstOrDefault();
+            Assert.IsNotNull(borderClash);
+            Assert.AreEqual(2, borderClash.InvolvedArmies.Count());
+            AssertCombat.IsAttacking(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 5, primaryUser.OwnerId, borderClash);
+            AssertCombat.IsAttacking(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 1, DummyUserRepository.RegisteredUserIds[1], borderClash);
+
+            var invasionOfA = result.Where(combat => combat.ResolutionType == CombatType.Invasion && combat.InvolvedArmies.First().OriginRegionId == ControllerMockRegionRepositoryExtensions.DummyWorldRegionA).FirstOrDefault();
+            Assert.IsNotNull(invasionOfA);
+            Assert.AreEqual(1, invasionOfA.InvolvedArmies.Count());
+            AssertCombat.IsDefending(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 2, primaryUser.OwnerId, invasionOfA);
+
+            var invasionOfD = result.Where(combat => combat.ResolutionType == CombatType.Invasion && combat.InvolvedArmies.First().OriginRegionId == ControllerMockRegionRepositoryExtensions.DummyWorldRegionD).FirstOrDefault();
+            Assert.IsNotNull(invasionOfD);
+            Assert.AreEqual(1, invasionOfD.InvolvedArmies.Count());
+            AssertCombat.IsDefending(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 1, DummyUserRepository.RegisteredUserIds[1], invasionOfD);
         }
 
         [TestMethod]
@@ -197,7 +211,8 @@ namespace Peril.Api.Tests.Controllers
                        .SetupDummyWorldAsTree()
                        .SetupRegionOwnership(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, DummyUserRepository.RegisteredUserIds[1])
                        .SetupRegionOwnership(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, DummyUserRepository.RegisteredUserIds[2])
-                       .SetupMassInvasion(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 10U, ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 5, ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 1);
+                       .SetupRegionTroops(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 10)
+                       .SetupMassInvasion(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 5, ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 1);
 
             // Act
             IEnumerable<ICombat> result = await primaryUser.WorldController.GetCombat(SessionGuid);

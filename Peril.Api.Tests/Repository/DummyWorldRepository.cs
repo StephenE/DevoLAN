@@ -67,6 +67,14 @@ namespace Peril.Api.Tests.Repository
     {
         static public ControllerMockSetupContext SetupBorderClash(this ControllerMockSetupContext setupContext, Guid attackingRegion, UInt32 attackingTroops, Guid secondAttackingRegion, UInt32 secondAttackingTroops)
         {
+            SetupBorderClashWithoutPendingInvasions(setupContext, attackingRegion, attackingTroops, secondAttackingRegion, secondAttackingTroops);
+            SetupInvasionPendingBorderClash(setupContext, attackingRegion, setupContext.ControllerMock.RegionRepository.RegionData[attackingRegion].TroopCount - attackingTroops);
+            SetupInvasionPendingBorderClash(setupContext, secondAttackingRegion, setupContext.ControllerMock.RegionRepository.RegionData[secondAttackingRegion].TroopCount - secondAttackingTroops);
+            return setupContext;
+        }
+
+        static private ControllerMockSetupContext SetupBorderClashWithoutPendingInvasions(this ControllerMockSetupContext setupContext, Guid attackingRegion, UInt32 attackingTroops, Guid secondAttackingRegion, UInt32 secondAttackingTroops)
+        {
             Guid combatId = Guid.NewGuid();
             DummyCombat combat = new DummyCombat(combatId, CombatType.BorderClash);
             combat.SetupAddArmy(attackingRegion, setupContext.ControllerMock.RegionRepository.RegionData[attackingRegion].OwnerId, CombatArmyMode.Attacking, attackingTroops);
@@ -75,14 +83,36 @@ namespace Peril.Api.Tests.Repository
             return setupContext;
         }
 
-        static public ControllerMockSetupContext SetupMassInvasion(this ControllerMockSetupContext setupContext, Guid targetRegion, UInt32 defendingTroops, Guid attackingRegion, UInt32 attackingTroops, Guid secondAttackingRegion, UInt32 secondAttackingTroops)
+        static public ControllerMockSetupContext SetupMassInvasion(this ControllerMockSetupContext setupContext, Guid targetRegion, Guid attackingRegion, UInt32 attackingTroops, Guid secondAttackingRegion, UInt32 secondAttackingTroops)
         {
             Guid combatId = Guid.NewGuid();
             DummyCombat combat = new DummyCombat(combatId, CombatType.MassInvasion);
             combat.SetupAddArmy(attackingRegion, setupContext.ControllerMock.RegionRepository.RegionData[attackingRegion].OwnerId, CombatArmyMode.Attacking, attackingTroops);
             combat.SetupAddArmy(secondAttackingRegion, setupContext.ControllerMock.RegionRepository.RegionData[secondAttackingRegion].OwnerId, CombatArmyMode.Attacking, secondAttackingTroops);
-            combat.SetupAddArmy(targetRegion, setupContext.ControllerMock.RegionRepository.RegionData[targetRegion].OwnerId, CombatArmyMode.Defending, defendingTroops);
+            combat.SetupAddArmy(targetRegion, setupContext.ControllerMock.RegionRepository.RegionData[targetRegion].OwnerId, CombatArmyMode.Defending, setupContext.ControllerMock.RegionRepository.RegionData[targetRegion].TroopCount);
             setupContext.ControllerMock.WorldRepository.MassInvasions[combatId] = combat;
+            return setupContext;
+        }
+
+        static public ControllerMockSetupContext SetupMassInvasionWithBorderClash(this ControllerMockSetupContext setupContext, Guid targetRegion, UInt32 counterAttackingTroops, Guid attackingRegion, UInt32 attackingTroops, Guid counterAttackedRegion, UInt32 secondAttackingTroops)
+        {
+            Guid combatId = Guid.NewGuid();
+            DummyCombat combat = new DummyCombat(combatId, CombatType.MassInvasion);
+            combat.SetupAddArmy(attackingRegion, setupContext.ControllerMock.RegionRepository.RegionData[attackingRegion].OwnerId, CombatArmyMode.Attacking, attackingTroops);
+            combat.SetupAddArmy(targetRegion, setupContext.ControllerMock.RegionRepository.RegionData[targetRegion].OwnerId, CombatArmyMode.Defending, setupContext.ControllerMock.RegionRepository.RegionData[targetRegion].TroopCount - counterAttackingTroops);
+            setupContext.ControllerMock.WorldRepository.MassInvasions[combatId] = combat;
+
+            SetupBorderClashWithoutPendingInvasions(setupContext, targetRegion, counterAttackingTroops, counterAttackedRegion, secondAttackingTroops);
+            SetupInvasionPendingBorderClash(setupContext, counterAttackedRegion, setupContext.ControllerMock.RegionRepository.RegionData[counterAttackedRegion].TroopCount - secondAttackingTroops);
+            return setupContext;
+        }
+
+        static private ControllerMockSetupContext SetupInvasionPendingBorderClash(this ControllerMockSetupContext setupContext, Guid defendingRegion, UInt32 defendingTroops)
+        {
+            Guid combatId = Guid.NewGuid();
+            DummyCombat combat = new DummyCombat(combatId, CombatType.Invasion);
+            combat.SetupAddArmy(defendingRegion, setupContext.ControllerMock.RegionRepository.RegionData[defendingRegion].OwnerId, CombatArmyMode.Defending, defendingTroops);
+            setupContext.ControllerMock.WorldRepository.Invasions[combatId] = combat;
             return setupContext;
         }
 
