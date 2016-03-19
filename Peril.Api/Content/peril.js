@@ -1,3 +1,17 @@
+// Load Screens
+	function loadScreen(screen){
+		var loadRequest = new XMLHttpRequest();
+		var loadTarget = "Content/" + screen + ".html";
+		
+		loadRequest.addEventListener("load", displayScreen)
+		loadRequest.open("GET", loadTarget)
+		loadRequest.send();
+	}
+	
+	function displayScreen(){
+		getID("canvas").innerHTML = this.responseText;
+	}
+
 // Board
 	// Setup Board
 		function boardSetup(){
