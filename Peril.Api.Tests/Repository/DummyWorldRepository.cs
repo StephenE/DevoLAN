@@ -5,6 +5,7 @@ using Peril.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Peril.Api.Tests.Repository
 {
@@ -18,7 +19,7 @@ namespace Peril.Api.Tests.Repository
             SpoilsOfWar = new Dictionary<Guid, ICombat>();
         }
 
-        public IEnumerable<ICombat> GetCombat(Guid sessionId)
+        public Task<IEnumerable<ICombat>> GetCombat(Guid sessionId)
         {
             throw new NotImplementedException();
         }
