@@ -36,13 +36,49 @@
 			</div>
 		
 		<!-- Overlay -->
-			<div id='overlay'>
-			
+			<div id='overlay' class='hide'>
+				<div id='overlayContent' class='boxContainer textAlignCenter'>
+				</div>
 			</div>
+			
+		<!-- Menu -->
+			<div id="menu"></div>
+			
+		<!-- Media -->
+			<audio id="music" autoplay>
+				<source src="Content/media/title.mp3" type="audio/mpeg" />
+			</audio>
+			
+			<audio id="sfx">
+				<source src="Content/media/title.mp3" type="audio/mpeg" />
+			</audio>
 			
 		<!-- Initialisation Scripts -->
 			<script>
-				loadScreen("login");
+				// Configure System
+					getID("music").volume = 0.5;
+					
+					if(loadCookie("system")){
+						system = loadCookie("system");
+						
+						if(system.music == 0){
+							getID("music").volume = 0;
+						}
+						
+						if(system.sfx == 0){
+							getID("sfx").volume = 0;
+						}
+					}
+					
+					menuRefresh();
+				
+				// Start Game
+					loadScreen("login");
 			</script>
+			
+		<!-- Enter the Maze by Kevin MacLeod is licensed under a Creative Commons Attribution licence (https://creativecommons.org/licenses/by/4.0/)
+		Source: http://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100782
+		Artist: http://incompetech.com/ -->
 	</body>
 </html>
+

@@ -15,23 +15,32 @@
 		margin:0px;
 		padding:0px;
 		
-		background:#000000;
+		background-color: #000000;
+		background-image: url('images/bckTile.jpg');
+		background-repeat: repeat;
+		background-position:top center;
 	}
 	
 /* Form Styles */
 	input, select, option{
-		height:35px;
-		min-width:75px;
+		display:block;
 		
-		margin-right:10px;
+		height:35px;
+		width:100%;
+		
+		margin-bottom:3px;
 		
 		padding:5px;
 		
 		color:#444444;
 	}
 	
-	input:last-of-type{
-		margin-right:0px;
+	input.inline{
+		position: relative;
+		display: inline;
+		width: auto;
+		
+		margin-top: 10px;
 	}
 	
 	input:disabled{
@@ -53,18 +62,16 @@
 		background:#ffffff;
 	}
 	
+	input[type='button']{
+		cursor:pointer;
+	}
+	
 	/* Label */
 		label{
-			display:block;
+			display:inline;
 			
-			width:200px;
-			
-			margin-top:25px;
-			margin-bottom:3px;
-		}
-		
-		label:first-of-type{
 			margin-top:5px;
+			margin-bottom:3px;
 		}
 	
 	/* Select */
@@ -92,7 +99,48 @@
 			resize:none;
 		}
 	
+/* Table Styles */
+	table{
+		width: auto;
+		
+		border: none;
+		border-collapse: collapse;
+	}
+	
+	th{
+		border: none;
+		border-bottom: 5px solid #ffffff;
+		
+		padding: 10px;
+		
+		background-color: rgba(63, 57, 42, 0.6);
+		
+		text-align: left;
+	}
+	
+	td{
+		border: none;
+		padding: 10px;
+	}
+	
+	tr{
+		background-color: rgba(0, 0, 0, 0.5);
+	}
+	
+	tr:nth-of-type(even){
+		background-color: rgba(0, 0, 0, 0.4);
+	}
+	
+	tbody > tr:hover{
+		cursor: pointer;
+		background-color: rgba(150, 150, 150, 0.5);
+	}
+	
 /* Paragraph Styles */
+	p{
+		display:block;
+	}
+	
 	p, ul{
 		cursor:inherit;
 		
@@ -101,7 +149,7 @@
 	}
 	
 	/* Font Weights */
-		.fontWeightBold, b, label{
+		.fontWeightBold, b, label, th{
 			font-weight:700;
 		}
 		
@@ -111,6 +159,7 @@
 	
 	/* Header Styles */
 		h1{
+			display:block;
 			margin-top:0px;
 			
 			cursor:default;
@@ -351,32 +400,147 @@
 			background:#ff0000;
 		}
 		
-		table{
-			height:100%;
-			width:100%;
+	/* Login */
+		#login{
+			position:absolute;
 			
-			border-collapse:collapse;
+			min-height:50px;
+			width:400px;
+			
+			top:50%;
+			left:50%;
+			
+			margin-left:-200px;
+			margin-top:-150px;
 		}
 		
-		table, td{
-			border: 1px solid black;
+		#message{
+			position:relative;
+			display:block;
+			
+			opacity: 0;
+			
+			transition:opacity 0.5s ease-out;
 		}
 		
-		td{
-			padding:5px;
-		}
+		#message.show{
+			opacity: 1;
 			
+			margin-top:10px;
+			padding:10px;
+			
+			border:2px solid #880011;
+			background:rgba(255,25,25,0.6);
+			color:#880011;
+		}
+		
+	/* Browser */
+		#browser{
+			position: relative;
+			display: inline-block;
+			
+			left: 50%;
+			margin-left:-25%;
+			
+			padding: 50px;
+		}
+		
+	/* Content Boxes */
+		.boxContainer{
+			display: flex;
+		}
+		
+		.box{
+			flex: 1;
+			
+			padding:10px;
+		}
+		
 	/* Overlay */
 		#overlay{
-			position:absolute;
-			display:none;
+			position: absolute;
+			display: flex;
+			
+			align-items: center;
+			justify-content: center;
 			
 			height:100%;
 			width:100%;
 			
-			background:rgba(0,0,0,0.6)
+			top: 0px;
+			left: 0px;
+			
+			background: rgba(0,0,0,0.75);
+			
+			transition: opacity 0.5s ease-out;
 		}
-
+		
+		#overlay.hide{
+			display: none;
+			opacity: 0;
+		}
+		
+		#overlay.show{
+			display: flex;
+			opacity: 1;
+		}
+		
+		#overlayContent{
+			display: block;
+			
+			padding:50px;
+			
+			border-radius:25px;
+			background:rgba(100, 100, 100, 1);
+		}
+		
+	/* Menu */
+		#menu{
+			position:fixed;
+			
+			height:50px;
+			width:50px;
+			
+			bottom:25px;
+			right:25px;
+			
+			cursor: pointer;
+			overflow:hidden;
+			
+			background-color: rgba(0, 0, 0, 0.5);
+			background-image: url('images/settings.png');
+			background-repeat: no-repeat;
+			background-position: bottom left;
+			
+			transition: height 0.25s ease-out;
+		}
+		
+		#menu:hover{
+			height:150px;
+		}
+		
+		#menu:hover > .button{
+			opacity: 1;
+		}
+		
+		.button{
+			position:relative;
+			display:block;
+			
+			height:50px;
+			width:50px;
+			
+			opacity: 0;
+			
+			background-color: rgba(0, 0, 0, 0.5);
+			
+			transition: opacity 0.25s ease-out;
+		}
+		
+		.button:hover{
+			background-color: rgba(150, 150, 150, 0.5);
+		}
+	
 /* @Media Tags */
 	@media(max-width:1100px), (max-height:650px){
 		/* SVG */
