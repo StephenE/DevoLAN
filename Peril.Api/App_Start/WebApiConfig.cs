@@ -9,7 +9,7 @@ namespace Peril.Api
         public static void Register(HttpConfiguration config)
         {
             // Enable Cors
-            var defaultCors = new EnableCorsAttribute("beta.lairoftheraven.co.uk", "*", "*");
+            var defaultCors = new EnableCorsAttribute("http://beta.lairoftheraven.co.uk", "*", "*");
             defaultCors.SupportsCredentials = true;
             config.EnableCors(defaultCors);
 
