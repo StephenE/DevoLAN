@@ -13,6 +13,14 @@ namespace Peril.Api.Models
             NumberOfTroops = army.NumberOfTroops;
         }
 
+        public CombatArmy(Guid originRegionId, String ownerId, CombatArmyMode mode, UInt32 numberOfTroops)
+        {
+            OriginRegionId = originRegionId;
+            OwnerUserId = ownerId;
+            ArmyMode = mode;
+            NumberOfTroops = numberOfTroops;
+        }
+
         public Guid OriginRegionId { get; set; }
 
         public String OwnerUserId { get; set; }

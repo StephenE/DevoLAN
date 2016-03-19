@@ -18,13 +18,14 @@ namespace Peril.Api.Controllers.Api
     [RoutePrefix("api/Game")]
     public class GameController : ApiController
     {
-        public GameController(ICommandQueue commandQueue, INationRepository nationRepository, IRegionRepository regionRepository, ISessionRepository sessionRepository, IUserRepository userRepository)
+        public GameController(ICommandQueue commandQueue, INationRepository nationRepository, IRegionRepository regionRepository, ISessionRepository sessionRepository, IUserRepository userRepository, IWorldRepository worldRepository)
         {
             CommandQueue = commandQueue;
             NationRepository = nationRepository;
             RegionRepository = regionRepository;
             SessionRepository = sessionRepository;
             UserRepository = userRepository;
+            WorldRepository = worldRepository;
         }
 
         // GET /api/Game/Sessions
@@ -194,8 +195,7 @@ namespace Peril.Api.Controllers.Api
                     var regions = RegionRepository.GetRegions(session.GameId);
                     var nationsTask = NationRepository.GetNations(session.GameId);
                     IEnumerable<ICommandQueueMessage> pendingMessages = await CommandQueue.GetQueuedCommands(session.GameId, session.PhaseId);
-                    IEnumerable<IDeployReinforcementsMessage> pendingReinforcementMessages = pendingMessages.GetCommandsFromPhase(session.PhaseId)
-                                                                                                            .GetQueuedDeployReinforcementsCommands();
+                    IEnumerable<IDeployReinforcementsMessage> pendingReinforcementMessages = pendingMessages.GetQueuedDeployReinforcementsCommands();
 
                     IEnumerable<INationData> nations = await nationsTask;
                     await ProcessReinforcementMessages(session.GameId, await regions, nations, pendingReinforcementMessages);
@@ -213,6 +213,12 @@ namespace Peril.Api.Controllers.Api
                 }
                 case SessionPhase.CombatOrders:
                 {
+                    var regions = RegionRepository.GetRegions(session.GameId);
+                    var nationsTask = NationRepository.GetNations(session.GameId);
+                    IEnumerable<ICommandQueueMessage> pendingMessages = await CommandQueue.GetQueuedCommands(session.GameId, session.PhaseId);
+                    IEnumerable<IOrderAttackMessage> pendingAttackMessages = pendingMessages.GetQueuedOrderAttacksCommands();
+                    nextPhase = await ProcessCombatOrders(session.GameId, await regions, await nationsTask, pendingAttackMessages);
+                    await CommandQueue.RemoveCommands(session.PhaseId);
                     break;
                 }
                 default:
@@ -320,9 +326,11 @@ namespace Peril.Api.Controllers.Api
 
         private async Task<SessionPhase> ProcessCombatOrders(Guid sessionId, IEnumerable<IRegionData> availableRegions, IEnumerable<INationData> players, IEnumerable<IOrderAttackMessage> messages)
         {
+            SessionPhase nextSessionPhase = SessionPhase.Redeployment;
+
             // Track how many troops are available in each region
             var sourceRegionsQuery = from region in availableRegions
-                                     select new { RegionId = region.RegionId, TroopCount = region.TroopCount, CurrentEtag = region.CurrentEtag, OwnerId = region.OwnerId, OutgoingArmies = new Dictionary<Guid, UInt32>() };
+                                     select new CombatOrderRegion { RegionId = region.RegionId, TroopCount = region.TroopCount, CurrentEtag = region.CurrentEtag, OwnerId = region.OwnerId };
             var sourceRegions = sourceRegionsQuery.ToDictionary(entry => entry.RegionId);
 
 
@@ -352,19 +360,99 @@ namespace Peril.Api.Controllers.Api
                                     regionData.OutgoingArmies[attackMessage.TargetRegion] = 0;
                                 }
                                 regionData.OutgoingArmies[attackMessage.TargetRegion] += attackMessage.NumberOfTroops;
+                                regionData.TroopCount -= attackMessage.NumberOfTroops;
                             }
                         }
                     }
                 }
             }
 
-            // Create armies
+            var resolvedCombat = new List<Tuple<CombatType, IEnumerable<ICombatArmy>>>();
 
-            // Detect types of combat
+            // Detect border clashes
+            Dictionary<Guid, List<Guid>> regionAttackers = new Dictionary<Guid, List<Guid>>();
+            foreach (var regionEntry in sourceRegions)
+            {
+                Guid sourceRegionId = regionEntry.Key;
+                var sourceRegionData = regionEntry.Value;
+
+                List<Guid> targetRegions = regionEntry.Value.OutgoingArmies.Keys.ToList();
+                foreach(var targetRegionId in targetRegions)
+                {
+                    // Skip this army if the troop count is 0 (means we've already created a border clash)
+                    if (sourceRegionData.OutgoingArmies[targetRegionId] > 0 && sourceRegions.ContainsKey(targetRegionId))
+                    {
+                        var targetRegionData = sourceRegions[targetRegionId];
+                        if (targetRegionData.OutgoingArmies.ContainsKey(sourceRegionId))
+                        {
+                            // Border clash!
+                            IEnumerable<ICombatArmy> involvedArmies = new List<CombatArmy>
+                            {
+                                new CombatArmy(targetRegionId, targetRegionData.OwnerId, CombatArmyMode.Attacking, targetRegionData.OutgoingArmies[sourceRegionId]),
+                                new CombatArmy(sourceRegionId, sourceRegionData.OwnerId, CombatArmyMode.Attacking, sourceRegionData.OutgoingArmies[targetRegionId])
+                            };
+                            resolvedCombat.Add(Tuple.Create(CombatType.BorderClash, involvedArmies));
+
+                            // Clear the number of attacking troops, so we know that we've processed this already
+                            targetRegionData.OutgoingArmies[sourceRegionId] = 0;
+                            sourceRegionData.OutgoingArmies[targetRegionId] = 0;
+
+                            // There will be at least one border clash to resolve
+                            nextSessionPhase = SessionPhase.BorderClashes;
+                        }
+                    }
+
+                    if(!regionAttackers.ContainsKey(targetRegionId))
+                    {
+                        regionAttackers[targetRegionId] = new List<Guid>();
+                    }
+                    regionAttackers[targetRegionId].Add(sourceRegionId);
+                }
+            }
+
+            // Detect invasions & mass invasions. We can only detect "mass" invasions correctly by grouping the attacks by their target rather than source
+            foreach (var targetRegionPair in regionAttackers)
+            {
+                CombatType combatType = CombatType.Invasion;
+                if(targetRegionPair.Value.Count > 1)
+                {
+                    combatType = CombatType.MassInvasion;
+                }
+
+                List<ICombatArmy> involvedArmies = new List<ICombatArmy>();
+
+                // Add attacking armies. Ignore any that are currently in a BorderClash
+                foreach (Guid sourceRegionId in targetRegionPair.Value)
+                {
+                    var sourceRegionData = sourceRegions[sourceRegionId];
+                    UInt32 attackingArmySize = sourceRegionData.OutgoingArmies[targetRegionPair.Key];
+                    if (attackingArmySize > 0)
+                    {
+                        involvedArmies.Add(new CombatArmy(sourceRegionId, sourceRegionData.OwnerId, CombatArmyMode.Attacking, attackingArmySize));
+                    }
+                }
+
+                // Don't add a combat yet if all attackers are involved in border clashes
+                if (involvedArmies.Count > 0)
+                {
+                    // Add the defending army
+                    var defendingRegionData = sourceRegions[targetRegionPair.Key];
+                    involvedArmies.Add(new CombatArmy(targetRegionPair.Key, defendingRegionData.OwnerId, CombatArmyMode.Defending, defendingRegionData.TroopCount));
+
+                    resolvedCombat.Add(Tuple.Create(combatType, involvedArmies.AsEnumerable()));
+
+                    // Update the next session phase if required
+                    if(nextSessionPhase == SessionPhase.Redeployment || nextSessionPhase == SessionPhase.Invasions)
+                    {
+                        nextSessionPhase = combatType == CombatType.MassInvasion ? SessionPhase.MassInvasions : SessionPhase.Invasions;
+                    }
+                }
+            }
 
             // Store combat
+            await WorldRepository.AddCombat(resolvedCombat);
 
-            return SessionPhase.BorderClashes;
+            return nextSessionPhase;
         }
 
         private ICommandQueue CommandQueue { get; set; }
@@ -372,5 +460,6 @@ namespace Peril.Api.Controllers.Api
         private IRegionRepository RegionRepository { get; set; }
         private ISessionRepository SessionRepository { get; set; }
         private IUserRepository UserRepository { get; set; }
+        private IWorldRepository WorldRepository { get; set; }
     }
 }

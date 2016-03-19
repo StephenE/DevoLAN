@@ -28,6 +28,35 @@ namespace Peril.Api.Tests.Repository
             return Task.FromResult<IEnumerable<ICombat>>(combat);
         }
 
+        public Task AddCombat(IEnumerable<Tuple<CombatType, IEnumerable<ICombatArmy>>> armies)
+        {
+            foreach(var combatData in armies)
+            {
+                Guid combatId = Guid.NewGuid();
+                DummyCombat combat = new DummyCombat(combatId, combatData.Item1);
+
+                foreach(ICombatArmy army in combatData.Item2)
+                {
+                    combat.SetupAddArmy(army.OriginRegionId, army.OwnerUserId, army.ArmyMode, army.NumberOfTroops);
+                }
+
+                switch (combat.ResolutionType)
+                {
+                    case CombatType.BorderClash:
+                        BorderClashes[combatId] = combat;
+                        break;
+                    case CombatType.MassInvasion:
+                        MassInvasions[combatId] = combat;
+                        break;
+                    case CombatType.Invasion:
+                        Invasions[combatId] = combat;
+                        break;
+                }
+            }
+
+            return Task.FromResult(false);
+        }
+
         public Dictionary<Guid, DummyCombat> BorderClashes { get; private set; }
         public Dictionary<Guid, DummyCombat> MassInvasions { get; private set; }
         public Dictionary<Guid, DummyCombat> Invasions { get; private set; }

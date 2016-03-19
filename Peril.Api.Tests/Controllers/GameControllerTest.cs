@@ -647,7 +647,7 @@ namespace Peril.Api.Tests.Controllers
             Assert.AreEqual(1, primaryUser.WorldRepository.MassInvasions.Count());
             ICombat invasion = primaryUser.WorldRepository.MassInvasions.First().Value;
             Assert.AreEqual(CombatType.MassInvasion, invasion.ResolutionType);
-            Assert.AreEqual(2, invasion.InvolvedArmies.Count());
+            Assert.AreEqual(3, invasion.InvolvedArmies.Count());
             AssertCombat.IsAttacking(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 1, primaryUser.OwnerId, invasion);
             AssertCombat.IsAttacking(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 1, primaryUser.OwnerId, invasion);
             AssertCombat.IsDefending(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 5, DummyUserRepository.RegisteredUserIds[1], invasion);
