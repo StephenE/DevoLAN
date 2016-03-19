@@ -211,6 +211,10 @@ namespace Peril.Api.Controllers.Api
                     nextPhase = SessionPhase.CombatOrders;
                     break;
                 }
+                case SessionPhase.CombatOrders:
+                {
+                    break;
+                }
                 default:
                 {
                     throw new NotImplementedException("Not done yet");
@@ -312,6 +316,55 @@ namespace Peril.Api.Controllers.Api
             {
                 await RegionRepository.AssignRegionOwnership(sessionId, assignedRegions);
             }
+        }
+
+        private async Task<SessionPhase> ProcessCombatOrders(Guid sessionId, IEnumerable<IRegionData> availableRegions, IEnumerable<INationData> players, IEnumerable<IOrderAttackMessage> messages)
+        {
+            // Track how many troops are available in each region
+            var sourceRegionsQuery = from region in availableRegions
+                                     select new { RegionId = region.RegionId, TroopCount = region.TroopCount, CurrentEtag = region.CurrentEtag, OwnerId = region.OwnerId, OutgoingArmies = new Dictionary<Guid, UInt32>() };
+            var sourceRegions = sourceRegionsQuery.ToDictionary(entry => entry.RegionId);
+
+
+            // Group all orders by target region (process most attacked targets first)
+            var attacksBySourceRegionQuery = from message in messages
+                                             group message by message.SourceRegion into source
+                                             select source;
+            var attacksBySourceRegion = attacksBySourceRegionQuery.ToDictionary(entry => entry.Key, entry => entry.ToList());
+
+            // Group duplicate source regions
+            foreach(var sourceRegionMessages in attacksBySourceRegion)
+            {
+                // Ignore any invalid messages that don't come from a region that actually exists
+                if (sourceRegions.ContainsKey(sourceRegionMessages.Key))
+                {
+                    var regionData = sourceRegions[sourceRegionMessages.Key];
+                    foreach(IOrderAttackMessage attackMessage in sourceRegionMessages.Value)
+                    {
+                        // Ignore any messages that don't match the Etag
+                        if(attackMessage.SourceRegionEtag == regionData.CurrentEtag)
+                        {
+                            // Ignore any messages that would reduce the number of available troops below 1
+                            if(regionData.TroopCount > attackMessage.NumberOfTroops)
+                            {
+                                if(!regionData.OutgoingArmies.ContainsKey(attackMessage.TargetRegion))
+                                {
+                                    regionData.OutgoingArmies[attackMessage.TargetRegion] = 0;
+                                }
+                                regionData.OutgoingArmies[attackMessage.TargetRegion] += attackMessage.NumberOfTroops;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Create armies
+
+            // Detect types of combat
+
+            // Store combat
+
+            return SessionPhase.BorderClashes;
         }
 
         private ICommandQueue CommandQueue { get; set; }
