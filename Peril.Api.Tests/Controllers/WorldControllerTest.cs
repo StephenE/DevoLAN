@@ -180,13 +180,10 @@ namespace Peril.Api.Tests.Controllers
             // Assert
             Assert.IsNotNull(result);
             Assert.AreEqual(1, result.Count());
-            Assert.AreEqual(primaryUser.WorldRepository.BorderClashes[0].CombatId, result.First().CombatId);
             Assert.AreEqual(CombatType.BorderClash, result.First().ResolutionType);
             Assert.AreEqual(2, result.First().InvolvedArmies.Count());
-            Assert.AreEqual(5U, result.First().InvolvedArmies.Where(army => army.ArmyMode == CombatArmyMode.Attacking).Where(army => army.OriginRegionId == ControllerMockRegionRepositoryExtensions.DummyWorldRegionA).First().NumberOfTroops);
-            Assert.AreEqual(primaryUser.OwnerId, result.First().InvolvedArmies.Where(army => army.ArmyMode == CombatArmyMode.Attacking).Where(army => army.OriginRegionId == ControllerMockRegionRepositoryExtensions.DummyWorldRegionA).First().OwnerUserId);
-            Assert.AreEqual(1U, result.First().InvolvedArmies.Where(army => army.ArmyMode == CombatArmyMode.Attacking).Where(army => army.OriginRegionId == ControllerMockRegionRepositoryExtensions.DummyWorldRegionD).First().NumberOfTroops);
-            Assert.AreEqual(DummyUserRepository.RegisteredUserIds[1], result.First().InvolvedArmies.Where(army => army.ArmyMode == CombatArmyMode.Attacking).Where(army => army.OriginRegionId == ControllerMockRegionRepositoryExtensions.DummyWorldRegionD).First().OwnerUserId);
+            AssertCombat.IsAttacking(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 5, primaryUser.OwnerId, result.First());
+            AssertCombat.IsAttacking(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 1, DummyUserRepository.RegisteredUserIds[1], result.First());
         }
 
         [TestMethod]
@@ -208,16 +205,11 @@ namespace Peril.Api.Tests.Controllers
             // Assert
             Assert.IsNotNull(result);
             Assert.AreEqual(1, result.Count());
-            Assert.AreEqual(primaryUser.WorldRepository.MassInvasions[0].CombatId, result.First().CombatId);
             Assert.AreEqual(CombatType.MassInvasion, result.First().ResolutionType);
             Assert.AreEqual(3, result.First().InvolvedArmies.Count());
-            Assert.AreEqual(10U, result.First().InvolvedArmies.Where(army => army.ArmyMode == CombatArmyMode.Defending).First().NumberOfTroops);
-            Assert.AreEqual(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, result.First().InvolvedArmies.Where(army => army.ArmyMode == CombatArmyMode.Defending).First().OriginRegionId);
-            Assert.AreEqual(primaryUser.OwnerId, result.First().InvolvedArmies.Where(army => army.ArmyMode == CombatArmyMode.Defending).First().OwnerUserId);
-            Assert.AreEqual(5U, result.First().InvolvedArmies.Where(army => army.ArmyMode == CombatArmyMode.Attacking).Where(army => army.OriginRegionId == ControllerMockRegionRepositoryExtensions.DummyWorldRegionB).First().NumberOfTroops);
-            Assert.AreEqual(DummyUserRepository.RegisteredUserIds[1], result.First().InvolvedArmies.Where(army => army.ArmyMode == CombatArmyMode.Attacking).Where(army => army.OriginRegionId == ControllerMockRegionRepositoryExtensions.DummyWorldRegionB).First().OwnerUserId);
-            Assert.AreEqual(1U, result.First().InvolvedArmies.Where(army => army.ArmyMode == CombatArmyMode.Attacking).Where(army => army.OriginRegionId == ControllerMockRegionRepositoryExtensions.DummyWorldRegionD).First().NumberOfTroops);
-            Assert.AreEqual(DummyUserRepository.RegisteredUserIds[2], result.First().InvolvedArmies.Where(army => army.ArmyMode == CombatArmyMode.Attacking).Where(army => army.OriginRegionId == ControllerMockRegionRepositoryExtensions.DummyWorldRegionD).First().OwnerUserId);
+            AssertCombat.IsAttacking(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 5, DummyUserRepository.RegisteredUserIds[1], result.First());
+            AssertCombat.IsAttacking(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 1, DummyUserRepository.RegisteredUserIds[2], result.First());
+            AssertCombat.IsDefending(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 10, primaryUser.OwnerId, result.First());
         }
 
         [TestMethod]
@@ -238,15 +230,10 @@ namespace Peril.Api.Tests.Controllers
             // Assert
             Assert.IsNotNull(result);
             Assert.AreEqual(1, result.Count());
-            Assert.AreEqual(primaryUser.WorldRepository.Invasions[0].CombatId, result.First().CombatId);
             Assert.AreEqual(CombatType.Invasion, result.First().ResolutionType);
             Assert.AreEqual(2, result.First().InvolvedArmies.Count());
-            Assert.AreEqual(5U, result.First().InvolvedArmies.Where(army => army.ArmyMode == CombatArmyMode.Attacking).First().NumberOfTroops);
-            Assert.AreEqual(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, result.First().InvolvedArmies.Where(army => army.ArmyMode == CombatArmyMode.Attacking).First().OriginRegionId);
-            Assert.AreEqual(primaryUser.OwnerId, result.First().InvolvedArmies.Where(army => army.ArmyMode == CombatArmyMode.Attacking).First().OwnerUserId);
-            Assert.AreEqual(1U, result.First().InvolvedArmies.Where(army => army.ArmyMode == CombatArmyMode.Defending).First().NumberOfTroops);
-            Assert.AreEqual(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, result.First().InvolvedArmies.Where(army => army.ArmyMode == CombatArmyMode.Defending).First().OriginRegionId);
-            Assert.AreEqual(DummyUserRepository.RegisteredUserIds[1], result.First().InvolvedArmies.Where(army => army.ArmyMode == CombatArmyMode.Defending).First().OwnerUserId);
+            AssertCombat.IsAttacking(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 5, primaryUser.OwnerId, result.First());
+            AssertCombat.IsDefending(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 1, DummyUserRepository.RegisteredUserIds[1], result.First());
         }
 
         [TestMethod]
@@ -268,16 +255,12 @@ namespace Peril.Api.Tests.Controllers
             // Assert
             Assert.IsNotNull(result);
             Assert.AreEqual(1, result.Count());
-            Assert.AreEqual(primaryUser.WorldRepository.SpoilsOfWar[0].CombatId, result.First().CombatId);
             Assert.AreEqual(CombatType.SpoilsOfWar, result.First().ResolutionType);
             Assert.AreEqual(3, result.First().InvolvedArmies.Count());
-            Assert.AreEqual(0U, result.First().InvolvedArmies.Where(army => army.ArmyMode == CombatArmyMode.Defending).First().NumberOfTroops);
-            Assert.AreEqual(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, result.First().InvolvedArmies.Where(army => army.ArmyMode == CombatArmyMode.Defending).First().OriginRegionId);
-            Assert.AreEqual(primaryUser.OwnerId, result.First().InvolvedArmies.Where(army => army.ArmyMode == CombatArmyMode.Defending).First().OwnerUserId);
-            Assert.AreEqual(5U, result.First().InvolvedArmies.Where(army => army.ArmyMode == CombatArmyMode.Attacking).Where(army => army.OriginRegionId == ControllerMockRegionRepositoryExtensions.DummyWorldRegionB).First().NumberOfTroops);
-            Assert.AreEqual(DummyUserRepository.RegisteredUserIds[1], result.First().InvolvedArmies.Where(army => army.ArmyMode == CombatArmyMode.Attacking).Where(army => army.OriginRegionId == ControllerMockRegionRepositoryExtensions.DummyWorldRegionB).First().OwnerUserId);
-            Assert.AreEqual(1U, result.First().InvolvedArmies.Where(army => army.ArmyMode == CombatArmyMode.Attacking).Where(army => army.OriginRegionId == ControllerMockRegionRepositoryExtensions.DummyWorldRegionD).First().NumberOfTroops);
-            Assert.AreEqual(DummyUserRepository.RegisteredUserIds[2], result.First().InvolvedArmies.Where(army => army.ArmyMode == CombatArmyMode.Attacking).Where(army => army.OriginRegionId == ControllerMockRegionRepositoryExtensions.DummyWorldRegionD).First().OwnerUserId);
+
+            AssertCombat.IsAttacking(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 5, DummyUserRepository.RegisteredUserIds[1], result.First());
+            AssertCombat.IsAttacking(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 1, DummyUserRepository.RegisteredUserIds[2], result.First());
+            AssertCombat.IsDefending(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 0, primaryUser.OwnerId, result.First());
         }
         #endregion
 
