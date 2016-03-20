@@ -229,6 +229,13 @@ namespace Peril.Api.Controllers.Api
                     nextPhase = SessionPhase.MassInvasions;
                     break;
                 }
+                case SessionPhase.MassInvasions:
+                {
+                    var massInvasions = WorldRepository.GetCombat(session.GameId, CombatType.MassInvasion);
+                    IEnumerable<CombatResult> results = await ResolveCombat(session.GameId, await massInvasions);
+                    nextPhase = SessionPhase.Invasions;
+                    break;
+                }
                 default:
                 {
                     throw new NotImplementedException("Not done yet");

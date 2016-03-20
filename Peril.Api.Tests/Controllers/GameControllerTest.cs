@@ -965,10 +965,10 @@ namespace Peril.Api.Tests.Controllers
             // Assert
             Assert.AreEqual(SessionPhase.Invasions, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
             Assert.AreNotEqual(currentSessionPhaseId, primaryUser.SessionRepository.SessionMap[validGuid].PhaseId);
-            AssertCombat.IsResultValid(3, primaryUser.WorldRepository.BorderClashes[massInvasionCombatId], primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
-            AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 3, 5, primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
-            AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 3, 1, primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
-            AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 3, 0, primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
+            AssertCombat.IsResultValid(2, primaryUser.WorldRepository.MassInvasions[massInvasionCombatId], primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
+            AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 2, 5, primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
+            AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 2, 1, primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
+            AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 2, 0, primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
 
             Assert.AreEqual(primaryUser.OwnerId, primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionA].OwnerId);
             Assert.AreEqual(8, primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionA].TroopCount);
@@ -1003,7 +1003,7 @@ namespace Peril.Api.Tests.Controllers
             // Assert
             Assert.AreEqual(SessionPhase.Invasions, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
             Assert.AreNotEqual(currentSessionPhaseId, primaryUser.SessionRepository.SessionMap[validGuid].PhaseId);
-            AssertCombat.IsResultValid(6, primaryUser.WorldRepository.BorderClashes[massInvasionCombatId], primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
+            AssertCombat.IsResultValid(6, primaryUser.WorldRepository.MassInvasions[massInvasionCombatId], primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
             AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 6, 5, primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
             AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 6, 5, primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
             AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 2, 3, primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
@@ -1041,9 +1041,9 @@ namespace Peril.Api.Tests.Controllers
             // Assert
             Assert.AreEqual(SessionPhase.Invasions, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
             Assert.AreNotEqual(currentSessionPhaseId, primaryUser.SessionRepository.SessionMap[validGuid].PhaseId);
-            AssertCombat.IsResultValid(6, primaryUser.WorldRepository.BorderClashes[massInvasionCombatId], primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
-            AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 6, 5, primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
-            AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 6, 5, primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
+            AssertCombat.IsResultValid(4, primaryUser.WorldRepository.MassInvasions[massInvasionCombatId], primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
+            AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 4, 1, primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
+            AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 4, 6, primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
             AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 2, 3, primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
 
             Assert.AreEqual(DummyUserRepository.RegisteredUserIds[1], primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionA].OwnerId);
