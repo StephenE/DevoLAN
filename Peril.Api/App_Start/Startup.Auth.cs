@@ -1,15 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.AspNet.Identity;
-using Microsoft.AspNet.Identity.EntityFramework;
+﻿using Microsoft.AspNet.Identity;
 using Microsoft.Owin;
+using Microsoft.Owin.Cors;
 using Microsoft.Owin.Security.Cookies;
-using Microsoft.Owin.Security.Google;
 using Microsoft.Owin.Security.OAuth;
 using Owin;
-using Peril.Api.Providers;
 using Peril.Api.Models;
+using Peril.Api.Providers;
+using System;
+using System.Threading.Tasks;
+using System.Web.Cors;
 
 namespace Peril.Api
 {
@@ -22,6 +21,26 @@ namespace Peril.Api
         // For more information on configuring authentication, please visit http://go.microsoft.com/fwlink/?LinkId=301864
         public void ConfigureAuth(IAppBuilder app)
         {
+            // Create a CORS policy for accessing Token auth
+            var tokenCorsPolicy = new CorsPolicy
+            {
+                AllowAnyHeader = true,
+                AllowAnyMethod = true,
+                SupportsCredentials = true
+            };
+            tokenCorsPolicy.Origins.Add("http://beta.lairoftheraven.co.uk");
+
+            // Configure CORS to only apply the policy to the /token endpoint
+            var corsOptions = new CorsOptions
+            {
+                PolicyProvider = new CorsPolicyProvider
+                {
+                    PolicyResolver = request => Task.FromResult(request.Path.ToString().StartsWith("/token", StringComparison.InvariantCultureIgnoreCase) ? tokenCorsPolicy : null)
+                    //PolicyResolver = request => Task.FromResult(tokenCorsPolicy)
+                }
+            };
+            app.UseCors(corsOptions);
+
             // Configure the db context and user manager to use a single instance per request
             app.CreatePerOwinContext(ApplicationDbContext.Create);
             app.CreatePerOwinContext<ApplicationUserManager>(ApplicationUserManager.Create);
