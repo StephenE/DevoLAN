@@ -1118,7 +1118,7 @@ namespace Peril.Api.Tests.Controllers
             await primaryUser.GameController.PostAdvanceNextPhase(validGuid, currentSessionPhaseId, true);
 
             // Assert
-            Assert.AreEqual(SessionPhase.Invasions, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
+            Assert.AreEqual(SessionPhase.SpoilsOfWar, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
             Assert.AreNotEqual(currentSessionPhaseId, primaryUser.SessionRepository.SessionMap[validGuid].PhaseId);
             AssertCombat.IsResultValid(1, primaryUser.WorldRepository.Invasions[combatId], primaryUser.WorldRepository.CombatResults[combatId]);
             AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 1, 2, primaryUser.WorldRepository.CombatResults[combatId]);
@@ -1146,7 +1146,7 @@ namespace Peril.Api.Tests.Controllers
                        .SetupSessionPhase(SessionPhase.Invasions)
                        .SetupInvasion(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 2, out combatId)
                        // Rig dice rolls so that A wins in the second round, having lost 1 troop in the first
-                       .SetupRiggedDiceResults(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 5, 6, 5)
+                       .SetupRiggedDiceResults(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 6, 4, 5)
                        .SetupRiggedDiceResults(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 5, 4, 4);
             Guid currentSessionPhaseId = primaryUser.SessionRepository.SessionMap[validGuid].PhaseId;
 
@@ -1154,11 +1154,11 @@ namespace Peril.Api.Tests.Controllers
             await primaryUser.GameController.PostAdvanceNextPhase(validGuid, currentSessionPhaseId, true);
 
             // Assert
-            Assert.AreEqual(SessionPhase.Invasions, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
+            Assert.AreEqual(SessionPhase.SpoilsOfWar, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
             Assert.AreNotEqual(currentSessionPhaseId, primaryUser.SessionRepository.SessionMap[validGuid].PhaseId);
-            AssertCombat.IsResultValid(1, primaryUser.WorldRepository.Invasions[combatId], primaryUser.WorldRepository.CombatResults[combatId]);
-            AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 1, 2, primaryUser.WorldRepository.CombatResults[combatId]);
-            AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 1, 0, primaryUser.WorldRepository.CombatResults[combatId]);
+            AssertCombat.IsResultValid(2, primaryUser.WorldRepository.Invasions[combatId], primaryUser.WorldRepository.CombatResults[combatId]);
+            AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 2, 1, primaryUser.WorldRepository.CombatResults[combatId]);
+            AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 2, 2, primaryUser.WorldRepository.CombatResults[combatId]);
 
             Assert.AreEqual(DummyUserRepository.RegisteredUserIds[1], primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionA].OwnerId);
             Assert.AreEqual(1U, primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionA].TroopCount);

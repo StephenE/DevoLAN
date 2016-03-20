@@ -237,6 +237,14 @@ namespace Peril.Api.Controllers.Api
                     nextPhase = SessionPhase.Invasions;
                     break;
                 }
+                case SessionPhase.Invasions:
+                {
+                    var invasions = WorldRepository.GetCombat(session.GameId, CombatType.Invasion);
+                    IEnumerable<CombatResult> results = await ResolveCombat(session.GameId, await invasions);
+                    await ApplyCombatResults(session.GameId, CombatType.Invasion, results);
+                    nextPhase = SessionPhase.SpoilsOfWar;
+                    break;
+                }
                 default:
                 {
                     throw new NotImplementedException("Not done yet");
