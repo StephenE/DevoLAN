@@ -37,7 +37,7 @@ namespace Peril.Api.Models
             {
                 case CombatType.BorderClash:
                 case CombatType.SpoilsOfWar:
-                    {
+                {
                     for (int counter = 0; counter < 3; ++counter)
                     {
                         var attackingDiceQuery = from armyResult in roundResult.m_ArmyResults
@@ -53,15 +53,20 @@ namespace Peril.Api.Models
                             var attacker = attackers[attackerIndex];
 
                             // Compare against all remaining attackers (or until we run out of troops)
-                            for (int defenderIndex = attackerIndex + 1; attacker.Results.TroopsLost < attacker.Army.NumberOfTroops && attackerIndex < attackers.Count; ++attackerIndex)
+                            for (int defenderIndex = attackerIndex + 1; attacker.Results.TroopsLost < attacker.Army.NumberOfTroops && defenderIndex < attackers.Count; ++defenderIndex)
                             {
-                                var defender = attackers[attackerIndex];
+                                var defender = attackers[defenderIndex];
                                 // Ensure defender has troops left and this wouldn't be friendly fire
                                 if (defender.Army.OwnerUserId != attacker.Army.OwnerUserId && defender.Results.TroopsLost < defender.Army.NumberOfTroops)
                                 {
                                     // We've sorted out players by dice roll, so anyone in a lower index must either draw or be worse
                                     if (attacker.AttackerRoll == defender.AttackerRoll)
                                     {
+                                        if(resolutionMode == CombatType.SpoilsOfWar)
+                                        {
+                                            // For a spoils of war, don't deduct troops on a draw. We don't want to be left with no one able to take the territory over
+                                            continue;
+                                        }
                                         attacker.Results.TroopsLost += 1;
                                     }
                                     defender.Results.TroopsLost += 1;

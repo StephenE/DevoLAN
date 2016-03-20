@@ -262,13 +262,26 @@ namespace Peril.Api.Tests.Repository
 
         static public ControllerMockSetupContext SetupSpoilsOfWar(this ControllerMockSetupContext setupContext, Guid targetRegion, Guid attackingRegion, UInt32 attackingTroops, Guid secondAttackingRegion, UInt32 secondAttackingTroops)
         {
-            Guid combatId = Guid.NewGuid();
+            Guid combatId;
+            return SetupSpoilsOfWar(setupContext, targetRegion, attackingRegion, attackingTroops, secondAttackingRegion, secondAttackingTroops, out combatId);
+        }
+
+        static public ControllerMockSetupContext SetupSpoilsOfWar(this ControllerMockSetupContext setupContext, Guid targetRegion, Guid attackingRegion, UInt32 attackingTroops, Guid secondAttackingRegion, UInt32 secondAttackingTroops, out Guid combatId)
+        {
+            combatId = Guid.NewGuid();
             DummyCombat combat = new DummyCombat(combatId, CombatType.SpoilsOfWar);
             combat.SetupAddArmy(attackingRegion, setupContext.ControllerMock.RegionRepository.RegionData[attackingRegion].OwnerId, CombatArmyMode.Attacking, attackingTroops);
             combat.SetupAddArmy(secondAttackingRegion, setupContext.ControllerMock.RegionRepository.RegionData[secondAttackingRegion].OwnerId, CombatArmyMode.Attacking, secondAttackingTroops);
             combat.SetupAddArmy(targetRegion, setupContext.ControllerMock.RegionRepository.RegionData[targetRegion].OwnerId, CombatArmyMode.Defending, 0);
             setupContext.ControllerMock.WorldRepository.SpoilsOfWar[combatId] = combat;
             setupContext.ControllerMock.WorldRepository.AddToCombatLookup(combat);
+            return setupContext;
+        }
+
+        static public ControllerMockSetupContext SetupSpoilsOfWarAdditionalPlayer(this ControllerMockSetupContext setupContext, Guid combatId, Guid attackingRegion, UInt32 attackingTroops)
+        {
+            DummyCombat combat = setupContext.ControllerMock.WorldRepository.SpoilsOfWar[combatId];
+            combat.SetupAddArmy(attackingRegion, setupContext.ControllerMock.RegionRepository.RegionData[attackingRegion].OwnerId, CombatArmyMode.Attacking, attackingTroops);
             return setupContext;
         }
 
@@ -343,7 +356,7 @@ namespace Peril.Api.Tests.Repository
         static public void IsResultValid(UInt32 numberOfRounds, ICombat sourceCombat, ICombatResult result)
         {
             Assert.AreEqual(numberOfRounds, (UInt32)result.Rounds.Count());
-            Assert.AreEqual(sourceCombat.InvolvedArmies.Count(), result.Rounds.First().ArmyResults.Count());
+            Assert.AreEqual(sourceCombat.InvolvedArmies.Where(army => army.NumberOfTroops > 0).Count(), result.Rounds.First().ArmyResults.Count());
 
             foreach (ICombatRoundResult round in result.Rounds)
             {

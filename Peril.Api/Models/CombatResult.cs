@@ -38,6 +38,9 @@ namespace Peril.Api.Models
             result.m_SurvivingArmies = (from army in combat.InvolvedArmies
                                         select new CombatArmy(army)).ToList();
 
+            // Remove any armies with no troops (e.g. spoils of war, the defender is just here so we know what region's at stake!)
+            result.m_SurvivingArmies.RemoveAll(army => army.NumberOfTroops == 0);
+
             while (result.m_SurvivingArmies.GroupBy(army => army.OwnerUserId).Count() > 1)
             {
                 CombatRoundResult combatRound = CombatRoundResult.GenerateForCombat(combat.ResolutionType, result.m_SurvivingArmies, randomNumberGenerator);
