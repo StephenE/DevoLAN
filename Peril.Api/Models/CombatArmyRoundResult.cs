@@ -31,14 +31,14 @@ namespace Peril.Api.Models
 
         public UInt32 TroopsLost { get; set; }
 
-        static public CombatArmyRoundResult GenerateForCombat(CombatArmy army, IEnumerable<int> randomNumberGenerator)
+        static public CombatArmyRoundResult GenerateForCombat(CombatArmy army, IEnumerable<UInt32> randomNumberGenerator)
         {
             CombatArmyRoundResult armyRoundResult = new CombatArmyRoundResult(army.OriginRegionId, army.OwnerUserId);
 
             int maximumDicePoolSize = (army.ArmyMode == CombatArmyMode.Attacking) ? 3 : 2;
             int dicePoolSize = (maximumDicePoolSize < army.NumberOfTroops) ? maximumDicePoolSize : (int)army.NumberOfTroops;
 
-            armyRoundResult.m_RolledResults.AddRange(randomNumberGenerator.Take(dicePoolSize).Select(value => (UInt32)value));
+            armyRoundResult.m_RolledResults.AddRange(randomNumberGenerator.Take(dicePoolSize));
 
             return armyRoundResult;
         }

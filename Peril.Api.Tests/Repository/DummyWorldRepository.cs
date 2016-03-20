@@ -17,7 +17,8 @@ namespace Peril.Api.Tests.Repository
             MassInvasions = new Dictionary<Guid, DummyCombat>();
             Invasions = new Dictionary<Guid, DummyCombat>();
             SpoilsOfWar = new Dictionary<Guid, DummyCombat>();
-            NumberGeneratorInjections = new List<int>();
+            CombatResults = new Dictionary<Guid, ICombatResult>();
+            RegionNumberGeneratorInjections = new Dictionary<Guid, Queue<int>>();
             NumberGenerator = new Random(0);
         }
 
@@ -76,21 +77,53 @@ namespace Peril.Api.Tests.Repository
             return Task.FromResult(false);
         }
 
-        public Task AddCombatResults(Guid sessionId, IEnumerable<ICombatResult> results)
+        public Task AddArmyToCombat(Guid sessionId, IDictionary<Guid, IEnumerable<ICombatArmy>> armies)
         {
-            throw new NotImplementedException("Not implemented");
+            foreach(var combatEntry in armies)
+            {
+                Guid combatId = combatEntry.Key;
+                DummyCombat combat;
+                if(Invasions.ContainsKey(combatId))
+                {
+                    combat = Invasions[combatId];
+                }
+                else if(SpoilsOfWar.ContainsKey(combatId))
+                {
+                    combat = SpoilsOfWar[combatId];
+                }
+                else
+                {
+                    throw new InvalidOperationException("Expected CombatId to be for a invasion or spoils of war");
+                }
+
+                foreach (ICombatArmy army in combatEntry.Value)
+                {
+                    combat.SetupAddArmy(army.OriginRegionId, army.OwnerUserId, army.ArmyMode, army.NumberOfTroops);
+                }
+            }
+
+            return Task.FromResult(false);
         }
 
-        public IEnumerable<Int32> GetRandomNumberGenerator(int minimum, int maximum)
+        public Task AddCombatResults(Guid sessionId, IEnumerable<ICombatResult> results)
         {
-            if (NumberGeneratorInjections.Count > 0)
+            foreach(ICombatResult result in results)
             {
-                while (NumberGeneratorInjections.Count > 0)
+                CombatResults[result.CombatId] = result;
+            }
+
+            return Task.FromResult(false);
+        }
+
+        public IEnumerable<Int32> GetRandomNumberGenerator(Guid regionId, int minimum, int maximum)
+        {
+            if (RegionNumberGeneratorInjections.ContainsKey(regionId))
+            {
+                while (RegionNumberGeneratorInjections[regionId].Count > 0)
                 {
-                    yield return NumberGeneratorInjections.Last();
-                    NumberGeneratorInjections.RemoveAt(NumberGeneratorInjections.Count - 1);
+                    yield return RegionNumberGeneratorInjections[regionId].Dequeue();
                 }
-                Assert.Fail("Ran out of pre-generated random numbers");
+                throw new InvalidOperationException("Ran out of pre-defined numbers for region");
             }
 
             yield return NumberGenerator.Next(minimum, maximum);
@@ -100,23 +133,30 @@ namespace Peril.Api.Tests.Repository
         public Dictionary<Guid, DummyCombat> MassInvasions { get; private set; }
         public Dictionary<Guid, DummyCombat> Invasions { get; private set; }
         public Dictionary<Guid, DummyCombat> SpoilsOfWar { get; private set; }
+        public Dictionary<Guid, ICombatResult> CombatResults { get; private set; }
         public Random NumberGenerator { get; set; }
-        public List<int> NumberGeneratorInjections { get; set; }
+        public Dictionary<Guid, Queue<int>> RegionNumberGeneratorInjections { get; set; }
     }
 
     static class ControllerMockWorldRepositoryExtensions
     {
         static public ControllerMockSetupContext SetupBorderClash(this ControllerMockSetupContext setupContext, Guid attackingRegion, UInt32 attackingTroops, Guid secondAttackingRegion, UInt32 secondAttackingTroops)
         {
-            SetupBorderClashWithoutPendingInvasions(setupContext, attackingRegion, attackingTroops, secondAttackingRegion, secondAttackingTroops);
+            Guid combatId;
+            return SetupBorderClash(setupContext, attackingRegion, attackingTroops, secondAttackingRegion, secondAttackingTroops, out combatId);
+        }
+
+        static public ControllerMockSetupContext SetupBorderClash(this ControllerMockSetupContext setupContext, Guid attackingRegion, UInt32 attackingTroops, Guid secondAttackingRegion, UInt32 secondAttackingTroops, out Guid combatId)
+        {
+            SetupBorderClashWithoutPendingInvasions(setupContext, attackingRegion, attackingTroops, secondAttackingRegion, secondAttackingTroops, out combatId);
             SetupInvasionPendingBorderClash(setupContext, attackingRegion, setupContext.ControllerMock.RegionRepository.RegionData[attackingRegion].TroopCount - attackingTroops);
             SetupInvasionPendingBorderClash(setupContext, secondAttackingRegion, setupContext.ControllerMock.RegionRepository.RegionData[secondAttackingRegion].TroopCount - secondAttackingTroops);
             return setupContext;
         }
 
-        static private ControllerMockSetupContext SetupBorderClashWithoutPendingInvasions(this ControllerMockSetupContext setupContext, Guid attackingRegion, UInt32 attackingTroops, Guid secondAttackingRegion, UInt32 secondAttackingTroops)
+        static private ControllerMockSetupContext SetupBorderClashWithoutPendingInvasions(this ControllerMockSetupContext setupContext, Guid attackingRegion, UInt32 attackingTroops, Guid secondAttackingRegion, UInt32 secondAttackingTroops, out Guid combatId)
         {
-            Guid combatId = Guid.NewGuid();
+            combatId = Guid.NewGuid();
             DummyCombat combat = new DummyCombat(combatId, CombatType.BorderClash);
             combat.SetupAddArmy(attackingRegion, setupContext.ControllerMock.RegionRepository.RegionData[attackingRegion].OwnerId, CombatArmyMode.Attacking, attackingTroops);
             combat.SetupAddArmy(secondAttackingRegion, setupContext.ControllerMock.RegionRepository.RegionData[secondAttackingRegion].OwnerId, CombatArmyMode.Attacking, secondAttackingTroops);
@@ -137,13 +177,20 @@ namespace Peril.Api.Tests.Repository
 
         static public ControllerMockSetupContext SetupMassInvasionWithBorderClash(this ControllerMockSetupContext setupContext, Guid targetRegion, UInt32 counterAttackingTroops, Guid attackingRegion, UInt32 attackingTroops, Guid counterAttackedRegion, UInt32 secondAttackingTroops)
         {
-            Guid combatId = Guid.NewGuid();
-            DummyCombat combat = new DummyCombat(combatId, CombatType.MassInvasion);
+            Guid borderClashCombatId;
+            Guid massInvasionCombatId;
+            return SetupMassInvasionWithBorderClash(setupContext, targetRegion, counterAttackingTroops, attackingRegion, attackingTroops, counterAttackedRegion, secondAttackingTroops, out borderClashCombatId, out massInvasionCombatId);
+        }
+
+        static public ControllerMockSetupContext SetupMassInvasionWithBorderClash(this ControllerMockSetupContext setupContext, Guid targetRegion, UInt32 counterAttackingTroops, Guid attackingRegion, UInt32 attackingTroops, Guid counterAttackedRegion, UInt32 secondAttackingTroops, out Guid borderClashCombatId, out Guid massInvasionCombatId)
+        {
+            massInvasionCombatId = Guid.NewGuid();
+            DummyCombat combat = new DummyCombat(massInvasionCombatId, CombatType.MassInvasion);
             combat.SetupAddArmy(attackingRegion, setupContext.ControllerMock.RegionRepository.RegionData[attackingRegion].OwnerId, CombatArmyMode.Attacking, attackingTroops);
             combat.SetupAddArmy(targetRegion, setupContext.ControllerMock.RegionRepository.RegionData[targetRegion].OwnerId, CombatArmyMode.Defending, setupContext.ControllerMock.RegionRepository.RegionData[targetRegion].TroopCount - counterAttackingTroops);
-            setupContext.ControllerMock.WorldRepository.MassInvasions[combatId] = combat;
+            setupContext.ControllerMock.WorldRepository.MassInvasions[massInvasionCombatId] = combat;
 
-            SetupBorderClashWithoutPendingInvasions(setupContext, targetRegion, counterAttackingTroops, counterAttackedRegion, secondAttackingTroops);
+            SetupBorderClashWithoutPendingInvasions(setupContext, targetRegion, counterAttackingTroops, counterAttackedRegion, secondAttackingTroops, out borderClashCombatId);
             SetupInvasionPendingBorderClash(setupContext, counterAttackedRegion, setupContext.ControllerMock.RegionRepository.RegionData[counterAttackedRegion].TroopCount - secondAttackingTroops);
             return setupContext;
         }
@@ -175,6 +222,19 @@ namespace Peril.Api.Tests.Repository
             combat.SetupAddArmy(secondAttackingRegion, setupContext.ControllerMock.RegionRepository.RegionData[secondAttackingRegion].OwnerId, CombatArmyMode.Attacking, secondAttackingTroops);
             combat.SetupAddArmy(targetRegion, setupContext.ControllerMock.RegionRepository.RegionData[targetRegion].OwnerId, CombatArmyMode.Defending, 0);
             setupContext.ControllerMock.WorldRepository.SpoilsOfWar[combatId] = combat;
+            return setupContext;
+        }
+
+        static public ControllerMockSetupContext SetupRiggedDiceResults(this ControllerMockSetupContext setupContext, Guid targetRegion, params int[] rolls)
+        {
+            if(!setupContext.ControllerMock.WorldRepository.RegionNumberGeneratorInjections.ContainsKey(targetRegion))
+            {
+                setupContext.ControllerMock.WorldRepository.RegionNumberGeneratorInjections[targetRegion] = new Queue<int>();
+            }
+            foreach(int roll in rolls)
+            {
+                setupContext.ControllerMock.WorldRepository.RegionNumberGeneratorInjections[targetRegion].Enqueue(roll);
+            }
             return setupContext;
         }
 
@@ -220,6 +280,65 @@ namespace Peril.Api.Tests.Repository
             Assert.AreEqual(numberOfTroops, defendingArmy.NumberOfTroops);
             Assert.AreEqual(regionId, defendingArmy.OriginRegionId);
             Assert.AreEqual(ownerId, defendingArmy.OwnerUserId);
+        }
+
+        static public void IsResultValid(UInt32 numberOfRounds, ICombat sourceCombat, ICombatResult result)
+        {
+            Assert.AreEqual(numberOfRounds, (UInt32)result.Rounds.Count());
+            Assert.AreEqual(sourceCombat.InvolvedArmies.Count(), result.Rounds.First().ArmyResults.Count());
+
+            foreach (ICombatRoundResult round in result.Rounds)
+            {
+                foreach (ICombatArmy army in sourceCombat.InvolvedArmies)
+                {
+                    var armyResults = round.ArmyResults.Where(armyResult => armyResult.OriginRegionId == army.OriginRegionId).FirstOrDefault();
+                    if (armyResults != null)
+                    {
+                        Assert.IsNotNull(armyResults.RolledResults);
+                        Assert.AreEqual(army.OwnerUserId, armyResults.OwnerUserId);
+                        if(army.ArmyMode == CombatArmyMode.Defending)
+                        {
+                            Assert.IsTrue(2 >= armyResults.RolledResults.Count() && 1 <= armyResults.RolledResults.Count(), "Defender can only roll 1 or 2 dice");
+                        }
+                        else
+                        {
+                            Assert.IsTrue(3 >= armyResults.RolledResults.Count() && 1 <= armyResults.RolledResults.Count(), "Attacker can only roll 1, 2 or 3 dice");
+                        }
+
+                        switch (sourceCombat.ResolutionType)
+                        {
+                            case CombatType.BorderClash:
+                                Assert.IsTrue(3 >= armyResults.TroopsLost, "An army cannot lose more than three troops in a round");
+                                break;
+                            case CombatType.Invasion:
+                                Assert.IsTrue(2 >= armyResults.TroopsLost, "An army cannot lose more than two troops in a round");
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+
+        static public void IsArmyResult(Guid regionId, UInt32 numberOfSurvivedRounds, UInt32 expectedTroopLoss, ICombatResult result)
+        {
+            UInt32 roundsSurvived = 0;
+            UInt32 troopsLost = 0;
+            foreach (ICombatRoundResult round in result.Rounds)
+            {
+                var armyResults = round.ArmyResults.Where(armyResult => armyResult.OriginRegionId == regionId).FirstOrDefault();
+                if(roundsSurvived == numberOfSurvivedRounds)
+                {
+                    Assert.IsNull(armyResults);
+                }
+                else
+                {
+                    Assert.IsNotNull(armyResults);
+                    troopsLost += armyResults.TroopsLost;
+                    roundsSurvived += 1;
+                }
+            }
+
+            Assert.AreEqual(expectedTroopLoss, troopsLost);
         }
     }
 }

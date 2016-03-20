@@ -23,14 +23,14 @@ namespace Peril.Api.Models
 
         public IEnumerable<ICombatArmyRoundResult> ArmyResults { get { return m_ArmyResults; } }
 
-        static public CombatRoundResult GenerateForCombat(CombatType resolutionMode, List<CombatArmy> armies, IEnumerable<int> randomNumberGenerator)
+        static public CombatRoundResult GenerateForCombat(CombatType resolutionMode, List<CombatArmy> armies, Func<Guid, IEnumerable<UInt32>> randomNumberGenerator)
         {
             CombatRoundResult roundResult = new CombatRoundResult();
 
             // Generate the results for each army
             foreach(CombatArmy army in armies)
             {
-                roundResult.m_ArmyResults.Add(CombatArmyRoundResult.GenerateForCombat(army, randomNumberGenerator));
+                roundResult.m_ArmyResults.Add(CombatArmyRoundResult.GenerateForCombat(army, randomNumberGenerator(army.OriginRegionId)));
             }
 
             switch (resolutionMode)

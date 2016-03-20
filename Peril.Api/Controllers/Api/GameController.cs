@@ -461,18 +461,20 @@ namespace Peril.Api.Controllers.Api
             return nextSessionPhase;
         }
 
-        private async Task ResolveCombat(Guid sessionId, IEnumerable<ICombat> pendingCombat)
+        private async Task<IEnumerable<ICombatResult>> ResolveCombat(Guid sessionId, IEnumerable<ICombat> pendingCombat)
         {
             List<ICombatResult> combatResults = new List<ICombatResult>();
             foreach(ICombat combat in pendingCombat)
             {
-                combatResults.Add(CombatResult.GenerateForCombat(combat, WorldRepository.GetRandomNumberGenerator(1, 6)));
+                combatResults.Add(CombatResult.GenerateForCombat(combat, (Guid regionId) => WorldRepository.GetRandomNumberGenerator(regionId, 1, 6).Select(value => (UInt32)value)));
             }
 
             if (combatResults.Count > 0)
             {
                 await WorldRepository.AddCombatResults(sessionId, combatResults);
             }
+
+            return combatResults;
         }
 
         private ICommandQueue CommandQueue { get; set; }

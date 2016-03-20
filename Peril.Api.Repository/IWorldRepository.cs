@@ -13,8 +13,10 @@ namespace Peril.Api.Repository
 
         Task AddCombat(Guid sessionId, IEnumerable<Tuple<CombatType, IEnumerable<ICombatArmy>>> armies);
 
+        Task AddArmyToCombat(Guid sessionId, IDictionary<Guid, IEnumerable<ICombatArmy>> armies);
+
         Task AddCombatResults(Guid sessionId, IEnumerable<ICombatResult> results);
 
-        IEnumerable<Int32> GetRandomNumberGenerator(int minimum, int maximum);
+        IEnumerable<Int32> GetRandomNumberGenerator(Guid targetRegion, int minimum, int maximum);
     }
 }

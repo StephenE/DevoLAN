@@ -27,7 +27,7 @@ namespace Peril.Api.Models
 
         public IEnumerable<ICombatRoundResult> Rounds { get { return m_Rounds; } }
 
-        static public CombatResult GenerateForCombat(ICombat combat, IEnumerable<int> randomNumberGenerator)
+        static public CombatResult GenerateForCombat(ICombat combat, Func<Guid, IEnumerable<UInt32>> randomNumberGenerator)
         {
             CombatResult result = new CombatResult(combat.CombatId);
             List<CombatArmy> armies = (from army in combat.InvolvedArmies
