@@ -936,6 +936,120 @@ namespace Peril.Api.Tests.Controllers
             AssertCombat.IsAttacking(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 3, DummyUserRepository.RegisteredUserIds[1], invasionOfD);
             AssertCombat.IsDefending(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 4, primaryUser.OwnerId, invasionOfD);
         }
+
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("GameController")]
+        public async Task TestAdvanceNextPhase_WithMassInvaions_WithAttackersWin()
+        {
+            // Arrange
+            Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
+            Guid massInvasionCombatId;
+            ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(validGuid)
+                       .SetupAddPlayer(DummyUserRepository.RegisteredUserIds[1], PlayerColour.Blue)
+                       .SetupDummyWorldAsTree(primaryUser.OwnerId)
+                       .SetupRegionOwnership(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, DummyUserRepository.RegisteredUserIds[1])
+                       .SetupRegionTroops(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 5)
+                       .SetupSessionPhase(SessionPhase.MassInvasions)
+                       .SetupMassInvasion(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 6, ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 3, out massInvasionCombatId)
+                       // Rig dice rolls so that D & B beat A, with only B taking a loss
+                       .SetupRiggedDiceResults(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 5, 5,    4, 1,    1)
+                       .SetupRiggedDiceResults(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 5, 4, 4, 4, 2, 2, 2, 1, 1)
+                       .SetupRiggedDiceResults(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 6, 6, 6, 4, 2, 2, 1, 1, 1);
+            Guid currentSessionPhaseId = primaryUser.SessionRepository.SessionMap[validGuid].PhaseId;
+
+            // Act
+            await primaryUser.GameController.PostAdvanceNextPhase(validGuid, currentSessionPhaseId, true);
+
+            // Assert
+            Assert.AreEqual(SessionPhase.Invasions, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
+            Assert.AreNotEqual(currentSessionPhaseId, primaryUser.SessionRepository.SessionMap[validGuid].PhaseId);
+            AssertCombat.IsResultValid(3, primaryUser.WorldRepository.BorderClashes[massInvasionCombatId], primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
+            AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 3, 5, primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
+            AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 3, 1, primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
+            AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 3, 0, primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
+
+            Assert.AreEqual(primaryUser.OwnerId, primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionA].OwnerId);
+            Assert.AreEqual(8, primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionA].TroopCount);
+            Assert.AreEqual(0, primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionA].TroopsCommittedToPhase);
+        }
+
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("GameController")]
+        public async Task TestAdvanceNextPhase_WithMassInvaions_WithOneAttackerWin()
+        {
+            // Arrange
+            Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
+            Guid massInvasionCombatId;
+            ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(validGuid)
+                       .SetupAddPlayer(DummyUserRepository.RegisteredUserIds[1], PlayerColour.Blue)
+                       .SetupDummyWorldAsTree(primaryUser.OwnerId)
+                       .SetupRegionOwnership(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, DummyUserRepository.RegisteredUserIds[1])
+                       .SetupRegionTroops(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 5)
+                       .SetupSessionPhase(SessionPhase.MassInvasions)
+                       .SetupMassInvasion(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 6, ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 3, out massInvasionCombatId)
+                       // Rig dice rolls so that D gets wiped out in the first round, B eventually beats A with 1 troop left
+                       .SetupRiggedDiceResults(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 4, 3,    3, 2,    3, 3,    3, 4,    1, 5,     3)
+                       .SetupRiggedDiceResults(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 5, 4, 1, 4, 1, 1, 2, 1, 1, 2, 1, 1, 6,        6)
+                       .SetupRiggedDiceResults(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 1, 1, 1, 1);
+            Guid currentSessionPhaseId = primaryUser.SessionRepository.SessionMap[validGuid].PhaseId;
+
+            // Act
+            await primaryUser.GameController.PostAdvanceNextPhase(validGuid, currentSessionPhaseId, true);
+
+            // Assert
+            Assert.AreEqual(SessionPhase.Invasions, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
+            Assert.AreNotEqual(currentSessionPhaseId, primaryUser.SessionRepository.SessionMap[validGuid].PhaseId);
+            AssertCombat.IsResultValid(6, primaryUser.WorldRepository.BorderClashes[massInvasionCombatId], primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
+            AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 6, 5, primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
+            AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 6, 5, primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
+            AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 2, 3, primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
+
+            Assert.AreEqual(primaryUser.OwnerId, primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionA].OwnerId);
+            Assert.AreEqual(1, primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionA].TroopCount);
+            Assert.AreEqual(0, primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionA].TroopsCommittedToPhase);
+        }
+
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("GameController")]
+        public async Task TestAdvanceNextPhase_WithMassInvaions_WithDefendersWin()
+        {
+            // Arrange
+            Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
+            Guid massInvasionCombatId;
+            ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(validGuid)
+                       .SetupAddPlayer(DummyUserRepository.RegisteredUserIds[1], PlayerColour.Blue)
+                       .SetupDummyWorldAsTree(primaryUser.OwnerId)
+                       .SetupRegionOwnership(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, DummyUserRepository.RegisteredUserIds[1])
+                       .SetupRegionTroops(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 5)
+                       .SetupSessionPhase(SessionPhase.MassInvasions)
+                       .SetupMassInvasion(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 6, ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 3, out massInvasionCombatId)
+                       // Rig dice rolls so that D & B get wiped out with 1 loss to A
+                       .SetupRiggedDiceResults(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 6, 6,    3, 2,    3, 3,    3, 6)
+                       .SetupRiggedDiceResults(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 1, 1, 1, 4, 1, 1, 2, 1, 1, 5)
+                       .SetupRiggedDiceResults(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 1, 1, 1, 1);
+            Guid currentSessionPhaseId = primaryUser.SessionRepository.SessionMap[validGuid].PhaseId;
+
+            // Act
+            await primaryUser.GameController.PostAdvanceNextPhase(validGuid, currentSessionPhaseId, true);
+
+            // Assert
+            Assert.AreEqual(SessionPhase.Invasions, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
+            Assert.AreNotEqual(currentSessionPhaseId, primaryUser.SessionRepository.SessionMap[validGuid].PhaseId);
+            AssertCombat.IsResultValid(6, primaryUser.WorldRepository.BorderClashes[massInvasionCombatId], primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
+            AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 6, 5, primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
+            AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 6, 5, primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
+            AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 2, 3, primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
+
+            Assert.AreEqual(DummyUserRepository.RegisteredUserIds[1], primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionA].OwnerId);
+            Assert.AreEqual(4, primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionA].TroopCount);
+            Assert.AreEqual(0, primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionA].TroopsCommittedToPhase);
+        }
         #endregion
     }
 }

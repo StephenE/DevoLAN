@@ -196,7 +196,13 @@ namespace Peril.Api.Tests.Repository
 
         static public ControllerMockSetupContext SetupMassInvasion(this ControllerMockSetupContext setupContext, Guid targetRegion, Guid attackingRegion, UInt32 attackingTroops, Guid secondAttackingRegion, UInt32 secondAttackingTroops)
         {
-            Guid combatId = Guid.NewGuid();
+            Guid combatId;
+            return SetupMassInvasion(setupContext, targetRegion, attackingRegion, attackingTroops, secondAttackingRegion, secondAttackingTroops, out combatId);
+        }
+
+        static public ControllerMockSetupContext SetupMassInvasion(this ControllerMockSetupContext setupContext, Guid targetRegion, Guid attackingRegion, UInt32 attackingTroops, Guid secondAttackingRegion, UInt32 secondAttackingTroops, out Guid combatId)
+        {
+            combatId = Guid.NewGuid();
             DummyCombat combat = new DummyCombat(combatId, CombatType.MassInvasion);
             combat.SetupAddArmy(attackingRegion, setupContext.ControllerMock.RegionRepository.RegionData[attackingRegion].OwnerId, CombatArmyMode.Attacking, attackingTroops);
             combat.SetupAddArmy(secondAttackingRegion, setupContext.ControllerMock.RegionRepository.RegionData[secondAttackingRegion].OwnerId, CombatArmyMode.Attacking, secondAttackingTroops);
