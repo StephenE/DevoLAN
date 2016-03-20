@@ -1050,6 +1050,49 @@ namespace Peril.Api.Tests.Controllers
             Assert.AreEqual(4U, primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionA].TroopCount);
             Assert.AreEqual(0U, primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionA].TroopsCommittedToPhase);
         }
+
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("GameController")]
+        public async Task TestAdvanceNextPhase_WithMassInvaions_WithSpoilsOfWar()
+        {
+            // Arrange
+            Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
+            Guid massInvasionCombatId;
+            ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(validGuid)
+                       .SetupAddPlayer(DummyUserRepository.RegisteredUserIds[1], PlayerColour.Blue)
+                       .SetupDummyWorldAsTree(primaryUser.OwnerId)
+                       .SetupRegionOwnership(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, DummyUserRepository.RegisteredUserIds[1])
+                       .SetupRegionOwnership(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, DummyUserRepository.RegisteredUserIds[2])
+                       .SetupRegionTroops(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 5)
+                       .SetupSessionPhase(SessionPhase.MassInvasions)
+                       .SetupMassInvasion(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 6, ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 3, out massInvasionCombatId)
+                       // Rig dice rolls so that A gets wiped out
+                       .SetupRiggedDiceResults(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 1, 1, 1)
+                       .SetupRiggedDiceResults(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 6, 6, 1, 1, 1, 1)
+                       .SetupRiggedDiceResults(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 6, 6, 1, 1, 1, 1);
+            Guid currentSessionPhaseId = primaryUser.SessionRepository.SessionMap[validGuid].PhaseId;
+
+            // Act
+            await primaryUser.GameController.PostAdvanceNextPhase(validGuid, currentSessionPhaseId, true);
+
+            // Assert
+            Assert.AreEqual(SessionPhase.Invasions, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
+            Assert.AreNotEqual(currentSessionPhaseId, primaryUser.SessionRepository.SessionMap[validGuid].PhaseId);
+            AssertCombat.IsResultValid(2, primaryUser.WorldRepository.MassInvasions[massInvasionCombatId], primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
+            AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 2, 5, primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
+            AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 2, 0, primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
+            AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 2, 0, primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
+
+            var spoilsOfWar = primaryUser.GetInvasion(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA);
+            Assert.AreEqual(CombatType.SpoilsOfWar, spoilsOfWar.ResolutionType);
+            Assert.AreEqual(3, spoilsOfWar.InvolvedArmies.Count());
+            AssertCombat.IsDefending(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 0, DummyUserRepository.RegisteredUserIds[1], spoilsOfWar);
+            AssertCombat.IsAttacking(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 6, DummyUserRepository.RegisteredUserIds[2], spoilsOfWar);
+            AssertCombat.IsAttacking(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 3, primaryUser.OwnerId, spoilsOfWar);
+
+        }
         #endregion
     }
 }

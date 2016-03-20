@@ -300,6 +300,17 @@ namespace Peril.Api.Tests.Repository
 
             return query.FirstOrDefault();
         }
+
+        static public ICombat GetSpoilsOfWar(this ControllerMock controller, Guid defendingRegion)
+        {
+            var query = from combatEntry in controller.WorldRepository.SpoilsOfWar
+                        let combat = combatEntry.Value
+                        let defendingArmy = combat.InvolvedArmies.Where(army => army.ArmyMode == CombatArmyMode.Defending).FirstOrDefault()
+                        where defendingArmy.OriginRegionId == defendingRegion
+                        select combat;
+
+            return query.FirstOrDefault();
+        }
     }
     
     static class AssertCombat
