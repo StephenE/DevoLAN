@@ -27,26 +27,31 @@ namespace Peril.Api.Models
 
         public IEnumerable<ICombatRoundResult> Rounds { get { return m_Rounds; } }
 
+        public IEnumerable<ICombatArmy> StartingArmies { get { return m_StartingArmies; } }
+
+        public IEnumerable<CombatArmy> SurvivingArmies { get { return m_SurvivingArmies; } }
+
         static public CombatResult GenerateForCombat(ICombat combat, Func<Guid, IEnumerable<UInt32>> randomNumberGenerator)
         {
             CombatResult result = new CombatResult(combat.CombatId);
-            List<CombatArmy> armies = (from army in combat.InvolvedArmies
-                                       select new CombatArmy(army)).ToList();
+            result.m_StartingArmies = combat.InvolvedArmies;
+            result.m_SurvivingArmies = (from army in combat.InvolvedArmies
+                                        select new CombatArmy(army)).ToList();
 
-            while(armies.GroupBy(army => army.OwnerUserId).Count() > 1)
+            while (result.m_SurvivingArmies.GroupBy(army => army.OwnerUserId).Count() > 1)
             {
-                CombatRoundResult combatRound = CombatRoundResult.GenerateForCombat(combat.ResolutionType, armies, randomNumberGenerator);
+                CombatRoundResult combatRound = CombatRoundResult.GenerateForCombat(combat.ResolutionType, result.m_SurvivingArmies, randomNumberGenerator);
                 result.m_Rounds.Add(combatRound);
 
                 // Remove armies with no troops left
-                armies.RemoveAll(army => army.NumberOfTroops == 0);
+                result.m_SurvivingArmies.RemoveAll(army => army.NumberOfTroops == 0);
 
                 // Mass invasion has an early out when the defenders are all dead. Otherwise, fight to the last army standing!
-                if(combat.ResolutionType == CombatType.MassInvasion)
+                if (combat.ResolutionType == CombatType.MassInvasion)
                 {
-                    if(armies.Where(army => army.ArmyMode == CombatArmyMode.Defending).Count() == 0)
+                    if (result.m_SurvivingArmies.Where(army => army.ArmyMode == CombatArmyMode.Defending).Count() == 0)
                     {
-                        armies.Clear();
+                        break;
                     }
                 }
             }
@@ -55,5 +60,7 @@ namespace Peril.Api.Models
         }
 
         private List<CombatRoundResult> m_Rounds;
+        private IEnumerable<ICombatArmy> m_StartingArmies;
+        private List<CombatArmy> m_SurvivingArmies;
     }
 }

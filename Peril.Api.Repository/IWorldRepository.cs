@@ -13,7 +13,7 @@ namespace Peril.Api.Repository
 
         Task AddCombat(Guid sessionId, IEnumerable<Tuple<CombatType, IEnumerable<ICombatArmy>>> armies);
 
-        Task AddArmyToCombat(Guid sessionId, IDictionary<Guid, IEnumerable<ICombatArmy>> armies);
+        Task AddArmyToCombat(Guid sessionId, CombatType sourceType, IDictionary<Guid, IEnumerable<ICombatArmy>> armies);
 
         Task AddCombatResults(Guid sessionId, IEnumerable<ICombatResult> results);
 

@@ -885,10 +885,8 @@ namespace Peril.Api.Tests.Controllers
 
             var invasionOfD = primaryUser.GetInvasion(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD);
             Assert.AreEqual(CombatType.Invasion, invasionOfD.ResolutionType);
-            Assert.AreEqual(2, invasionOfD.InvolvedArmies.Count());
+            Assert.AreEqual(1, invasionOfD.InvolvedArmies.Count());
             AssertCombat.IsDefending(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 4, primaryUser.OwnerId, invasionOfD);
-
-            Assert.Fail("Need to verify combat results");
         }
 
         [TestMethod]

@@ -13,6 +13,7 @@ namespace Peril.Api.Tests.Repository
     {
         public DummyWorldRepository()
         {
+            TargetRegionToCombatLookup = new Dictionary<Guid, List<DummyCombat>>();
             BorderClashes = new Dictionary<Guid, DummyCombat>();
             MassInvasions = new Dictionary<Guid, DummyCombat>();
             Invasions = new Dictionary<Guid, DummyCombat>();
@@ -60,6 +61,10 @@ namespace Peril.Api.Tests.Repository
                     combat.SetupAddArmy(army.OriginRegionId, army.OwnerUserId, army.ArmyMode, army.NumberOfTroops);
                 }
 
+                // Add to lookup
+                AddToCombatLookup(combat);
+
+                // Add to typed storage
                 switch (combat.ResolutionType)
                 {
                     case CombatType.BorderClash:
@@ -71,34 +76,36 @@ namespace Peril.Api.Tests.Repository
                     case CombatType.Invasion:
                         Invasions[combatId] = combat;
                         break;
+                    case CombatType.SpoilsOfWar:
+                        SpoilsOfWar[combatId] = combat;
+                        break;
                 }
             }
 
             return Task.FromResult(false);
         }
 
-        public Task AddArmyToCombat(Guid sessionId, IDictionary<Guid, IEnumerable<ICombatArmy>> armies)
+        public Task AddArmyToCombat(Guid sessionId, CombatType sourceType, IDictionary<Guid, IEnumerable<ICombatArmy>> armies)
         {
             foreach(var combatEntry in armies)
             {
-                Guid combatId = combatEntry.Key;
-                DummyCombat combat;
-                if(Invasions.ContainsKey(combatId))
+                Guid targetRegionId = combatEntry.Key;
+                if (TargetRegionToCombatLookup.ContainsKey(targetRegionId))
                 {
-                    combat = Invasions[combatId];
-                }
-                else if(SpoilsOfWar.ContainsKey(combatId))
-                {
-                    combat = SpoilsOfWar[combatId];
+                    foreach(DummyCombat combat in TargetRegionToCombatLookup[targetRegionId])
+                    {
+                        if (sourceType < combat.ResolutionType)
+                        {
+                            foreach (ICombatArmy army in combatEntry.Value)
+                            {
+                                combat.SetupAddArmy(army.OriginRegionId, army.OwnerUserId, army.ArmyMode, army.NumberOfTroops);
+                            }
+                        }
+                    }
                 }
                 else
                 {
-                    throw new InvalidOperationException("Expected CombatId to be for a invasion or spoils of war");
-                }
-
-                foreach (ICombatArmy army in combatEntry.Value)
-                {
-                    combat.SetupAddArmy(army.OriginRegionId, army.OwnerUserId, army.ArmyMode, army.NumberOfTroops);
+                    throw new InvalidOperationException("Unable to find the target region in the combat lookup");
                 }
             }
 
@@ -129,6 +136,28 @@ namespace Peril.Api.Tests.Repository
             yield return NumberGenerator.Next(minimum, maximum);
         }
 
+        #region - Test Helpers -
+        public void AddToCombatLookup(DummyCombat combat)
+        {
+            switch(combat.ResolutionType)
+            {
+                case CombatType.BorderClash:
+                    // Never need to look up border clash by target region
+                    break;
+                default:
+                    // Find the defending side and add this combat
+                    var defendingArmy = combat.InvolvedArmies.Where(army => army.ArmyMode == CombatArmyMode.Defending).First();
+                    if(!TargetRegionToCombatLookup.ContainsKey(defendingArmy.OriginRegionId))
+                    {
+                        TargetRegionToCombatLookup[defendingArmy.OriginRegionId] = new List<DummyCombat>();
+                    }
+                    TargetRegionToCombatLookup[defendingArmy.OriginRegionId].Add(combat);
+                    break;
+            }
+        }
+        #endregion
+
+        public Dictionary<Guid, List<DummyCombat>> TargetRegionToCombatLookup { get; private set; }
         public Dictionary<Guid, DummyCombat> BorderClashes { get; private set; }
         public Dictionary<Guid, DummyCombat> MassInvasions { get; private set; }
         public Dictionary<Guid, DummyCombat> Invasions { get; private set; }
@@ -161,6 +190,7 @@ namespace Peril.Api.Tests.Repository
             combat.SetupAddArmy(attackingRegion, setupContext.ControllerMock.RegionRepository.RegionData[attackingRegion].OwnerId, CombatArmyMode.Attacking, attackingTroops);
             combat.SetupAddArmy(secondAttackingRegion, setupContext.ControllerMock.RegionRepository.RegionData[secondAttackingRegion].OwnerId, CombatArmyMode.Attacking, secondAttackingTroops);
             setupContext.ControllerMock.WorldRepository.BorderClashes[combatId] = combat;
+            setupContext.ControllerMock.WorldRepository.AddToCombatLookup(combat);
             return setupContext;
         }
 
@@ -172,6 +202,7 @@ namespace Peril.Api.Tests.Repository
             combat.SetupAddArmy(secondAttackingRegion, setupContext.ControllerMock.RegionRepository.RegionData[secondAttackingRegion].OwnerId, CombatArmyMode.Attacking, secondAttackingTroops);
             combat.SetupAddArmy(targetRegion, setupContext.ControllerMock.RegionRepository.RegionData[targetRegion].OwnerId, CombatArmyMode.Defending, setupContext.ControllerMock.RegionRepository.RegionData[targetRegion].TroopCount);
             setupContext.ControllerMock.WorldRepository.MassInvasions[combatId] = combat;
+            setupContext.ControllerMock.WorldRepository.AddToCombatLookup(combat);
             return setupContext;
         }
 
@@ -189,6 +220,7 @@ namespace Peril.Api.Tests.Repository
             combat.SetupAddArmy(attackingRegion, setupContext.ControllerMock.RegionRepository.RegionData[attackingRegion].OwnerId, CombatArmyMode.Attacking, attackingTroops);
             combat.SetupAddArmy(targetRegion, setupContext.ControllerMock.RegionRepository.RegionData[targetRegion].OwnerId, CombatArmyMode.Defending, setupContext.ControllerMock.RegionRepository.RegionData[targetRegion].TroopCount - counterAttackingTroops);
             setupContext.ControllerMock.WorldRepository.MassInvasions[massInvasionCombatId] = combat;
+            setupContext.ControllerMock.WorldRepository.AddToCombatLookup(combat);
 
             SetupBorderClashWithoutPendingInvasions(setupContext, targetRegion, counterAttackingTroops, counterAttackedRegion, secondAttackingTroops, out borderClashCombatId);
             SetupInvasionPendingBorderClash(setupContext, counterAttackedRegion, setupContext.ControllerMock.RegionRepository.RegionData[counterAttackedRegion].TroopCount - secondAttackingTroops);
@@ -201,6 +233,7 @@ namespace Peril.Api.Tests.Repository
             DummyCombat combat = new DummyCombat(combatId, CombatType.Invasion);
             combat.SetupAddArmy(defendingRegion, setupContext.ControllerMock.RegionRepository.RegionData[defendingRegion].OwnerId, CombatArmyMode.Defending, defendingTroops);
             setupContext.ControllerMock.WorldRepository.Invasions[combatId] = combat;
+            setupContext.ControllerMock.WorldRepository.AddToCombatLookup(combat);
             return setupContext;
         }
 
@@ -211,6 +244,7 @@ namespace Peril.Api.Tests.Repository
             combat.SetupAddArmy(attackingRegion, setupContext.ControllerMock.RegionRepository.RegionData[attackingRegion].OwnerId, CombatArmyMode.Attacking, attackingTroops);
             combat.SetupAddArmy(defendingRegion, setupContext.ControllerMock.RegionRepository.RegionData[defendingRegion].OwnerId, CombatArmyMode.Defending, defendingTroops);
             setupContext.ControllerMock.WorldRepository.Invasions[combatId] = combat;
+            setupContext.ControllerMock.WorldRepository.AddToCombatLookup(combat);
             return setupContext;
         }
 
@@ -222,6 +256,7 @@ namespace Peril.Api.Tests.Repository
             combat.SetupAddArmy(secondAttackingRegion, setupContext.ControllerMock.RegionRepository.RegionData[secondAttackingRegion].OwnerId, CombatArmyMode.Attacking, secondAttackingTroops);
             combat.SetupAddArmy(targetRegion, setupContext.ControllerMock.RegionRepository.RegionData[targetRegion].OwnerId, CombatArmyMode.Defending, 0);
             setupContext.ControllerMock.WorldRepository.SpoilsOfWar[combatId] = combat;
+            setupContext.ControllerMock.WorldRepository.AddToCombatLookup(combat);
             return setupContext;
         }
 

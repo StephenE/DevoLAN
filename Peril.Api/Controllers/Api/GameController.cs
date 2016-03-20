@@ -224,9 +224,8 @@ namespace Peril.Api.Controllers.Api
                 case SessionPhase.BorderClashes:
                 {
                     var borderClashes = WorldRepository.GetCombat(session.GameId, CombatType.BorderClash);
-                    await ResolveCombat(session.GameId, await borderClashes);
-                    // Update remaining combat (surviving army needs)
-                    // Delete border clashes?
+                    IEnumerable<CombatResult> results = await ResolveCombat(session.GameId, await borderClashes);
+                    await ApplyBorderClashResults(session.GameId, results);
                     nextPhase = SessionPhase.MassInvasions;
                     break;
                 }
@@ -461,9 +460,9 @@ namespace Peril.Api.Controllers.Api
             return nextSessionPhase;
         }
 
-        private async Task<IEnumerable<ICombatResult>> ResolveCombat(Guid sessionId, IEnumerable<ICombat> pendingCombat)
+        private async Task<IEnumerable<CombatResult>> ResolveCombat(Guid sessionId, IEnumerable<ICombat> pendingCombat)
         {
-            List<ICombatResult> combatResults = new List<ICombatResult>();
+            List<CombatResult> combatResults = new List<CombatResult>();
             foreach(ICombat combat in pendingCombat)
             {
                 combatResults.Add(CombatResult.GenerateForCombat(combat, (Guid regionId) => WorldRepository.GetRandomNumberGenerator(regionId, 1, 6).Select(value => (UInt32)value)));
@@ -475,6 +474,27 @@ namespace Peril.Api.Controllers.Api
             }
 
             return combatResults;
+        }
+
+        private async Task ApplyBorderClashResults(Guid sessionId, IEnumerable<CombatResult> combatResults)
+        {
+            Dictionary<Guid, IEnumerable<ICombatArmy>> survivingArmies = new Dictionary<Guid, IEnumerable<ICombatArmy>>();
+
+            foreach(CombatResult result in combatResults)
+            {
+                if(result.SurvivingArmies.Count() == 1)
+                {
+                    // Figure out which side lost
+                    var survivingArmy = result.SurvivingArmies.First();
+                    var defeatedArmy = result.StartingArmies.Where(army => army.OriginRegionId != survivingArmy.OriginRegionId).ToList();
+                    if(defeatedArmy.Count == 1)
+                    {
+                        survivingArmies[defeatedArmy[0].OriginRegionId] = new List<ICombatArmy> { survivingArmy };
+                    }
+                }
+            }
+
+            await WorldRepository.AddArmyToCombat(sessionId, CombatType.BorderClash, survivingArmies);
         }
 
         private ICommandQueue CommandQueue { get; set; }
