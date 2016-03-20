@@ -359,6 +359,7 @@ namespace Peril.Api.Controllers.Api
         private async Task<SessionPhase> ProcessCombatOrders(Guid sessionId, IEnumerable<IRegionData> availableRegions, IEnumerable<INationData> players, IEnumerable<IOrderAttackMessage> messages)
         {
             SessionPhase nextSessionPhase = SessionPhase.Redeployment;
+            Dictionary<Guid, OwnershipChange> regionOwnershipChanges = new Dictionary<Guid, OwnershipChange>();
 
             // Track how many troops are available in each region
             var sourceRegionsQuery = from region in availableRegions
@@ -396,6 +397,8 @@ namespace Peril.Api.Controllers.Api
                             }
                         }
                     }
+
+                    regionOwnershipChanges.Add(regionData.RegionId, new OwnershipChange(regionData.OwnerId, regionData.TroopCount));
                 }
             }
 
@@ -478,8 +481,14 @@ namespace Peril.Api.Controllers.Api
                 }
             }
 
-            // Store combat
-            await WorldRepository.AddCombat(sessionId, resolvedCombat);
+            if (resolvedCombat.Count > 0)
+            {
+                // Store combat
+                await WorldRepository.AddCombat(sessionId, resolvedCombat);
+
+                // Update source regions with new troop levels
+                await RegionRepository.AssignRegionOwnership(sessionId, regionOwnershipChanges);
+            }
 
             return nextSessionPhase;
         }
