@@ -233,6 +233,7 @@ namespace Peril.Api.Controllers.Api
                 {
                     var massInvasions = WorldRepository.GetCombat(session.GameId, CombatType.MassInvasion);
                     IEnumerable<CombatResult> results = await ResolveCombat(session.GameId, await massInvasions);
+                    await ApplyCombatResults(session.GameId, CombatType.MassInvasion, results);
                     nextPhase = SessionPhase.Invasions;
                     break;
                 }
@@ -502,6 +503,41 @@ namespace Peril.Api.Controllers.Api
             }
 
             await WorldRepository.AddArmyToCombat(sessionId, CombatType.BorderClash, survivingArmies);
+        }
+
+        private async Task ApplyCombatResults(Guid sessionId, CombatType type, IEnumerable<CombatResult> combatResults)
+        {
+            Dictionary<Guid, OwnershipChange> regionOwnershipChanges = new Dictionary<Guid, OwnershipChange>();
+
+            foreach (CombatResult result in combatResults)
+            {
+                var survivingNationsQuery = from army in result.SurvivingArmies
+                                            group army by army.OwnerUserId into survivingOwnerIds
+                                            select survivingOwnerIds;
+
+                if (survivingNationsQuery.Count() == 1)
+                {
+                    // Figure out which side lost
+                    var defendingArmy = result.StartingArmies.Where(army => army.ArmyMode == CombatArmyMode.Defending).ToList();
+                    if (defendingArmy.Count() == 1)
+                    {
+                        Guid battleRegionId = defendingArmy[0].OriginRegionId;
+                        UInt32 survivingTroops = 0;
+                        foreach(CombatArmy army in result.SurvivingArmies)
+                        {
+                            survivingTroops += army.NumberOfTroops;
+                        }
+
+                        regionOwnershipChanges[battleRegionId] = new OwnershipChange(survivingNationsQuery.First().Key, survivingTroops);
+                    }
+                }
+                else
+                {
+                    throw new NotImplementedException("Spoils of war not implemented yet!");
+                }
+            }
+
+            await RegionRepository.AssignRegionOwnership(sessionId, regionOwnershipChanges);
         }
 
         private ICommandQueue CommandQueue { get; set; }
