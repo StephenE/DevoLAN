@@ -1085,7 +1085,7 @@ namespace Peril.Api.Tests.Controllers
             AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 2, 0, primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
             AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 2, 0, primaryUser.WorldRepository.CombatResults[massInvasionCombatId]);
 
-            var spoilsOfWar = primaryUser.GetInvasion(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA);
+            var spoilsOfWar = primaryUser.GetSpoilsOfWar(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA);
             Assert.AreEqual(CombatType.SpoilsOfWar, spoilsOfWar.ResolutionType);
             Assert.AreEqual(3, spoilsOfWar.InvolvedArmies.Count());
             AssertCombat.IsDefending(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 0, DummyUserRepository.RegisteredUserIds[1], spoilsOfWar);

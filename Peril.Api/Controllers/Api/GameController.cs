@@ -508,36 +508,51 @@ namespace Peril.Api.Controllers.Api
         private async Task ApplyCombatResults(Guid sessionId, CombatType type, IEnumerable<CombatResult> combatResults)
         {
             Dictionary<Guid, OwnershipChange> regionOwnershipChanges = new Dictionary<Guid, OwnershipChange>();
+            List<Tuple<CombatType, IEnumerable<ICombatArmy>>> spoilsOfWar = new List<Tuple<CombatType, IEnumerable<ICombatArmy>>>();
 
             foreach (CombatResult result in combatResults)
             {
                 var survivingNationsQuery = from army in result.SurvivingArmies
                                             group army by army.OwnerUserId into survivingOwnerIds
                                             select survivingOwnerIds;
+                var defendingArmy = result.StartingArmies.Where(army => army.ArmyMode == CombatArmyMode.Defending).FirstOrDefault();
 
-                if (survivingNationsQuery.Count() == 1)
+                if (defendingArmy != null)
                 {
-                    // Figure out which side lost
-                    var defendingArmy = result.StartingArmies.Where(army => army.ArmyMode == CombatArmyMode.Defending).ToList();
-                    if (defendingArmy.Count() == 1)
+                    if (survivingNationsQuery.Count() == 1)
                     {
-                        Guid battleRegionId = defendingArmy[0].OriginRegionId;
+                        // Figure out which side lost
+
+                        Guid battleRegionId = defendingArmy.OriginRegionId;
                         UInt32 survivingTroops = 0;
-                        foreach(CombatArmy army in result.SurvivingArmies)
+                        foreach (CombatArmy army in result.SurvivingArmies)
                         {
                             survivingTroops += army.NumberOfTroops;
                         }
 
                         regionOwnershipChanges[battleRegionId] = new OwnershipChange(survivingNationsQuery.First().Key, survivingTroops);
                     }
-                }
-                else
-                {
-                    throw new NotImplementedException("Spoils of war not implemented yet!");
+                    else
+                    {
+                        var survivingArmies = result.SurvivingArmies.ToList();
+
+                        // Add an empty defending army, so we know which region is being attacked
+                        survivingArmies.Add(new CombatArmy(defendingArmy.OriginRegionId, defendingArmy.OwnerUserId, CombatArmyMode.Defending, 0));
+    
+                        spoilsOfWar.Add(Tuple.Create<CombatType, IEnumerable<ICombatArmy>>(CombatType.SpoilsOfWar, survivingArmies));
+                    }
                 }
             }
 
-            await RegionRepository.AssignRegionOwnership(sessionId, regionOwnershipChanges);
+            if (regionOwnershipChanges.Count > 0)
+            {
+                await RegionRepository.AssignRegionOwnership(sessionId, regionOwnershipChanges);
+            }
+
+            if(spoilsOfWar.Count > 0)
+            {
+                await WorldRepository.AddCombat(sessionId, spoilsOfWar);
+            }
         }
 
         private ICommandQueue CommandQueue { get; set; }
