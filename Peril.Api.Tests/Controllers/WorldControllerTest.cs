@@ -237,7 +237,8 @@ namespace Peril.Api.Tests.Controllers
             primaryUser.SetupDummySession(SessionGuid)
                        .SetupDummyWorldAsTree()
                        .SetupRegionOwnership(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, DummyUserRepository.RegisteredUserIds[1])
-                       .SetupInvasion(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 5, ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 1);
+                       .SetupRegionTroops(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 1)
+                       .SetupInvasion(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 5);
 
             // Act
             IEnumerable<ICombat> result = await primaryUser.WorldController.GetCombat(SessionGuid);

@@ -243,12 +243,18 @@ namespace Peril.Api.Tests.Repository
             return setupContext;
         }
 
-        static public ControllerMockSetupContext SetupInvasion(this ControllerMockSetupContext setupContext, Guid attackingRegion, UInt32 attackingTroops, Guid defendingRegion, UInt32 defendingTroops)
+        static public ControllerMockSetupContext SetupInvasion(this ControllerMockSetupContext setupContext, Guid defendingRegion, Guid attackingRegion, UInt32 attackingTroops)
         {
-            Guid combatId = Guid.NewGuid();
+            Guid combatId;
+            return SetupInvasion(setupContext, defendingRegion, attackingRegion, attackingTroops, out combatId);
+        }
+
+        static public ControllerMockSetupContext SetupInvasion(this ControllerMockSetupContext setupContext, Guid defendingRegion, Guid attackingRegion, UInt32 attackingTroops, out Guid combatId)
+        {
+            combatId = Guid.NewGuid();
             DummyCombat combat = new DummyCombat(combatId, CombatType.Invasion);
             combat.SetupAddArmy(attackingRegion, setupContext.ControllerMock.RegionRepository.RegionData[attackingRegion].OwnerId, CombatArmyMode.Attacking, attackingTroops);
-            combat.SetupAddArmy(defendingRegion, setupContext.ControllerMock.RegionRepository.RegionData[defendingRegion].OwnerId, CombatArmyMode.Defending, defendingTroops);
+            combat.SetupAddArmy(defendingRegion, setupContext.ControllerMock.RegionRepository.RegionData[defendingRegion].OwnerId, CombatArmyMode.Defending, setupContext.ControllerMock.RegionRepository.RegionData[defendingRegion].TroopCount);
             setupContext.ControllerMock.WorldRepository.Invasions[combatId] = combat;
             setupContext.ControllerMock.WorldRepository.AddToCombatLookup(combat);
             return setupContext;
