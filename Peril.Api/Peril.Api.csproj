@@ -271,10 +271,13 @@
     <Content Include="Content\images\logoPerilSmall.png" />
     <Content Include="Content\images\musicOff.png" />
     <Content Include="Content\images\musicOn.png" />
+    <Content Include="Content\images\perilLogoOG.jpg" />
     <Content Include="Content\images\settings.png" />
     <Content Include="Content\images\sfxOff.png" />
     <Content Include="Content\images\sfxOn.png" />
     <Content Include="Content\images\waiting.svg" />
+    <Content Include="Content\media\button.mp3" />
+    <Content Include="Content\media\confirm.mp3" />
     <Content Include="Content\media\title.mp3" />
     <Content Include="Content\parts\board.html" />
     <Content Include="Content\parts\browser.html" />

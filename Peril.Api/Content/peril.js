@@ -41,15 +41,15 @@
 					loadScreen("browser");
 				}
 				
-				addEvent("loginButton", "click", function(){login();}, false);
-				addEvent("registerButton", "click", function(){register();}, false);
+				addEvent("loginButton", "click", function(){playAudio("sfx", "button"); login();}, false);
+				addEvent("registerButton", "click", function(){playAudio("sfx", "button"); register();}, false);
 				break;
 				
 			 case "browser":
 				sessions();
 				
-				addEvent("createButton", "click", function(){hostGame();}, false)
-				addEvent("logoutButton", "click", function(){deleteCookie("userToken"); loadScreen("login");}, false)
+				addEvent("createButton", "click", function(){playAudio("sfx", "button"); hostGame();}, false)
+				addEvent("logoutButton", "click", function(){playAudio("sfx", "confirm"); deleteCookie("userToken"); loadScreen("login");}, false)
 				break;
 		}
 	}
@@ -349,6 +349,19 @@
 			
 			menuRefresh();
 		}
+		
+// Audio Handling
+	function playAudio(target, sound){
+		console.log("Changing " + target + " to " + sound + ".");
+		
+		var player = getID(target);
+		var source = getID(target + "Source");
+		
+		player.pause();
+		source.src = "Content/media/" + sound + ".mp3";
+		player.load();
+		player.play();
+	}
 	
 // Screen Sizing
 	// Circle Sizer

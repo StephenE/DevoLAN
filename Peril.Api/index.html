@@ -5,16 +5,16 @@
 			<meta charset='UTF-8' />
 			<meta name='robots' content='all' />
 			
-			<meta name='author' content='Anthony Edmonds' />
-			<meta name='description' content='' />
+			<meta name='author' content='Stephen Edmonds, Anthony Edmonds' />
+			<meta name='description' content='Play at your own Peril!' />
 			
 		<!-- Open Graph -->
-			<meta property='og:title' content='' />
-			<meta property='og:description' content='' />
+			<meta property='og:title' content='PERIL - DEVOLAN Edition' />
+			<meta property='og:description' content='Play at your own Peril!' />
 			<meta property='og:type' content='website' />
-			<meta property='og:url' content='' />
-			<meta property='og:image' content='' />
-			<meta property='og:site_name' content='' />
+			<meta property='og:url' content='http://devolan.azurewebsites.net' />
+			<meta property='og:image' content='Content/images/perilLogoOG.jpg' />
+			<meta property='og:site_name' content='DEVOLAN' />
 			<meta property='og:locale' content='en_gb' />
 		
 		<!-- Links -->
@@ -26,7 +26,7 @@
 			<script src='Content/peril.js' type='text/javascript'></script>
 			
 		<!-- Title -->
-			<title>Peril ALPHA</title>
+			<title>PERIL - DEVOLAN EDITION</title>
 	</head>
 		
 	<body>
@@ -45,12 +45,12 @@
 			<div id="menu"></div>
 			
 		<!-- Media -->
-			<audio id="music" autoplay>
-				<source src="Content/media/title.mp3" type="audio/mpeg" />
+			<audio id="music">
+				<source id="musicSource" src="Content/media/title.mp3" type="audio/mpeg" />
 			</audio>
 			
 			<audio id="sfx">
-				<source src="Content/media/title.mp3" type="audio/mpeg" />
+				<source id="sfxSource" src="Content/media/confirm.mp3" type="audio/mpeg" />
 			</audio>
 			
 		<!-- Initialisation Scripts -->
@@ -73,10 +73,11 @@
 					menuRefresh();
 				
 				// Start Game
+					playAudio("music", "title");
 					loadScreen("login");
 			</script>
 			
-		<!-- Enter the Maze by Kevin MacLeod is licensed under a Creative Commons Attribution licence (https://creativecommons.org/licenses/by/4.0/)
+		<!-- Enter the Maze (title) by Kevin MacLeod is licensed under a Creative Commons Attribution licence (https://creativecommons.org/licenses/by/4.0/)
 		Source: http://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100782
 		Artist: http://incompetech.com/ -->
 	</body>
