@@ -1,6 +1,7 @@
 // Global Variables
 	var userToken = "";
 	var screenTarget = "";
+	var currentGame = "";
 	
 	var system = {};
 	system.music = 1;
@@ -10,15 +11,10 @@
 	function loadScreen(screen){
 		console.log("Loading " + screen + "...")
 		
-		var loadRequest = new XMLHttpRequest();
-		var loadTarget = "Content/parts/" + screen + ".html";
-		
-		loadRequest.addEventListener("load", displayScreen)
-		loadRequest.open("GET", loadTarget)
-		loadRequest.send();
+		var url = "Content/parts/" + screen + ".html";
+		sendAjax("GET", url, "", "form", displayScreen, displayScreen, false);
 		
 		screenTarget = screen;
-		
 		showOverlay("Loading...", "<img src='Content/images/waiting.svg' />");
 	}
 	
@@ -57,35 +53,27 @@
 // Login Screen
 	// Login
 		function login(loginUN, loginPW){
-			if(typeof loginUN === "undefined"){
-				loginUN = getValue("loginUsername");
-				loginPW = getValue("loginPassword");
-			}
-			
-			if(loginUN == ""){
-				console.log("No username.");
-				loginError("Failed Validation.", "Please enter a username.");
-				return false;
-			}
-			
-			if(loginPW == "" || loginPW.length < 6){
-				console.log("No password.");
-				loginError("Failed Validation.", "Please enter a valid password.");
-				return false;
-			}
-			
-			// Format Request
-				var loginData = "grant_type=password&" + "username=" + loginUN + "&password=" + loginPW;
-			
-			// Send Login Requests
-				var loginRequest = new XMLHttpRequest();
+			// Validation
+				if(typeof loginUN === "undefined"){
+					loginUN = getValue("loginUsername");
+					loginPW = getValue("loginPassword");
+				}
 				
-				loginRequest.addEventListener("load", loginResponse);
-				loginRequest.addEventListener("error", loginResponse);
+				if(loginUN == ""){
+					console.log("No username.");
+					messageBox("Failed Validation.", "Please enter a username.");
+					return false;
+				}
 				
-				loginRequest.open("POST", "http://devolan.azurewebsites.net/Token");
-				loginRequest.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
-				loginRequest.send(loginData);
+				if(loginPW == "" || loginPW.length < 6){
+					console.log("No password.");
+					messageBox("Failed Validation.", "Please enter a valid password.");
+					return false;
+				}
+			
+			// Request
+				var data = "grant_type=password&" + "username=" + loginUN + "&password=" + loginPW;
+				sendAjax("POST", "http://devolan.azurewebsites.net/Token", "", "form", loginResponse, loginResponse, false, data);
 				
 				showOverlay("Logging in...", "<img src='Content/images/waiting.svg' />");
 		}
@@ -104,54 +92,40 @@
 				default:
 					console.log("Login failed.");
 					
-					loginError("Login Failed.", "Please check your details and try again.");
+					messageBox("Login Failed.", "Please check your details and try again.");
 					break;
 			}
 		}
 		
-		function loginError(title, message){
-			hideOverlay();
-			
-			writeHTML("message", "<h3>" + title + "</h3><p>" + message + "</p>");
-			writeClass("message", "show");
-		}
-		
 	// Register
 		function register(){
-			var regUN = getValue("registerUsername");
-			var regPW = getValue("registerPassword");
-			var regPWC = getValue("registerPasswordConfirm");
+			// Get Values
+				var regUN = getValue("registerUsername");
+				var regPW = getValue("registerPassword");
+				var regPWC = getValue("registerPasswordConfirm");
 			
-			if(regUN == ""){
-				console.log("No username.");
-				loginError("Failed Validation.", "Please enter a username.");
-				return false;
-			}
-			
-			if(regPW == "" || regPW.length < 6){
-				console.log("No password.");
-				loginError("Failed Validation.", "Please enter a password.");
-				return false;
-			}
-			
-			if(regPWC == "" || regPWC.length < 6 || regPW !== regPWC){
-				console.log("No password confirmation.");
-				loginError("Failed Validation.", "Please enter a matching password.");
-				return false;
-			}
+			// Validation
+				if(regUN == ""){
+					console.log("No username.");
+					messageBox("Failed Validation.", "Please enter a username.");
+					return false;
+				}
 				
-			// Format Request
-				var regData = '{"Email":"' + regUN + '", "Password":"' + regPW + '", "ConfirmPassword":"' + regPWC + '"}';
+				if(regPW == "" || regPW.length < 6){
+					console.log("No password.");
+					messageBox("Failed Validation.", "Please enter a password.");
+					return false;
+				}
+				
+				if(regPWC == "" || regPWC.length < 6 || regPW !== regPWC){
+					console.log("No password confirmation.");
+					messageBox("Failed Validation.", "Please enter a matching password.");
+					return false;
+				}
 			
-			// Send Registration Request
-				var regRequest = new XMLHttpRequest();
-				
-				regRequest.addEventListener("load", regResponse);
-				regRequest.addEventListener("error", regResponse);
-				
-				regRequest.open("POST", "http://devolan.azurewebsites.net/api/account/register");
-				regRequest.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
-				regRequest.send(regData);
+			// Request
+				var data = '{"Email":"' + regUN + '", "Password":"' + regPW + '", "ConfirmPassword":"' + regPWC + '"}';
+				sendAjax("POST", "http://devolan.azurewebsites.net/api/account/register", "", "json", regResponse, regResponse, false, data);
 				
 				showOverlay("Registering...", "<img src='Content/images/waiting.svg' />");
 		}
@@ -169,7 +143,7 @@
 				default:
 					console.log("Registration failed.");
 					
-					loginError("Registration Failed.", "Please check your details and try again.");
+					messageBox("Registration Failed.", "Please check your details and try again.");
 					break;
 			}
 		}
@@ -179,20 +153,10 @@
 		function sessions(){
 			console.log("Retrieving game sessions...");
 			
-			// Send Session Request
-				var sesRequest = new XMLHttpRequest();
-				
-				sesRequest.addEventListener("load", sesResponse);
-				sesRequest.addEventListener("error", sesResponse);
-				
-				sesRequest.open("GET", "http://devolan.azurewebsites.net/api/Game/Sessions");
-				sesRequest.setRequestHeader("Accept", "text/html");
-				sesRequest.setRequestHeader("Authorization", "bearer " + userToken.access_token);
-				sesRequest.setRequestHeader("Content-Type", "application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-				
-				sesRequest.send();
-				
-				showOverlay("Finding Games...", "<img src='Content/images/waiting.svg' />");
+			var data = "";
+			sendAjax("GET", "http://devolan.azurewebsites.net/api/Game/Sessions", data, "adv", sesResponse, sesResponse, true);
+			
+			showOverlay("Finding Games...", "<img src='Content/images/waiting.svg' />");
 		}
 		
 		function sesResponse(){
@@ -204,7 +168,7 @@
 			
 			// Assemble Game Browser
 				for(x = 0; x < sessions.length; x++){
-					build += "<tr>";
+					build += "<tr id='g-" + x + "' data-gameid='" + sessions[x].GameId + "'>";
 						build += "<td>" + sessions[x].GameId + "</td>";
 						build += "<td>" + sessions[x].PhaseId + "</td>";
 						
@@ -226,15 +190,101 @@
 				
 			// Output Game Browser
 				writeHTML("browserBody", build);
+				
+			// Event Listeners
+				var y = 0;
+				
+				for(y = 0; y < x; y++){
+					addEvent("g-" + y, "click", function(){currentGame = getData(this.id, "gameid"); playAudio("sfx", "button"); checkPlayers(currentGame);});
+				}
+			
+			// Overlay
 				hideOverlay();
+		}
+	
+	// Check Players
+		function checkPlayers(gameid){
+			console.log("Checking game " + gameid + "...");
+			
+			var data = "?sessionId=" + gameid;
+			sendAjax("GET", "http://devolan.azurewebsites.net/api/Game/Players", data, "adv", checkResponse, checkResponse, true);
+			
+			showOverlay("Checking Game...", "<img src='Content/images/waiting.svg' />");
+		}
+		
+		function checkResponse(){
+			console.log("Looking for player in game...");
+			
+			// Search for player in game
+				var players = JSON.parse(this.responseText);
+				var x = 0;
+				
+				for(x = 0; x < players.length; x++){
+					if(players[x].Name === userToken.userName){
+						console.log("Player is already part of game. Rejoining.");
+						joinGame(currentGame);
+						return true;
+					}
+				}
+			
+			// Player colour selection
+				var content = "";
+				
+				content = "<div class='boxContainer'>";
+					content += "<div class='box'>1</div>";
+					content += "<div class='box'>2</div>";
+					content += "<div class='box'>3</div>";
+					content += "<div class='box'>4</div>";
+					content += "<div class='box'>5</div>";
+					content += "<div class='box'>6</div>";
+					content += "<div class='box'>7</div>";
+					content += "<div class='box'>8</div>";
+					content += "<div class='box'>9</div>";
+					content += "<div class='box'>10</div>";
+					content += "<div class='box'>11</div>";
+					content += "<div class='box'>12</div>";
+					content += "<div class='box'>13</div>";
+					content += "<div class='box'>14</div>";
+					content += "<div class='box'>15</div>";
+					content += "<div class='box'>16</div>";
+					content += "<input type='button' value='Cancel' />";
+				content += "</div>"
+				
+				showOverlay("Select Your Player Colour.", content);
+		}
+	
+	// Join Game
+		function joinGame(gameid){
+			console.log("Joining game " + gameid + "...");
+			
+			var data = "?sessionId=" + gameid + "&colour=0";
+			sendAjax("POST", "http://devolan.azurewebsites.net/api/Game/JoinGame", data, "adv", joinResponse, joinResponse, true);
+				
+			showOverlay("Joining Game...", "<img src='Content/images/waiting.svg' />");
+		}
+		
+		function joinResponse(){
+			switch(this.status){
+				case 204:
+					console.log("Join request successful.");
+					
+					showOverlay("Entering Game...", "<img src='Content/images/waiting.svg' />");
+					break;
+					
+				default:
+					console.log("Join request failed.");
+					
+					messageBox("Join failed.", "Unable to join game.");
+					break;
+			}
 		}
 		
 	// Host Game
 		function hostGame(){
-			console.log("Creating game...")
+			console.log("Creating game...");
 		}
 		
-// Board
+// Game Board
 	// Setup Board
 		function boardSetup(){
 			// Resize Listener
@@ -242,27 +292,33 @@
 				resizeBoard();
 		}
 		
+// Message Box
+	function messageBox(title, message){
+		hideOverlay();
+		
+		writeHTML("message", "<h3>" + title + "</h3><p>" + message + "</p>");
+		writeClass("message", "show");
+	}
+		
 // Overlay
 	function showOverlay(title, content){
-		console.log("Showing overlay.");
+		//console.log("Showing overlay.");
 		
 		writeHTML("overlayContent", "<h1>" + title + "</h1>" + content);
 		writeClass("overlay", "show");
 	}
 	
 	function hideOverlay(){
-		console.log("Hiding overlay.");
+		//console.log("Hiding overlay.");
 		
 		writeClass("overlay", "hide");
 	}
 	
 // Save User Login Session
 	function saveCookie(name, data){
-		console.log("Saving " + name + " cookie...");
+		console.log("Saving " + name + " cookie.");
 		
 		document.cookie = name + "=" + JSON.stringify(data);
-		
-		console.log(name + " cookie saved.");
 	}
 	
 	function loadCookie(name){
@@ -285,6 +341,8 @@
 	}
 	
 	function deleteCookie(name){
+		console.log("Removing " + name + " cookie.")
+		
 		document.cookie = name + "=''; expires=Thu, 01 Jan 1970 00:00:00 UTC";
 	}
 	
@@ -404,6 +462,40 @@
 			getID(target).textContent = value;
 		}
 		
+// AJAX Requests
+	function sendAjax(method, url, urlData, content, evt1, evt2, auth, sendData){
+		var ajaxRequest = new XMLHttpRequest();
+		
+		ajaxRequest.open(method, url + urlData);
+		
+		ajaxRequest.addEventListener("load", evt1);
+		ajaxRequest.addEventListener("error", evt2);
+			
+		if(auth){
+			ajaxRequest.setRequestHeader("Accept", "text/html");
+			ajaxRequest.setRequestHeader("Authorization", "bearer " + userToken.access_token);
+		}
+		
+		switch(content){
+			case "form":
+				ajaxRequest.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+				break;
+				
+			case "json":
+				ajaxRequest.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
+				break;
+			
+			case "adv":
+			default:
+				ajaxRequest.setRequestHeader("Content-Type", "application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+				break;
+		}
+		
+		ajaxRequest.send(sendData);
+		
+		return ajaxRequest;
+	}
+
 // DOM Requests
 	// Write Classes
 		function writeClass(t, v, m){
@@ -414,6 +506,11 @@
 			}
 			
 			return;
+		}
+		
+	// Get Data
+		function getData(target, data){
+			return getID(target).getAttribute("data-" + data);
 		}
 		
 	// Get Element by ID

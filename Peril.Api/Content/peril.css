@@ -447,10 +447,13 @@
 		
 	/* Content Boxes */
 		.boxContainer{
+			position:relative;
 			display: flex;
 		}
 		
 		.box{
+			position: relative;
+			display: inline-block;
 			flex: 1;
 			
 			padding:10px;
@@ -458,7 +461,7 @@
 		
 	/* Overlay */
 		#overlay{
-			position: absolute;
+			position: fixed;
 			display: flex;
 			
 			align-items: center;
