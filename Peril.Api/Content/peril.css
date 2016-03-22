@@ -101,7 +101,7 @@
 	
 /* Table Styles */
 	table{
-		width: auto;
+		width: 100%;
 		
 		border: none;
 		border-collapse: collapse;
@@ -385,6 +385,14 @@
 		}
 
 /* Interface */
+	/* Canvas */
+		#canvas{
+			position:relative;
+			display:block;
+			
+			min-width: 800px;
+		}
+		
 	/* HUD */
 		#hud{
 			position:absolute;
@@ -402,16 +410,15 @@
 		
 	/* Login */
 		#login{
-			position:absolute;
+			position:relative;
+			display:block;
 			
-			min-height:50px;
 			width:400px;
 			
-			top:50%;
+			top:100px;
 			left:50%;
 			
 			margin-left:-200px;
-			margin-top:-150px;
 		}
 		
 		#message{
@@ -439,24 +446,46 @@
 			position: relative;
 			display: inline-block;
 			
+			width: 800px;
+			
 			left: 50%;
-			margin-left:-25%;
+			margin-left:-400px;
 			
 			padding: 50px;
 		}
 		
 	/* Content Boxes */
 		.boxContainer{
-			position:relative;
+			position: relative;
 			display: flex;
 		}
 		
 		.box{
 			position: relative;
 			display: inline-block;
+			
 			flex: 1;
 			
 			padding:10px;
+		}
+		
+		.box.button{
+			margin: 10px;
+			padding: 10px;
+			
+			cursor: pointer;
+		}
+		
+		.box.button:first-of-type{
+			margin-left:0px;
+		}
+		
+		.box.button:last-of-type{
+			margin-right:0px;
+		}
+		
+		.box.button:hover{
+			box-shadow: 0 0 5px rgba(255, 255, 255, 1);
 		}
 		
 	/* Overlay */
@@ -470,12 +499,15 @@
 			height:100%;
 			width:100%;
 			
+			min-width: 800px;
+			
 			top: 0px;
 			left: 0px;
 			
 			background: rgba(0,0,0,0.75);
 			
 			transition: opacity 0.5s ease-out;
+			transition: background 1.5s ease-out;
 		}
 		
 		#overlay.hide{
@@ -488,10 +520,15 @@
 			opacity: 1;
 		}
 		
+		#overlay.blackout{
+			background: rgba(0,0,0,1);
+		}
+		
 		#overlayContent{
 			display: block;
 			
-			padding:50px;
+			padding: 50px;
+			margin: 50px;
 			
 			border-radius:25px;
 			background:rgba(100, 100, 100, 1);
@@ -522,11 +559,11 @@
 			height:150px;
 		}
 		
-		#menu:hover > .button{
+		#menu:hover > .menuButton{
 			opacity: 1;
 		}
 		
-		.button{
+		.menuButton{
 			position:relative;
 			display:block;
 			
@@ -540,9 +577,106 @@
 			transition: opacity 0.25s ease-out;
 		}
 		
-		.button:hover{
+		.menuButton:hover{
 			background-color: rgba(150, 150, 150, 0.5);
 		}
+		
+/* Player Colours */
+	.player-0{
+		background-color:Black;
+		fill:Black;
+		color:white;
+	}
+	
+	.player-1{
+		background-color:FireBrick;
+		fill:FireBrick;
+		color:White;
+	}
+	
+	.player-2{
+		background-color:OrangeRed;
+		fill:OrangeRed;
+		color:White;
+	}
+	
+	.player-3{
+		background-color:Orange;
+		fill:Orange;
+		color:White;
+	}
+	
+	.player-4{
+		background-color:SaddleBrown;
+		fill:SaddleBrown;
+		color:White;
+	}
+	
+	.player-5{
+		background-color:Tan;
+		fill:Tan;
+		color:Black;
+	}
+	
+	.player-6{
+		background-color:Gold;
+		fill:Gold;
+		color:Black;
+	}
+	
+	.player-7{
+		background-color:GreenYellow;
+		fill:GreenYellow;
+		color:Black;
+	}
+	
+	.player-8{
+		background-color:ForestGreen;
+		fill:ForestGreen;
+		color:White;
+	}
+	
+	.player-9{
+		background-color:LightSeaGreen;
+		fill:LightSeaGreen;
+		color:White;
+	}
+	
+	.player-10{
+		background-color:RoyalBlue;
+		fill:RoyalBlue;
+		color:White;
+	}
+	
+	.player-11{
+		background-color:MediumOrchid;
+		fill:MediumOrchid;
+		color:White;
+	}
+	
+	.player-12{
+		background-color:Indigo;
+		fill:Indigo;
+		color:White;
+	}
+	
+	.player-13{
+		background-color:Purple;
+		fill:Purple;
+		color:White;
+	}
+	
+	.player-14{
+		background-color:HotPink;
+		fill:HotPink;
+		color:White;
+	}
+	
+	.player-15{
+		background-color:GhostWhite;
+		fill:GhostWhite;
+		color:Black;
+	}
 	
 /* @Media Tags */
 	@media(max-width:1100px), (max-height:650px){

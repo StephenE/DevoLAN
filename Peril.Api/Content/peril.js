@@ -218,46 +218,46 @@
 			// Search for player in game
 				var players = JSON.parse(this.responseText);
 				var x = 0;
+				var usedColours = [];
 				
 				for(x = 0; x < players.length; x++){
+					usedColours[x] = players[x].Colour;
+					
 					if(players[x].Name === userToken.userName){
 						console.log("Player is already part of game. Rejoining.");
-						joinGame(currentGame);
+						joinGame(currentGame, players[x].Colour);
 						return true;
 					}
 				}
-			
-			// Player colour selection
-				var content = "";
-				
-				content = "<div class='boxContainer'>";
-					content += "<div class='box'>1</div>";
-					content += "<div class='box'>2</div>";
-					content += "<div class='box'>3</div>";
-					content += "<div class='box'>4</div>";
-					content += "<div class='box'>5</div>";
-					content += "<div class='box'>6</div>";
-					content += "<div class='box'>7</div>";
-					content += "<div class='box'>8</div>";
-					content += "<div class='box'>9</div>";
-					content += "<div class='box'>10</div>";
-					content += "<div class='box'>11</div>";
-					content += "<div class='box'>12</div>";
-					content += "<div class='box'>13</div>";
-					content += "<div class='box'>14</div>";
-					content += "<div class='box'>15</div>";
-					content += "<div class='box'>16</div>";
-					content += "<input type='button' value='Cancel' />";
-				content += "</div>"
-				
-				showOverlay("Select Your Player Colour.", content);
+
+				// Select Player Colour
+					console.log(usedColours);
+					var content = "<div class='boxContainer'>";
+						for(x = 0; x < 16; x++){
+							if(usedColours.indexOf(x) < 0){
+								content += "<div id='b-" + x + "' data-colour='" + x + "' class='box button player-" + x + "'><br/><br/></div>";
+							}
+						}
+
+					content += "</div>";
+					content += "<input id='b-cancel' type='button' value='Cancel' />";
+					
+					showOverlay("Select Your Player Colour.", content);
+					
+				// Add Event Listeners
+					addEvent("b-cancel", "click", function(){hideOverlay();});
+					for(x = 0; x < 16; x++){
+						if(usedColours.indexOf(x) < 0){
+							addEvent("b-" + x, "click", function(){playAudio("sfx", "confirm"); joinGame(currentGame, getData(this.id, "colour"));});
+						}
+					}
 		}
 	
 	// Join Game
-		function joinGame(gameid){
-			console.log("Joining game " + gameid + "...");
+		function joinGame(gameid, colour){
+			console.log("Joining game " + gameid + " as " + colour + "...");
 			
-			var data = "?sessionId=" + gameid + "&colour=0";
+			var data = "?sessionId=" + gameid + "&colour=" + colour;
 			sendAjax("POST", "http://devolan.azurewebsites.net/api/Game/JoinGame", data, "adv", joinResponse, joinResponse, true);
 				
 			showOverlay("Joining Game...", "<img src='Content/images/waiting.svg' />");
@@ -268,7 +268,7 @@
 				case 204:
 					console.log("Join request successful.");
 					
-					showOverlay("Entering Game...", "<img src='Content/images/waiting.svg' />");
+					showOverlay("Entering Game...", "<img src='Content/images/waiting.svg' />", true);
 					break;
 					
 				default:
@@ -301,11 +301,15 @@
 	}
 		
 // Overlay
-	function showOverlay(title, content){
+	function showOverlay(title, content, blackout){
 		//console.log("Showing overlay.");
 		
 		writeHTML("overlayContent", "<h1>" + title + "</h1>" + content);
 		writeClass("overlay", "show");
+		
+		if(blackout){
+			writeClass("overlay", " blackout", 1);
+		}
 	}
 	
 	function hideOverlay(){
@@ -354,7 +358,7 @@
 			var build = "";
 			
 			// Music Button
-				build += "<img id='buttonMusic' class='button' src='Content/images/music";
+				build += "<img id='buttonMusic' class='menuButton' src='Content/images/music";
 					if(system.music == 0){
 						build += "Off";
 					} else {
@@ -363,7 +367,7 @@
 				build += ".png' title='Toggle Music' />";
 				
 			// SFX Button
-				build += "<img id='buttonSFX' class='button' src='Content/images/sfx";
+				build += "<img id='buttonSFX' class='menuButton' src='Content/images/sfx";
 					if(system.sfx == 0){
 						build += "Off";
 					} else {
