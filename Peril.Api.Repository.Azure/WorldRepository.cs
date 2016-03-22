@@ -22,7 +22,65 @@ namespace Peril.Api.Repository.Azure
 
         public async Task AddArmyToCombat(Guid sessionId, CombatType sourceType, IDictionary<Guid, IEnumerable<ICombatArmy>> armies)
         {
-            throw new NotImplementedException();
+            // Do a query to grab all combat
+            var allCombat = await GetCombat(sessionId);
+            var combatByTargetRegionQuery = from combat in allCombat
+                                            where combat.ResolutionType != CombatType.BorderClash
+                                            from army in combat.InvolvedArmies
+                                            where army.ArmyMode == CombatArmyMode.Defending
+                                            let defendingRegion = army.OriginRegionId
+                                            group combat by defendingRegion into combatByTargetRegion
+                                            select combatByTargetRegion;
+            Dictionary<Guid, IEnumerable<CombatTableEntry>> targetRegionToCombatLookup = combatByTargetRegionQuery.ToDictionary(
+                entry => entry.Key,
+                entry => entry.Select(combat => combat as CombatTableEntry)
+            );
+
+            // Iterate changes and apply to target regions
+            TableBatchOperation batchOperation = new TableBatchOperation();
+            foreach (var combatEntry in armies)
+            {
+                Guid targetRegionId = combatEntry.Key;
+                if (targetRegionToCombatLookup.ContainsKey(targetRegionId))
+                {
+                    foreach (CombatTableEntry combat in targetRegionToCombatLookup[targetRegionId])
+                    {
+                        if (sourceType < combat.ResolutionType)
+                        {
+                            List<ICombatArmy> existingArmies = combat.InvolvedArmies.ToList();
+                            foreach (ICombatArmy army in combatEntry.Value)
+                            {
+                                existingArmies.Add(new CombatArmy(army.OriginRegionId, army.OwnerUserId, army.ArmyMode, army.NumberOfTroops));
+                            }
+                            combat.SetCombatArmy(existingArmies);
+
+                            batchOperation.Replace(combat);
+                        }
+                    }
+                }
+                else
+                {
+                    throw new InvalidOperationException("Unable to find the target region in the combat lookup");
+                }
+            }
+
+            // Write entry back (fails on write conflict)
+            try
+            {
+                CloudTable dataTable = GetTableForSessionData(sessionId, 1);
+                await dataTable.ExecuteBatchAsync(batchOperation);
+            }
+            catch (StorageException exception)
+            {
+                if (exception.RequestInformation.HttpStatusCode == (int)HttpStatusCode.PreconditionFailed)
+                {
+                    throw new ConcurrencyException();
+                }
+                else
+                {
+                    throw exception;
+                }
+            }
         }
 
         public async Task<IEnumerable<Guid>> AddCombat(Guid sessionId, IEnumerable<Tuple<CombatType, IEnumerable<ICombatArmy>>> armies)
@@ -91,7 +149,29 @@ namespace Peril.Api.Repository.Azure
 
         public async Task<IEnumerable<ICombat>> GetCombat(Guid sessionId, CombatType type)
         {
-            throw new NotImplementedException();
+            CloudTable dataTable = GetTableForSessionData(sessionId, 1);
+
+            TableQuery<CombatTableEntry> query = new TableQuery<CombatTableEntry>()
+                .Where(TableQuery.CombineFilters(
+                    TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, sessionId.ToString()),
+                    TableOperators.And,
+                    TableQuery.GenerateFilterConditionForInt("ResolutionTypeRaw", QueryComparisons.Equal, (Int32)type)
+                ));
+
+            // Initialize the continuation token to null to start from the beginning of the table.
+            TableContinuationToken continuationToken = null;
+
+            // Loop until the continuation token comes back as null
+            List<ICombat> results = new List<ICombat>();
+            do
+            {
+                var queryResults = await dataTable.ExecuteQuerySegmentedAsync(query, continuationToken);
+                continuationToken = queryResults.ContinuationToken;
+                results.AddRange(queryResults.Results);
+            }
+            while (continuationToken != null);
+
+            return results;
         }
 
         public IEnumerable<int> GetRandomNumberGenerator(Guid targetRegion, int minimum, int maximum)
