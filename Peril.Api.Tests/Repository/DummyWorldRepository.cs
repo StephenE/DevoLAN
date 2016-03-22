@@ -49,14 +49,16 @@ namespace Peril.Api.Tests.Repository
             throw new InvalidOperationException();
         }
 
-        public Task AddCombat(Guid sessionId, IEnumerable<Tuple<CombatType, IEnumerable<ICombatArmy>>> armies)
+        public Task<IEnumerable<Guid>> AddCombat(Guid sessionId, IEnumerable<Tuple<CombatType, IEnumerable<ICombatArmy>>> armies)
         {
+            List<Guid> createdCombatIds = new List<Guid>();
             foreach(var combatData in armies)
             {
                 Guid combatId = Guid.NewGuid();
                 DummyCombat combat = new DummyCombat(combatId, combatData.Item1);
+                createdCombatIds.Add(combatId);
 
-                foreach(ICombatArmy army in combatData.Item2)
+                foreach (ICombatArmy army in combatData.Item2)
                 {
                     combat.SetupAddArmy(army.OriginRegionId, army.OwnerUserId, army.ArmyMode, army.NumberOfTroops);
                 }
@@ -82,7 +84,7 @@ namespace Peril.Api.Tests.Repository
                 }
             }
 
-            return Task.FromResult(false);
+            return Task.FromResult<IEnumerable<Guid>>(createdCombatIds);
         }
 
         public Task AddArmyToCombat(Guid sessionId, CombatType sourceType, IDictionary<Guid, IEnumerable<ICombatArmy>> armies)

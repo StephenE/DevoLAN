@@ -28,7 +28,7 @@ namespace Peril.Api.Repository.Azure
             Guid newSessionGuid = Guid.NewGuid();
 
             // Create a new table to store all the data for this session
-            GetTableForSessionData(newSessionGuid);
+            GetTableForSessionData(newSessionGuid, 1);
 
             // Create a new table entry
             SessionTableEntry newSession = new SessionTableEntry(userId, newSessionGuid);
@@ -168,14 +168,14 @@ namespace Peril.Api.Repository.Azure
             }
         }
 
-        public CloudTable GetTableForSessionData(Guid sessionId)
+        public CloudTable GetTableForSessionData(Guid sessionId, UInt32 roundNumber)
         {
-            return GetTableForSessionData(TableClient, sessionId);
+            return GetTableForSessionData(TableClient, sessionId, roundNumber);
         }
 
-        static public CloudTable GetTableForSessionData(CloudTableClient tableClient, Guid sessionId)
+        static public CloudTable GetTableForSessionData(CloudTableClient tableClient, Guid sessionId, UInt32 roundNumber)
         {
-            String tableName = "Data" + sessionId.ToString().Replace("-", String.Empty);
+            String tableName = "Data" + sessionId.ToString().Replace("-", String.Empty) + "Round" + roundNumber;
             CloudTable table = tableClient.GetTableReference(tableName);
             return table;
         }

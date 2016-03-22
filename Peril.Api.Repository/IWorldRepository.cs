@@ -11,7 +11,7 @@ namespace Peril.Api.Repository
 
         Task<IEnumerable<ICombat>> GetCombat(Guid sessionId, CombatType type);
 
-        Task AddCombat(Guid sessionId, IEnumerable<Tuple<CombatType, IEnumerable<ICombatArmy>>> armies);
+        Task<IEnumerable<Guid>> AddCombat(Guid sessionId, IEnumerable<Tuple<CombatType, IEnumerable<ICombatArmy>>> armies);
 
         Task AddArmyToCombat(Guid sessionId, CombatType sourceType, IDictionary<Guid, IEnumerable<ICombatArmy>> armies);
 

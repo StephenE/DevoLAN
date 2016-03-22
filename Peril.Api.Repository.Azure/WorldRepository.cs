@@ -25,23 +25,25 @@ namespace Peril.Api.Repository.Azure
             throw new NotImplementedException();
         }
 
-        public async Task AddCombat(Guid sessionId, IEnumerable<Tuple<CombatType, IEnumerable<ICombatArmy>>> armies)
+        public async Task<IEnumerable<Guid>> AddCombat(Guid sessionId, IEnumerable<Tuple<CombatType, IEnumerable<ICombatArmy>>> armies)
         {
             TableBatchOperation batchOperation = new TableBatchOperation();
 
             // Insert armies
+            List<Guid> createdCombatIds = new List<Guid>();
             foreach (var armyEntry in armies)
             {
                 Guid combatId = Guid.NewGuid();
                 CombatTableEntry entry = new CombatTableEntry(sessionId, combatId, armyEntry.Item1);
                 entry.SetCombatArmy(armyEntry.Item2);
                 batchOperation.Insert(entry);
+                createdCombatIds.Add(combatId);
             }
 
             // Write entry back (fails on write conflict)
             try
             {
-                CloudTable dataTable = GetTableForSessionData(sessionId);
+                CloudTable dataTable = GetTableForSessionData(sessionId, 1);
                 await dataTable.ExecuteBatchAsync(batchOperation);
             }
             catch (StorageException exception)
@@ -55,6 +57,8 @@ namespace Peril.Api.Repository.Azure
                     throw exception;
                 }
             }
+
+            return createdCombatIds;
         }
 
         public async Task AddCombatResults(Guid sessionId, IEnumerable<ICombatResult> results)
@@ -64,7 +68,25 @@ namespace Peril.Api.Repository.Azure
 
         public async Task<IEnumerable<ICombat>> GetCombat(Guid sessionId)
         {
-            throw new NotImplementedException();
+            CloudTable dataTable = GetTableForSessionData(sessionId, 1);
+
+            TableQuery<CombatTableEntry> query = new TableQuery<CombatTableEntry>()
+                .Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, sessionId.ToString()));
+
+            // Initialize the continuation token to null to start from the beginning of the table.
+            TableContinuationToken continuationToken = null;
+
+            // Loop until the continuation token comes back as null
+            List<ICombat> results = new List<ICombat>();
+            do
+            {
+                var queryResults = await dataTable.ExecuteQuerySegmentedAsync(query, continuationToken);
+                continuationToken = queryResults.ContinuationToken;
+                results.AddRange(queryResults.Results);
+            }
+            while (continuationToken != null);
+
+            return results;
         }
 
         public async Task<IEnumerable<ICombat>> GetCombat(Guid sessionId, CombatType type)
@@ -77,9 +99,9 @@ namespace Peril.Api.Repository.Azure
             yield return RandomNumberGenerator.Next(minimum, maximum);
         }
 
-        public CloudTable GetTableForSessionData(Guid sessionId)
+        public CloudTable GetTableForSessionData(Guid sessionId, UInt32 roundNumber)
         {
-            return SessionRepository.GetTableForSessionData(TableClient, sessionId);
+            return SessionRepository.GetTableForSessionData(TableClient, sessionId, roundNumber);
         }
 
         private CloudStorageAccount StorageAccount { get; set; }
