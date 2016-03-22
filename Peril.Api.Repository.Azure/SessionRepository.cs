@@ -173,9 +173,9 @@ namespace Peril.Api.Repository.Azure
             return GetTableForSessionData(TableClient, sessionId);
         }
 
-        static public CloudTable GetTableForSessionData(CloudTableClient tableClient, Guid sessionPhaseId)
+        static public CloudTable GetTableForSessionData(CloudTableClient tableClient, Guid sessionId)
         {
-            String tableName = sessionPhaseId.ToString().Replace("-", String.Empty);
+            String tableName = "Data" + sessionId.ToString().Replace("-", String.Empty);
             CloudTable table = tableClient.GetTableReference(tableName);
             return table;
         }

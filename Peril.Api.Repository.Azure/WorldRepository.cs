@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using Peril.Core;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
+using Peril.Api.Repository.Azure.Model;
+using System.Net;
 
 namespace Peril.Api.Repository.Azure
 {
@@ -18,27 +20,54 @@ namespace Peril.Api.Repository.Azure
             RandomNumberGenerator = new Random();
         }
 
-        public Task AddArmyToCombat(Guid sessionId, CombatType sourceType, IDictionary<Guid, IEnumerable<ICombatArmy>> armies)
+        public async Task AddArmyToCombat(Guid sessionId, CombatType sourceType, IDictionary<Guid, IEnumerable<ICombatArmy>> armies)
         {
             throw new NotImplementedException();
         }
 
-        public Task AddCombat(Guid sessionId, IEnumerable<Tuple<CombatType, IEnumerable<ICombatArmy>>> armies)
+        public async Task AddCombat(Guid sessionId, IEnumerable<Tuple<CombatType, IEnumerable<ICombatArmy>>> armies)
+        {
+            TableBatchOperation batchOperation = new TableBatchOperation();
+
+            // Insert armies
+            foreach (var armyEntry in armies)
+            {
+                Guid combatId = Guid.NewGuid();
+                CombatTableEntry entry = new CombatTableEntry(sessionId, combatId, armyEntry.Item1);
+                entry.SetCombatArmy(armyEntry.Item2);
+                batchOperation.Insert(entry);
+            }
+
+            // Write entry back (fails on write conflict)
+            try
+            {
+                CloudTable dataTable = GetTableForSessionData(sessionId);
+                await dataTable.ExecuteBatchAsync(batchOperation);
+            }
+            catch (StorageException exception)
+            {
+                if (exception.RequestInformation.HttpStatusCode == (int)HttpStatusCode.PreconditionFailed)
+                {
+                    throw new ConcurrencyException();
+                }
+                else
+                {
+                    throw exception;
+                }
+            }
+        }
+
+        public async Task AddCombatResults(Guid sessionId, IEnumerable<ICombatResult> results)
         {
             throw new NotImplementedException();
         }
 
-        public Task AddCombatResults(Guid sessionId, IEnumerable<ICombatResult> results)
+        public async Task<IEnumerable<ICombat>> GetCombat(Guid sessionId)
         {
             throw new NotImplementedException();
         }
 
-        public Task<IEnumerable<ICombat>> GetCombat(Guid sessionId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<IEnumerable<ICombat>> GetCombat(Guid sessionId, CombatType type)
+        public async Task<IEnumerable<ICombat>> GetCombat(Guid sessionId, CombatType type)
         {
             throw new NotImplementedException();
         }
