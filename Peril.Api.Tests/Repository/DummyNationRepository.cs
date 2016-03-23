@@ -109,5 +109,12 @@ namespace Peril.Api.Tests.Repository
             task.Wait();
             return setupContext;
         }
+
+        static public DummyNationData GetNation(this ControllerMock controllerMock, Guid sessionId, String userId)
+        {
+            var task = controllerMock.NationRepository.GetNation(sessionId, userId);
+            task.Wait();
+            return task.Result as DummyNationData;
+        }
     }
 }

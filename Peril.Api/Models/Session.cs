@@ -8,6 +8,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web.Http;
+using System.Xml.Linq;
 
 namespace Peril.Api.Models
 {
@@ -81,6 +82,57 @@ namespace Peril.Api.Models
                 throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.Unauthorized, ReasonPhrase = "Only the session owner is allowed to take this action" });
             }
             return session;
+        }
+
+        static public List<Region> LoadRegions(this XDocument worldDefinition)
+        {
+            var regionsList = from continentXml in worldDefinition.Root.Elements("Continent")
+                              let continentId = Guid.NewGuid()
+                              from regionXml in continentXml.Elements("Region")
+                              select new Region
+                              {
+                                  RegionId = Guid.NewGuid(),
+                                  ContinentId = continentId,
+                                  Name = regionXml.Attribute("Name").Value
+                              };
+            return regionsList.ToList();
+        }
+
+        static public void LoadRegionConnections(this XDocument worldDefinition, List<Region> regions)
+        {
+            Dictionary<String, Region> regionLookup = new Dictionary<string, Region>();
+            Dictionary<String, List<Guid>> regionConnectionsLookup = new Dictionary<string, List<Guid>>();
+            foreach (Region region in regions)
+            {
+                regionLookup[region.Name] = region;
+                regionConnectionsLookup[region.Name] = new List<Guid>();
+            }
+
+            var connections = from connectionXml in worldDefinition.Root.Elements("Connections")
+                              from connectedXml in connectionXml.Elements("Connected")
+                              let regionId = connectedXml.Attribute("Name").Value
+                              let otherRegionId = connectedXml.Attribute("Other").Value
+                              join regionData in regions on regionId equals regionData.Name
+                              join otherRegionData in regions on otherRegionId equals otherRegionData.Name
+                              select new
+                              {
+                                  Region = regionId,
+                                  RegionId = regionData.RegionId,
+                                  OtherRegion = otherRegionId,
+                                  OtherRegionId = otherRegionData.RegionId
+                              };
+
+
+            foreach (var connection in connections)
+            {
+                regionConnectionsLookup[connection.Region].Add(connection.OtherRegionId);
+                regionConnectionsLookup[connection.OtherRegion].Add(connection.RegionId);
+            }
+
+            foreach(var connectionEntry in regionConnectionsLookup)
+            {
+                regionLookup[connectionEntry.Key].ConnectedRegions = connectionEntry.Value;
+            }
         }
     }
 }
