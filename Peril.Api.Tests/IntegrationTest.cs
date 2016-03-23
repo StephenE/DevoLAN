@@ -15,6 +15,7 @@ namespace Peril.Api.Tests
         [TestMethod]
         [TestCategory("Integration")]
         [DeploymentItem(@"Data\ValidWorldDefinition.xml", "WorldData")]
+        [Ignore]
         public async Task IntegrationTestStartAndPlayOneRound_WithTwoUsers()
         {
             ControllerMock primaryUser = new ControllerMock();

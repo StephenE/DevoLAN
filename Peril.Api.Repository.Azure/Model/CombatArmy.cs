@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Peril.Core;
+using System;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using Peril.Core;
 
 namespace Peril.Api.Repository.Azure.Model
 {
@@ -52,7 +50,7 @@ namespace Peril.Api.Repository.Azure.Model
     {
         static public String EncodeToAzureString(this ICombatArmy army)
         {
-            if(army.OwnerUserId.Contains('@') || army.OwnerUserId.Contains('#'))
+            if(army.OwnerUserId.Contains(';') || army.OwnerUserId.Contains('#'))
             {
                 throw new InvalidOperationException("OwnerUserId contains unsupported characters");
             }

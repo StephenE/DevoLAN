@@ -121,7 +121,32 @@ namespace Peril.Api.Repository.Azure
 
         public async Task AddCombatResults(Guid sessionId, IEnumerable<ICombatResult> results)
         {
-            throw new NotImplementedException();
+            TableBatchOperation batchOperation = new TableBatchOperation();
+
+            // Insert results
+            foreach (ICombatResult result in results)
+            {
+                CombatResultTableEntry entry = new CombatResultTableEntry(sessionId, result.CombatId, result.Rounds);
+                batchOperation.Insert(entry);
+            }
+
+            // Write entry back (fails on write conflict)
+            try
+            {
+                CloudTable dataTable = GetTableForSessionData(sessionId, 1);
+                await dataTable.ExecuteBatchAsync(batchOperation);
+            }
+            catch (StorageException exception)
+            {
+                if (exception.RequestInformation.HttpStatusCode == (int)HttpStatusCode.PreconditionFailed)
+                {
+                    throw new ConcurrencyException();
+                }
+                else
+                {
+                    throw exception;
+                }
+            }
         }
 
         public async Task<IEnumerable<ICombat>> GetCombat(Guid sessionId)
