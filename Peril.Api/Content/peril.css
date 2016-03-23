@@ -21,6 +21,10 @@
 		background-position:top center;
 	}
 	
+	body.bckWater{
+		background-image:url('images/bckWater.jpg');
+	}
+	
 /* Form Styles */
 	input, select, option{
 		display:block;
@@ -589,93 +593,81 @@
 	}
 	
 	.player-1{
-		background-color:FireBrick;
-		fill:FireBrick;
-		color:White;
-	}
-	
-	.player-2{
-		background-color:OrangeRed;
-		fill:OrangeRed;
-		color:White;
-	}
-	
-	.player-3{
-		background-color:Orange;
-		fill:Orange;
-		color:White;
-	}
-	
-	.player-4{
-		background-color:SaddleBrown;
-		fill:SaddleBrown;
-		color:White;
-	}
-	
-	.player-5{
-		background-color:Tan;
-		fill:Tan;
-		color:Black;
-	}
-	
-	.player-6{
-		background-color:Gold;
-		fill:Gold;
-		color:Black;
-	}
-	
-	.player-7{
-		background-color:GreenYellow;
-		fill:GreenYellow;
-		color:Black;
-	}
-	
-	.player-8{
-		background-color:ForestGreen;
-		fill:ForestGreen;
-		color:White;
-	}
-	
-	.player-9{
-		background-color:LightSeaGreen;
-		fill:LightSeaGreen;
-		color:White;
-	}
-	
-	.player-10{
 		background-color:RoyalBlue;
 		fill:RoyalBlue;
 		color:White;
 	}
 	
-	.player-11{
-		background-color:MediumOrchid;
-		fill:MediumOrchid;
+	.player-2{
+		background-color:ForestGreen;
+		fill:ForestGreen;
 		color:White;
 	}
 	
-	.player-12{
-		background-color:Indigo;
-		fill:Indigo;
+	.player-3{
+		background-color:FireBrick;
+		fill:FireBrick;
 		color:White;
 	}
 	
-	.player-13{
+	.player-4{
+		background-color:Orange;
+		fill:Orange;
+		color:White;
+	}
+	
+	.player-5{
+		background-color:Yellow;
+		fill:Yellow;
+		color:Black;
+	}
+	
+	.player-6{
 		background-color:Purple;
 		fill:Purple;
 		color:White;
 	}
 	
-	.player-14{
+	.player-7{
 		background-color:HotPink;
 		fill:HotPink;
 		color:White;
 	}
 	
-	.player-15{
+	.player-8{
 		background-color:GhostWhite;
 		fill:GhostWhite;
 		color:Black;
+	}
+	
+	.player-9{
+		background-color:OrangeRed;
+		fill:OrangeRed;
+		color:White;
+	}
+	
+	.player-10{
+		background-color:GreenYellow;
+		fill:GreenYellow;
+		color:Black;
+	}
+	
+	.player-11{
+		background-color:LightSeaGreen;
+		fill:LightSeaGreen;
+		color:White;
+	}
+	
+	.player-12{
+		background-color:MediumOrchid;
+		fill:MediumOrchid;
+		color:White;
+	}
+	
+	.player-13{
+		background-color:Indigo;
+		fill:Indigo;
+		color:White;
 	}
 	
 /* @Media Tags */

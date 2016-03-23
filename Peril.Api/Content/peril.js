@@ -4,27 +4,32 @@
 	var currentGame = "";
 	var apiUriBase = "http://devolan.azurewebsites.net/";
 	
+	var maxPlayers = 14;
+	
 	var system = {};
 	system.music = 1;
 	system.sfx = 1;
+	system.musicVolume = 0.5;
+	system.sfxVolume = 1;
 
 // Load Screens
-	function loadScreen(screen){
-		console.log("Loading " + screen + "...")
+	function loadScreen(screen, noOverlay){
+		console.log("Loading " + screen + "...");
 		
 		var url = "Content/parts/" + screen + ".html";
 		sendAjax("GET", url, "", "form", displayScreen, displayScreen, false);
 		
 		screenTarget = screen;
-		showOverlay("Loading...", "<img src='Content/images/waiting.svg' />");
+		
+		if(noOverlay === false){
+			showOverlay("Loading...", "<img src='Content/images/waiting.svg' />");
+		}
 	}
 	
 	function displayScreen(){
 		console.log(screenTarget + " loaded.");
 		
 		getID("canvas").innerHTML = this.responseText;
-		hideOverlay();
-		
 		loadScripts();
 	}
 	
@@ -33,6 +38,8 @@
 		
 		switch(screenTarget){
 			case "login":
+				hideOverlay();
+				
 				if(loadCookie("userToken")){
 					userToken = loadCookie("userToken");
 					loadScreen("browser");
@@ -42,11 +49,19 @@
 				addEvent("registerButton", "click", function(){playAudio("sfx", "button"); register();}, false);
 				break;
 				
-			 case "browser":
+			case "browser":
 				sessions();
 				
 				addEvent("createButton", "click", function(){playAudio("sfx", "button"); hostGame();}, false)
 				addEvent("logoutButton", "click", function(){playAudio("sfx", "confirm"); deleteCookie("userToken"); loadScreen("login");}, false)
+				break;
+				
+			case "board":
+				writeClass("body", "bckWater");
+				
+				updateBoard();
+				
+				setTimeout(function(){hideOverlay(); playAudio("music", "planning");}, 1500);
 				break;
 		}
 	}
@@ -232,9 +247,8 @@
 				}
 
 				// Select Player Colour
-					console.log(usedColours);
 					var content = "<div class='boxContainer'>";
-						for(x = 0; x < 16; x++){
+						for(x = 0; x < maxPlayers; x++){
 							if(usedColours.indexOf(x) < 0){
 								content += "<div id='b-" + x + "' data-colour='" + x + "' class='box button player-" + x + "'><br/><br/></div>";
 							}
@@ -247,7 +261,7 @@
 					
 				// Add Event Listeners
 					addEvent("b-cancel", "click", function(){hideOverlay();});
-					for(x = 0; x < 16; x++){
+					for(x = 0; x < maxPlayers; x++){
 						if(usedColours.indexOf(x) < 0){
 							addEvent("b-" + x, "click", function(){playAudio("sfx", "confirm"); joinGame(currentGame, getData(this.id, "colour"));});
 						}
@@ -269,7 +283,10 @@
 				case 204:
 					console.log("Join request successful.");
 					
+					fadeAudio("music", 0, 1.5);
 					showOverlay("Entering Game...", "<img src='Content/images/waiting.svg' />", true);
+					
+					var timer = setTimeout(function(){loadScreen("board", true);}, 1500);
 					break;
 					
 				default:
@@ -286,6 +303,20 @@
 		}
 		
 // Game Board
+	// Update Board
+		function updateBoard(){
+			console.log("Getting current game board status...");
+			
+			var data = "?sessionId=" + currentGame;
+			sendAjax("GET", "http://devolan.azurewebsites.net/api/World/RegionList", data, "adv", updateResponse, updateResponse, true);
+		}
+		
+		function updateResponse(){
+			console.log("Updating board to current state...");
+			
+			var world = JSON.parse(this.responseText);
+		}
+	
 	// Setup Board
 		function boardSetup(){
 			// Resize Listener
@@ -313,15 +344,20 @@
 		}
 	}
 	
-	function hideOverlay(){
+	function hideOverlay(fade){
 		//console.log("Hiding overlay.");
 		
-		writeClass("overlay", "hide");
+		if(fade){
+			writeClass("overlay", "show");
+			setTimeout(hideOverlay, 1500);
+		} else {
+			writeClass("overlay", "hide");
+		}
 	}
 	
 // Save User Login Session
 	function saveCookie(name, data){
-		console.log("Saving " + name + " cookie.");
+		//console.log("Saving " + name + " cookie.");
 		
 		document.cookie = name + "=" + JSON.stringify(data);
 	}
@@ -330,7 +366,7 @@
 		var cookies = document.cookie.split(";");
 		var x = 0;
 		
-		console.log("Checking for " + name + " cookie...");
+		//console.log("Checking for " + name + " cookie...");
 		
 		// Cycle Cookies
 			for(x = 0; x < cookies.length; x++){
@@ -346,7 +382,7 @@
 	}
 	
 	function deleteCookie(name){
-		console.log("Removing " + name + " cookie.")
+		//console.log("Removing " + name + " cookie.")
 		
 		document.cookie = name + "=''; expires=Thu, 01 Jan 1970 00:00:00 UTC";
 	}
@@ -354,7 +390,7 @@
 // Menu & Settings
 	// Menu
 		function menuRefresh(){
-			console.log("Building settings menu.");
+			//console.log("Building settings menu.");
 			
 			var build = "";
 			
@@ -415,15 +451,54 @@
 		
 // Audio Handling
 	function playAudio(target, sound){
-		console.log("Changing " + target + " to " + sound + ".");
+		//console.log("Playing " + sound + " on " + target + " channel.");
 		
 		var player = getID(target);
 		var source = getID(target + "Source");
 		
 		player.pause();
 		source.src = "Content/media/" + sound + ".mp3";
+		
+		switch(target){
+			case "sfx":
+				setAudioVolume(target, system.sfxVolume);
+				break;
+				
+			case "music":
+				setAudioVolume(target, system.musicVolume);
+				break;
+		}
+		
 		player.load();
 		player.play();
+	}
+	
+	function setAudioVolume(target, level){
+		//console.log("Adjusting " + target + " to volume level " + level + ".");
+		
+		var player = getID(target);
+		player.volume = level;
+	}
+	
+	function fadeAudio(target, level, duration){
+		//console.log("Fading " + target + " to " + level + " over " + duration + " seconds.");
+		
+		var player = getID(target);
+		duration = (duration * 1000) / (duration * 25);
+		level = player.volume / duration;
+		
+		var timer = setInterval(function(){
+				try{
+					player.volume -= level;
+				}catch(err){
+					player.volume = 0;
+					clearInterval(timer);
+				}
+
+				if(player.volume === 0.0){
+					clearInterval(timer);
+				}
+			}, duration);
 	}
 	
 // Screen Sizing
