@@ -18,13 +18,14 @@ namespace Peril.Api.Controllers.Api
     [RoutePrefix("api/Game")]
     public class GameController : ApiController
     {
-        public GameController(ICommandQueue commandQueue, INationRepository nationRepository, IRegionRepository regionRepository, ISessionRepository sessionRepository, IUserRepository userRepository)
+        public GameController(ICommandQueue commandQueue, INationRepository nationRepository, IRegionRepository regionRepository, ISessionRepository sessionRepository, IUserRepository userRepository, IWorldRepository worldRepository)
         {
             CommandQueue = commandQueue;
             NationRepository = nationRepository;
             RegionRepository = regionRepository;
             SessionRepository = sessionRepository;
             UserRepository = userRepository;
+            WorldRepository = worldRepository;
         }
 
         // GET /api/Game/Sessions
@@ -194,8 +195,7 @@ namespace Peril.Api.Controllers.Api
                     var regions = RegionRepository.GetRegions(session.GameId);
                     var nationsTask = NationRepository.GetNations(session.GameId);
                     IEnumerable<ICommandQueueMessage> pendingMessages = await CommandQueue.GetQueuedCommands(session.GameId, session.PhaseId);
-                    IEnumerable<IDeployReinforcementsMessage> pendingReinforcementMessages = pendingMessages.GetCommandsFromPhase(session.PhaseId)
-                                                                                                            .GetQueuedDeployReinforcementsCommands();
+                    IEnumerable<IDeployReinforcementsMessage> pendingReinforcementMessages = pendingMessages.GetQueuedDeployReinforcementsCommands();
 
                     IEnumerable<INationData> nations = await nationsTask;
                     await ProcessReinforcementMessages(session.GameId, await regions, nations, pendingReinforcementMessages);
@@ -209,6 +209,48 @@ namespace Peril.Api.Controllers.Api
                     await NationRepository.SetAvailableReinforcements(session.GameId, initialReinforcements);
                     await CommandQueue.RemoveCommands(session.PhaseId);
                     nextPhase = SessionPhase.CombatOrders;
+                    break;
+                }
+                case SessionPhase.CombatOrders:
+                {
+                    var regions = RegionRepository.GetRegions(session.GameId);
+                    var nationsTask = NationRepository.GetNations(session.GameId);
+                    IEnumerable<ICommandQueueMessage> pendingMessages = await CommandQueue.GetQueuedCommands(session.GameId, session.PhaseId);
+                    IEnumerable<IOrderAttackMessage> pendingAttackMessages = pendingMessages.GetQueuedOrderAttacksCommands();
+                    nextPhase = await ProcessCombatOrders(session.GameId, await regions, await nationsTask, pendingAttackMessages);
+                    await CommandQueue.RemoveCommands(session.PhaseId);
+                    break;
+                }
+                case SessionPhase.BorderClashes:
+                {
+                    var borderClashes = WorldRepository.GetCombat(session.GameId, CombatType.BorderClash);
+                    IEnumerable<CombatResult> results = await ResolveCombat(session.GameId, await borderClashes);
+                    await ApplyBorderClashResults(session.GameId, results);
+                    nextPhase = SessionPhase.MassInvasions;
+                    break;
+                }
+                case SessionPhase.MassInvasions:
+                {
+                    var massInvasions = WorldRepository.GetCombat(session.GameId, CombatType.MassInvasion);
+                    IEnumerable<CombatResult> results = await ResolveCombat(session.GameId, await massInvasions);
+                    await ApplyCombatResults(session.GameId, CombatType.MassInvasion, results);
+                    nextPhase = SessionPhase.Invasions;
+                    break;
+                }
+                case SessionPhase.Invasions:
+                {
+                    var invasions = WorldRepository.GetCombat(session.GameId, CombatType.Invasion);
+                    IEnumerable<CombatResult> results = await ResolveCombat(session.GameId, await invasions);
+                    await ApplyCombatResults(session.GameId, CombatType.Invasion, results);
+                    nextPhase = SessionPhase.SpoilsOfWar;
+                    break;
+                }
+                case SessionPhase.SpoilsOfWar:
+                {
+                    var invasions = WorldRepository.GetCombat(session.GameId, CombatType.SpoilsOfWar);
+                    IEnumerable<CombatResult> results = await ResolveCombat(session.GameId, await invasions);
+                    await ApplyCombatResults(session.GameId, CombatType.SpoilsOfWar, results);
+                    nextPhase = SessionPhase.Redeployment;
                     break;
                 }
                 default:
@@ -314,10 +356,235 @@ namespace Peril.Api.Controllers.Api
             }
         }
 
+        private async Task<SessionPhase> ProcessCombatOrders(Guid sessionId, IEnumerable<IRegionData> availableRegions, IEnumerable<INationData> players, IEnumerable<IOrderAttackMessage> messages)
+        {
+            SessionPhase nextSessionPhase = SessionPhase.Redeployment;
+            Dictionary<Guid, OwnershipChange> regionOwnershipChanges = new Dictionary<Guid, OwnershipChange>();
+
+            // Track how many troops are available in each region
+            var sourceRegionsQuery = from region in availableRegions
+                                     select new CombatOrderRegion { RegionId = region.RegionId, TroopCount = region.TroopCount, CurrentEtag = region.CurrentEtag, OwnerId = region.OwnerId };
+            var sourceRegions = sourceRegionsQuery.ToDictionary(entry => entry.RegionId);
+
+
+            // Group all orders by target region (process most attacked targets first)
+            var attacksBySourceRegionQuery = from message in messages
+                                             group message by message.SourceRegion into source
+                                             select source;
+            var attacksBySourceRegion = attacksBySourceRegionQuery.ToDictionary(entry => entry.Key, entry => entry.ToList());
+
+            // Group duplicate source regions
+            foreach(var sourceRegionMessages in attacksBySourceRegion)
+            {
+                // Ignore any invalid messages that don't come from a region that actually exists
+                if (sourceRegions.ContainsKey(sourceRegionMessages.Key))
+                {
+                    var regionData = sourceRegions[sourceRegionMessages.Key];
+                    foreach(IOrderAttackMessage attackMessage in sourceRegionMessages.Value)
+                    {
+                        // Ignore any messages that don't match the Etag
+                        if(attackMessage.SourceRegionEtag == regionData.CurrentEtag)
+                        {
+                            // Ignore any messages that would reduce the number of available troops below 1
+                            if(regionData.TroopCount > attackMessage.NumberOfTroops)
+                            {
+                                if(!regionData.OutgoingArmies.ContainsKey(attackMessage.TargetRegion))
+                                {
+                                    regionData.OutgoingArmies[attackMessage.TargetRegion] = 0;
+                                }
+                                regionData.OutgoingArmies[attackMessage.TargetRegion] += attackMessage.NumberOfTroops;
+                                regionData.TroopCount -= attackMessage.NumberOfTroops;
+                            }
+                        }
+                    }
+
+                    regionOwnershipChanges.Add(regionData.RegionId, new OwnershipChange(regionData.OwnerId, regionData.TroopCount));
+                }
+            }
+
+            var resolvedCombat = new List<Tuple<CombatType, IEnumerable<ICombatArmy>>>();
+
+            // Detect border clashes
+            Dictionary<Guid, List<Guid>> regionAttackers = new Dictionary<Guid, List<Guid>>();
+            foreach (var regionEntry in sourceRegions)
+            {
+                Guid sourceRegionId = regionEntry.Key;
+                var sourceRegionData = regionEntry.Value;
+
+                List<Guid> targetRegions = regionEntry.Value.OutgoingArmies.Keys.ToList();
+                foreach(var targetRegionId in targetRegions)
+                {
+                    // Skip this army if the troop count is 0 (means we've already created a border clash)
+                    if (sourceRegionData.OutgoingArmies[targetRegionId] > 0 && sourceRegions.ContainsKey(targetRegionId))
+                    {
+                        var targetRegionData = sourceRegions[targetRegionId];
+                        if (targetRegionData.OutgoingArmies.ContainsKey(sourceRegionId))
+                        {
+                            // Border clash!
+                            IEnumerable<ICombatArmy> involvedArmies = new List<CombatArmy>
+                            {
+                                new CombatArmy(targetRegionId, targetRegionData.OwnerId, CombatArmyMode.Attacking, targetRegionData.OutgoingArmies[sourceRegionId]),
+                                new CombatArmy(sourceRegionId, sourceRegionData.OwnerId, CombatArmyMode.Attacking, sourceRegionData.OutgoingArmies[targetRegionId])
+                            };
+                            resolvedCombat.Add(Tuple.Create(CombatType.BorderClash, involvedArmies));
+
+                            // Clear the number of attacking troops, so we know that we've processed this already
+                            targetRegionData.OutgoingArmies[sourceRegionId] = 0;
+                            sourceRegionData.OutgoingArmies[targetRegionId] = 0;
+
+                            // There will be at least one border clash to resolve
+                            nextSessionPhase = SessionPhase.BorderClashes;
+                        }
+                    }
+
+                    if(!regionAttackers.ContainsKey(targetRegionId))
+                    {
+                        regionAttackers[targetRegionId] = new List<Guid>();
+                    }
+                    regionAttackers[targetRegionId].Add(sourceRegionId);
+                }
+            }
+
+            // Detect invasions & mass invasions. We can only detect "mass" invasions correctly by grouping the attacks by their target rather than source
+            foreach (var targetRegionPair in regionAttackers)
+            {
+                CombatType combatType = CombatType.Invasion;
+                if(targetRegionPair.Value.Count > 1)
+                {
+                    combatType = CombatType.MassInvasion;
+                }
+
+                List<ICombatArmy> involvedArmies = new List<ICombatArmy>();
+
+                // Add attacking armies. Ignore any that are currently in a BorderClash
+                foreach (Guid sourceRegionId in targetRegionPair.Value)
+                {
+                    var sourceRegionData = sourceRegions[sourceRegionId];
+                    UInt32 attackingArmySize = sourceRegionData.OutgoingArmies[targetRegionPair.Key];
+                    if (attackingArmySize > 0)
+                    {
+                        involvedArmies.Add(new CombatArmy(sourceRegionId, sourceRegionData.OwnerId, CombatArmyMode.Attacking, attackingArmySize));
+                    }
+                }
+
+                // Add a combat even if all attackers are involved in border clashes (we'll skip it later)
+                // Add the defending army
+                var defendingRegionData = sourceRegions[targetRegionPair.Key];
+                involvedArmies.Add(new CombatArmy(targetRegionPair.Key, defendingRegionData.OwnerId, CombatArmyMode.Defending, defendingRegionData.TroopCount));
+
+                resolvedCombat.Add(Tuple.Create(combatType, involvedArmies.AsEnumerable()));
+
+                // Update the next session phase if required
+                if(nextSessionPhase == SessionPhase.Redeployment || nextSessionPhase == SessionPhase.Invasions)
+                {
+                    nextSessionPhase = combatType == CombatType.MassInvasion ? SessionPhase.MassInvasions : SessionPhase.Invasions;
+                }
+            }
+
+            if (resolvedCombat.Count > 0)
+            {
+                // Store combat
+                await WorldRepository.AddCombat(sessionId, resolvedCombat);
+
+                // Update source regions with new troop levels
+                await RegionRepository.AssignRegionOwnership(sessionId, regionOwnershipChanges);
+            }
+
+            return nextSessionPhase;
+        }
+
+        private async Task<IEnumerable<CombatResult>> ResolveCombat(Guid sessionId, IEnumerable<ICombat> pendingCombat)
+        {
+            List<CombatResult> combatResults = new List<CombatResult>();
+            foreach(ICombat combat in pendingCombat)
+            {
+                combatResults.Add(CombatResult.GenerateForCombat(combat, (Guid regionId) => WorldRepository.GetRandomNumberGenerator(regionId, 1, 6).Select(value => (UInt32)value)));
+            }
+
+            if (combatResults.Count > 0)
+            {
+                await WorldRepository.AddCombatResults(sessionId, combatResults);
+            }
+
+            return combatResults;
+        }
+
+        private async Task ApplyBorderClashResults(Guid sessionId, IEnumerable<CombatResult> combatResults)
+        {
+            Dictionary<Guid, IEnumerable<ICombatArmy>> survivingArmies = new Dictionary<Guid, IEnumerable<ICombatArmy>>();
+
+            foreach(CombatResult result in combatResults)
+            {
+                if(result.SurvivingArmies.Count() == 1)
+                {
+                    // Figure out which side lost
+                    var survivingArmy = result.SurvivingArmies.First();
+                    var defeatedArmy = result.StartingArmies.Where(army => army.OriginRegionId != survivingArmy.OriginRegionId).ToList();
+                    if(defeatedArmy.Count == 1)
+                    {
+                        survivingArmies[defeatedArmy[0].OriginRegionId] = new List<ICombatArmy> { survivingArmy };
+                    }
+                }
+            }
+
+            await WorldRepository.AddArmyToCombat(sessionId, CombatType.BorderClash, survivingArmies);
+        }
+
+        private async Task ApplyCombatResults(Guid sessionId, CombatType type, IEnumerable<CombatResult> combatResults)
+        {
+            Dictionary<Guid, OwnershipChange> regionOwnershipChanges = new Dictionary<Guid, OwnershipChange>();
+            List<Tuple<CombatType, IEnumerable<ICombatArmy>>> spoilsOfWar = new List<Tuple<CombatType, IEnumerable<ICombatArmy>>>();
+
+            foreach (CombatResult result in combatResults)
+            {
+                var survivingNationsQuery = from army in result.SurvivingArmies
+                                            group army by army.OwnerUserId into survivingOwnerIds
+                                            select survivingOwnerIds;
+                var defendingArmy = result.StartingArmies.Where(army => army.ArmyMode == CombatArmyMode.Defending).FirstOrDefault();
+
+                if (defendingArmy != null)
+                {
+                    if (survivingNationsQuery.Count() == 1)
+                    {
+                        // Figure out which side lost
+
+                        Guid battleRegionId = defendingArmy.OriginRegionId;
+                        UInt32 survivingTroops = 0;
+                        foreach (CombatArmy army in result.SurvivingArmies)
+                        {
+                            survivingTroops += army.NumberOfTroops;
+                        }
+
+                        regionOwnershipChanges[battleRegionId] = new OwnershipChange(survivingNationsQuery.First().Key, survivingTroops);
+                    }
+                    else
+                    {
+                        var survivingArmies = result.SurvivingArmies.ToList();
+
+                        // Add an empty defending army, so we know which region is being attacked
+                        survivingArmies.Add(new CombatArmy(defendingArmy.OriginRegionId, defendingArmy.OwnerUserId, CombatArmyMode.Defending, 0));
+    
+                        spoilsOfWar.Add(Tuple.Create<CombatType, IEnumerable<ICombatArmy>>(CombatType.SpoilsOfWar, survivingArmies));
+                    }
+                }
+            }
+
+            if (regionOwnershipChanges.Count > 0)
+            {
+                await RegionRepository.AssignRegionOwnership(sessionId, regionOwnershipChanges);
+            }
+
+            if(spoilsOfWar.Count > 0)
+            {
+                await WorldRepository.AddCombat(sessionId, spoilsOfWar);
+            }
+        }
+
         private ICommandQueue CommandQueue { get; set; }
         private INationRepository NationRepository { get; set; }
         private IRegionRepository RegionRepository { get; set; }
         private ISessionRepository SessionRepository { get; set; }
         private IUserRepository UserRepository { get; set; }
+        private IWorldRepository WorldRepository { get; set; }
     }
 }

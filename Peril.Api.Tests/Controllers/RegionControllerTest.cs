@@ -420,6 +420,30 @@ namespace Peril.Api.Tests.Controllers
         [TestMethod]
         [TestCategory("Unit")]
         [TestCategory("RegionController")]
+        public async Task TestPostAttack_WithDuplicatedRegion_WithValidTroops()
+        {
+            // Arrange
+            ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(SessionGuid)
+                       .SetupSessionPhase(SessionPhase.CombatOrders)
+                       .SetupDummyWorldAsTree()
+                       .SetupRegionOwnership(UnownedAdjacentRegionGuid, DummyUserRepository.RegisteredUserIds[1])
+                       .SetupRegionTroops(OwnedRegionGuid, 3);
+
+            // Act
+            Guid operationId = await primaryUser.RegionController.PostAttack(SessionGuid, OwnedRegionGuid, 1, UnownedAdjacentRegionGuid);
+            Guid secondOperationId = await primaryUser.RegionController.PostAttack(SessionGuid, OwnedRegionGuid, 1, UnownedAdjacentRegionGuid);
+
+            // Assert
+            Assert.AreEqual(2, primaryUser.CommandQueue.DummyOrderAttackQueue.Count());
+            Assert.AreEqual(operationId, primaryUser.CommandQueue.DummyOrderAttackQueue.First().OperationId);
+            Assert.AreEqual(UnownedAdjacentRegionGuid, primaryUser.CommandQueue.DummyOrderAttackQueue.First().TargetRegion);
+            Assert.AreEqual(1U, primaryUser.CommandQueue.DummyOrderAttackQueue.First().NumberOfTroops);
+        }
+
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("RegionController")]
         public async Task TestPostAttack_WithValidRegion_WithInvalidTroops()
         {
             // Arrange
@@ -437,6 +461,37 @@ namespace Peril.Api.Tests.Controllers
             try
             {
                 await result;
+                Assert.Fail("Expected exception to be thrown");
+            }
+            catch (HttpResponseException exception)
+            {
+                Assert.AreEqual(HttpStatusCode.BadRequest, exception.Response.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("RegionController")]
+        [Ignore]
+        public async Task TestPostAttack_WithDuplicateRegion_WithInvalidTroops()
+        {
+            // Arrange
+            ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(SessionGuid)
+                       .SetupSessionPhase(SessionPhase.CombatOrders)
+                       .SetupDummyWorldAsTree()
+                       .SetupRegionOwnership(UnownedAdjacentRegionGuid, DummyUserRepository.RegisteredUserIds[1])
+                       .SetupRegionTroops(OwnedRegionGuid, 10);
+
+            // Act
+            Task result = primaryUser.RegionController.PostAttack(SessionGuid, OwnedRegionGuid, 9, UnownedAdjacentRegionGuid);
+            Task result2 = primaryUser.RegionController.PostAttack(SessionGuid, OwnedRegionGuid, 1, UnownedAdjacentRegionGuid);
+
+            // Assert
+            await result;
+            try
+            {
+                await result2;
                 Assert.Fail("Expected exception to be thrown");
             }
             catch (HttpResponseException exception)

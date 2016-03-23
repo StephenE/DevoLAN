@@ -12,7 +12,7 @@ namespace Peril.Core
     {
         Guid OriginRegionId { get; }
 
-        Guid OwnerUserId { get; }
+        String OwnerUserId { get; }
 
         CombatArmyMode ArmyMode { get; }
 

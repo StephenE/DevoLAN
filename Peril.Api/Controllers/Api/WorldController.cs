@@ -14,11 +14,12 @@ namespace Peril.Api.Controllers.Api
     [RoutePrefix("api/World")]
     public class WorldController : ApiController
     {
-        public WorldController(INationRepository nationRepository, IRegionRepository regionRepository, ISessionRepository sessionRepository)
+        public WorldController(INationRepository nationRepository, IRegionRepository regionRepository, ISessionRepository sessionRepository, IWorldRepository worldRepository)
         {
             NationRepository = nationRepository;
             RegionRepository = regionRepository;
             SessionRepository = sessionRepository;
+            WorldRepository = worldRepository;
         }
 
         // GET /api/World/RegionList
@@ -35,12 +36,14 @@ namespace Peril.Api.Controllers.Api
 
         // GET /api/World/Combat
         [Route("Combat")]
-        public Task<IEnumerable<ICombat>> GetCombat()
+        public async Task<IEnumerable<ICombat>> GetCombat(Guid sessionId)
         {
-            // Check taking part in session [Forbidden]
-            // Is allowed?
-            //   - Must be in correct round
-            throw new NotImplementedException("Not implemented");
+            ISession session = await SessionRepository.GetSessionOrThrow(sessionId)
+                                                      .IsUserIdJoinedOrThrow(NationRepository, User.Identity.GetUserId());
+
+            IEnumerable<ICombat> combatData = await WorldRepository.GetCombat(session.GameId);
+            return from combat in combatData
+                   select new Combat(combat);
         }
 
         // POST /api/World/Combat
@@ -57,5 +60,6 @@ namespace Peril.Api.Controllers.Api
         private INationRepository NationRepository { get; set; }
         private IRegionRepository RegionRepository { get; set; }
         private ISessionRepository SessionRepository { get; set; }
+        private IWorldRepository WorldRepository { get; set; }
     }
 }

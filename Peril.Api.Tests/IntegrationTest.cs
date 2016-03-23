@@ -16,7 +16,7 @@ namespace Peril.Api.Tests
         [TestCategory("Integration")]
         [DeploymentItem(@"Data\ValidWorldDefinition.xml", "WorldData")]
         [Ignore]
-        public async Task IntegrationTestStartGame_WithTwoUsers()
+        public async Task IntegrationTestStartAndPlayOneRound_WithTwoUsers()
         {
             ControllerMock primaryUser = new ControllerMock();
             primaryUser.RegionRepository.WorldDefinitionPath = @"WorldData\ValidWorldDefinition.xml";
@@ -63,6 +63,45 @@ namespace Peril.Api.Tests
             // Move into victory phase (with primary user)
             sessionDetails = await primaryUser.GameController.GetSession(sessionDetails.GameId);
             await primaryUser.GameController.PostAdvanceNextPhase(sessionDetails.GameId, sessionDetails.PhaseId, true);
+        }
+
+        [TestMethod]
+        [TestCategory("Integration")]
+        public async Task IntegrationTestCombatResolution_WithDirectInvasion()
+        {
+            // Arrange
+            Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
+            ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(validGuid)
+                       .SetupAddPlayer(DummyUserRepository.RegisteredUserIds[1], PlayerColour.Blue)
+                       .SetupDummyWorldAsTree(primaryUser.OwnerId)
+                       .SetupRegionOwnership(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, DummyUserRepository.RegisteredUserIds[1])
+                       .SetupRegionTroops(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 5)
+                       .SetupRegionTroops(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 2)
+                       .SetupSessionPhase(SessionPhase.CombatOrders)
+                       .QueueAttack(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 4)
+                       // Rig dice so that A beats B
+                       .SetupRiggedDiceResults(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 6, 6, 6)
+                       .SetupRiggedDiceResults(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 1, 1);
+
+            // Act
+            await ResolveAllCombat(primaryUser, validGuid);
+
+            // Assert
+            Assert.AreEqual(SessionPhase.Redeployment, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
+            var invasion = primaryUser.GetInvasion(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB);
+            var invasionResults = primaryUser.WorldRepository.CombatResults[invasion.CombatId];
+            AssertCombat.IsResultValid(1, invasion, invasionResults);
+            AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 1, 0, invasionResults);
+            AssertCombat.IsArmyResult(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 1, 2, invasionResults);
+
+            Assert.AreEqual(primaryUser.OwnerId, primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionA].OwnerId);
+            Assert.AreEqual(1U, primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionA].TroopCount);
+            Assert.AreEqual(0U, primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionA].TroopsCommittedToPhase);
+
+            Assert.AreEqual(primaryUser.OwnerId, primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionB].OwnerId);
+            Assert.AreEqual(4U, primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionB].TroopCount);
+            Assert.AreEqual(0U, primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionB].TroopsCommittedToPhase);
         }
 
         private async Task<IEnumerable<Guid>> GetCurrentlyOwnedRegions(ControllerMock user, Guid sessionId)
@@ -144,6 +183,7 @@ namespace Peril.Api.Tests
 
                 switch (session.PhaseType)
                 {
+                    case SessionPhase.CombatOrders:
                     case SessionPhase.BorderClashes:
                     case SessionPhase.MassInvasions:
                     case SessionPhase.Invasions:

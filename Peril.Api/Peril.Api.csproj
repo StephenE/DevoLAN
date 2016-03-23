@@ -250,6 +250,12 @@
     <Compile Include="Models\AccountBindingModels.cs" />
     <Compile Include="Models\AccountViewModels.cs" />
     <Compile Include="Models\AttackDetails.cs" />
+    <Compile Include="Models\Combat.cs" />
+    <Compile Include="Models\CombatArmy.cs" />
+    <Compile Include="Models\CombatArmyRoundResult.cs" />
+    <Compile Include="Models\CombatOrderRegion.cs" />
+    <Compile Include="Models\CombatResult.cs" />
+    <Compile Include="Models\CombatRoundResult.cs" />
     <Compile Include="Models\CommandQueueMessage.cs" />
     <Compile Include="Models\IdentityModels.cs" />
     <Compile Include="Models\Player.cs" />

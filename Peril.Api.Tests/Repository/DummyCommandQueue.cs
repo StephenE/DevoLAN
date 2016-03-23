@@ -126,9 +126,32 @@ namespace Peril.Api.Tests.Repository
             setupContext.ControllerMock.CommandQueue.DummyDeployReinforcementsQueue.Add(new DummyDeployReinforcements
             {
                 OperationId = Guid.NewGuid(),
+                SessionId = setupContext.DummySession.GameId,
                 PhaseId = setupContext.DummySession.PhaseId,
                 TargetRegion = regionId,
                 TargetRegionEtag = setupContext.ControllerMock.RegionRepository.RegionData[regionId].CurrentEtag,
+                NumberOfTroops = numberOfTroops
+            });
+            return setupContext;
+        }
+
+        static public ControllerMockSetupContext QueueAttack(this ControllerMockSetupContext setupContext, Guid sourceRegionId, Guid targetRegionId, UInt32 numberOfTroops)
+        {
+            Guid operationId;
+            return QueueAttack(setupContext, sourceRegionId, targetRegionId, numberOfTroops, out operationId);
+        }
+
+        static public ControllerMockSetupContext QueueAttack(this ControllerMockSetupContext setupContext, Guid sourceRegionId, Guid targetRegionId, UInt32 numberOfTroops, out Guid operationId)
+        {
+            operationId = Guid.NewGuid();
+            setupContext.ControllerMock.CommandQueue.DummyOrderAttackQueue.Add(new DummyOrderAttack
+            {
+                OperationId = operationId,
+                SessionId = setupContext.DummySession.GameId,
+                PhaseId = setupContext.DummySession.PhaseId,
+                SourceRegion = sourceRegionId,
+                SourceRegionEtag = setupContext.ControllerMock.RegionRepository.RegionData[sourceRegionId].CurrentEtag,
+                TargetRegion = targetRegionId,
                 NumberOfTroops = numberOfTroops
             });
             return setupContext;

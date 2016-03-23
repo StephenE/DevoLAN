@@ -19,6 +19,7 @@ namespace Peril.Api.Tests.Controllers
             RegionRepository = new DummyRegionRepository();
             SessionRepository = new DummySessionRepository();
             UserRepository = new DummyUserRepository();
+            WorldRepository = new DummyWorldRepository();
 
             NationRepository = new DummyNationRepository(SessionRepository);
 
@@ -34,6 +35,7 @@ namespace Peril.Api.Tests.Controllers
             RegionRepository = linkedData.RegionRepository;
             SessionRepository = linkedData.SessionRepository;
             UserRepository = linkedData.UserRepository;
+            WorldRepository = linkedData.WorldRepository;
 
             CreateControllers();
         }
@@ -50,10 +52,11 @@ namespace Peril.Api.Tests.Controllers
         public DummyRegionRepository RegionRepository { get; private set; }
         public DummySessionRepository SessionRepository { get; private set; }
         public DummyUserRepository UserRepository { get; private set; }
+        public DummyWorldRepository WorldRepository { get; private set; }
 
         public GameController CreateGameController(String userId)
         {
-            GameController controller = new GameController(CommandQueue, NationRepository, RegionRepository, SessionRepository, UserRepository);
+            GameController controller = new GameController(CommandQueue, NationRepository, RegionRepository, SessionRepository, UserRepository, WorldRepository);
             controller.ControllerContext.RequestContext.Principal = UserRepository.GetPrincipal(userId);
             return controller;
         }
@@ -74,7 +77,7 @@ namespace Peril.Api.Tests.Controllers
 
         public WorldController CreateWorldController(String userId)
         {
-            WorldController controller = new WorldController(NationRepository, RegionRepository, SessionRepository);
+            WorldController controller = new WorldController(NationRepository, RegionRepository, SessionRepository, WorldRepository);
             controller.ControllerContext.RequestContext.Principal = controller.ControllerContext.RequestContext.Principal = UserRepository.GetPrincipal(userId);
             return controller;
         }

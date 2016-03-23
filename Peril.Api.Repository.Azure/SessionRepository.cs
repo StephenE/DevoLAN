@@ -25,8 +25,12 @@ namespace Peril.Api.Repository.Azure
 
         public async Task<Guid> CreateSession(String userId, PlayerColour colour)
         {
-            // Create a new table entry
             Guid newSessionGuid = Guid.NewGuid();
+
+            // Create a new table to store all the data for this session
+            GetTableForSessionData(newSessionGuid, 1);
+
+            // Create a new table entry
             SessionTableEntry newSession = new SessionTableEntry(userId, newSessionGuid);
 
             // Kick off the insert operation
@@ -162,6 +166,18 @@ namespace Peril.Api.Repository.Azure
             {
                 throw new ConcurrencyException();
             }
+        }
+
+        public CloudTable GetTableForSessionData(Guid sessionId, UInt32 roundNumber)
+        {
+            return GetTableForSessionData(TableClient, sessionId, roundNumber);
+        }
+
+        static public CloudTable GetTableForSessionData(CloudTableClient tableClient, Guid sessionId, UInt32 roundNumber)
+        {
+            String tableName = "Data" + sessionId.ToString().Replace("-", String.Empty) + "Round" + roundNumber;
+            CloudTable table = tableClient.GetTableReference(tableName);
+            return table;
         }
 
         private CloudStorageAccount StorageAccount { get; set; }

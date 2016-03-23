@@ -12,11 +12,13 @@ namespace Peril.Api.Repository.Azure
 {
     public class RegionRepository : IRegionRepository
     {
+        static public String TableName { get { return "Regions"; } }
+
         public RegionRepository(String storageConnectionString)
         {
             StorageAccount = CloudStorageAccount.Parse(storageConnectionString);
             TableClient = StorageAccount.CreateCloudTableClient();
-            RegionTable = TableClient.GetTableReference("Regions");
+            RegionTable = TableClient.GetTableReference(TableName);
             RegionTable.CreateIfNotExists();
         }
 

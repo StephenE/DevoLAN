@@ -70,6 +70,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommandQueue.cs" />
+    <Compile Include="Model\CombatArmy.cs" />
+    <Compile Include="Model\CombatArmyRoundResult.cs" />
+    <Compile Include="Model\CombatResultTableEntry.cs" />
+    <Compile Include="Model\CombatRoundResult.cs" />
+    <Compile Include="Model\CombatTableEntry.cs" />
     <Compile Include="Model\CommandQueueTableEntry.cs" />
     <Compile Include="Model\RegionTableEntry.cs" />
     <Compile Include="Model\NationTableEntry.cs" />
@@ -78,6 +83,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RegionRepository.cs" />
     <Compile Include="SessionRepository.cs" />
+    <Compile Include="WorldRepository.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Peril.Api.Repository\Peril.Api.Repository.csproj">
