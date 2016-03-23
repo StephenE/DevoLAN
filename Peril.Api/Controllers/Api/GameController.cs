@@ -253,6 +253,12 @@ namespace Peril.Api.Controllers.Api
                     nextPhase = SessionPhase.Redeployment;
                     break;
                 }
+                case SessionPhase.Redeployment:
+                {
+                    // For DevoLAN 31, we're skipping redeployment!
+                    nextPhase = SessionPhase.Victory;
+                    break;
+                }
                 default:
                 {
                     throw new NotImplementedException("Not done yet");
