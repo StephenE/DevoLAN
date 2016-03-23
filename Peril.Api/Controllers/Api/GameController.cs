@@ -53,50 +53,13 @@ namespace Peril.Api.Controllers.Api
             try
             {
                 XDocument worldDefinition = XDocument.Load(RegionRepository.WorldDefinitionPath);
-                var regionsList = from continentXml in worldDefinition.Root.Elements("Continent")
-                                  let continentId = Guid.NewGuid()
-                                  from regionXml in continentXml.Elements("Region")
-                                  select new Region
-                                  {
-                                      RegionId = Guid.NewGuid(),
-                                      ContinentId = continentId,
-                                      Name = regionXml.Attribute("Name").Value
-                                  };
-                List<Region> regions = regionsList.ToList();
-
-                Dictionary<String, Region> regionLookup = new Dictionary<string, Region>();
-                Dictionary<String, List<Guid>> regionConnectionsLookup = new Dictionary<string, List<Guid>>();
-                foreach (Region region in regions)
-                {
-                    regionLookup[region.Name] = region;
-                    regionConnectionsLookup[region.Name] = new List<Guid>();
-                }
-
-                var connections = from connectionXml in worldDefinition.Root.Elements("Connections")
-                                  from connectedXml in connectionXml.Elements("Connected")
-                                  let regionId = connectedXml.Attribute("Name").Value
-                                  let otherRegionId = connectedXml.Attribute("Other").Value
-                                  join regionData in regions on regionId equals regionData.Name
-                                  join otherRegionData in regions on otherRegionId equals otherRegionData.Name
-                                  select new
-                                  {
-                                      Region = regionId,
-                                      RegionId = regionData.RegionId,
-                                      OtherRegion = otherRegionId,
-                                      OtherRegionId = otherRegionData.RegionId
-                                  };
-
-                
-                foreach(var connection in connections)
-                {
-                    regionConnectionsLookup[connection.Region].Add(connection.OtherRegionId);
-                    regionConnectionsLookup[connection.OtherRegion].Add(connection.RegionId);
-                }
+                List<Region> regions = worldDefinition.LoadRegions();
+                worldDefinition.LoadRegionConnections(regions);
 
                 List<Task> regionCreationOperations = new List<Task>();
-                foreach(var regionPair in regionLookup)
+                foreach(var region in regions)
                 {
-                    regionCreationOperations.Add(RegionRepository.CreateRegion(sessionGuid, regionPair.Value.RegionId, regionPair.Value.ContinentId, regionPair.Key, regionConnectionsLookup[regionPair.Key]));
+                    regionCreationOperations.Add(RegionRepository.CreateRegion(sessionGuid, region.RegionId, region.ContinentId, region.Name, region.ConnectedRegions));
                 }
                 await Task.WhenAll(regionCreationOperations);
             }
@@ -251,6 +214,20 @@ namespace Peril.Api.Controllers.Api
                     IEnumerable<CombatResult> results = await ResolveCombat(session.GameId, await invasions);
                     await ApplyCombatResults(session.GameId, CombatType.SpoilsOfWar, results);
                     nextPhase = SessionPhase.Redeployment;
+                    break;
+                }
+                case SessionPhase.Redeployment:
+                {
+                    // For DevoLAN 31, we're skipping redeployment!
+                    nextPhase = SessionPhase.Victory;
+                    break;
+                }
+                case SessionPhase.Victory:
+                {
+                    // Award reinforcements
+                    var regions = RegionRepository.GetRegions(session.GameId);
+                    await AwardReinforcements(sessionId, await regions);
+                    nextPhase = SessionPhase.Reinforcements;
                     break;
                 }
                 default:
@@ -578,6 +555,21 @@ namespace Peril.Api.Controllers.Api
             {
                 await WorldRepository.AddCombat(sessionId, spoilsOfWar);
             }
+        }
+
+        private async Task AwardReinforcements(Guid sessionId, IEnumerable<IRegionData> regions)
+        {
+            var regionByPlayerQuery = from region in regions
+                                      group region by region.OwnerId into regionsPerNation
+                                      select regionsPerNation;
+
+            Dictionary < String, UInt32> reinforcements = new Dictionary<string, uint>();
+            foreach (var playerWithRegions in regionByPlayerQuery)
+            {
+                // Award player a reinforcement for every 3 regions they own, minimum of at least 3 reinforcements
+                reinforcements[playerWithRegions.Key] = (UInt32)Math.Max(3, playerWithRegions.Count() / 3);
+            }
+            await NationRepository.SetAvailableReinforcements(sessionId, reinforcements);
         }
 
         private ICommandQueue CommandQueue { get; set; }

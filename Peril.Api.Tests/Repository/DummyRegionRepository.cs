@@ -1,10 +1,13 @@
-﻿using Peril.Api.Repository;
+﻿using Peril.Api.Models;
+using Peril.Api.Repository;
 using Peril.Api.Repository.Model;
 using Peril.Api.Tests.Controllers;
+using Peril.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace Peril.Api.Tests.Repository
 {
@@ -106,6 +109,19 @@ namespace Peril.Api.Tests.Repository
             setupContext.SetupRegion(DummyWorldRegionE, continentId, initialOwnerId)
                         .SetupRegionConnection(DummyWorldRegionD);
 
+            return setupContext;
+        }
+
+        static public ControllerMockSetupContext SetupDummyWorldFromFile(this ControllerMockSetupContext setupContext, String path)
+        {
+            XDocument worldDefinition = XDocument.Load(path);
+            List<Region> regions = worldDefinition.LoadRegions();
+            worldDefinition.LoadRegionConnections(regions);
+            foreach (IRegion region in regions)
+            {
+                setupContext.SetupRegion(Guid.NewGuid(), region.ContinentId, setupContext.ControllerMock.OwnerId);
+                setupContext.DummyRegion.ConnectedRegionIds = region.ConnectedRegions.ToList();
+            }
             return setupContext;
         }
 
