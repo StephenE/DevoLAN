@@ -68,6 +68,7 @@
     <Connected Name="Argentina" Other="New Zealand" />
     <Connected Name="Brazil" Other="Venezuela" />
     <Connected Name="Brazil" Other="Peru" />
+    <Connected Name="Brazil" Other="North Africa" />
     <Connected Name="Central America" Other="Eastern United States" />
     <Connected Name="Central America" Other="Western United States" />
     <Connected Name="Central America" Other="Venezuela" />
@@ -92,5 +93,58 @@
     <Connected Name="Egypt" Other="North Africa" />
     <Connected Name="Egypt" Other="Middle East" />
     <Connected Name="Egypt" Other="South Europe" />
+    <Connected Name="Falklands" Other="South Africa" />
+    <Connected Name="Great Britain" Other="Western Europe" />
+    <Connected Name="Great Britain" Other="North Europe" />
+    <Connected Name="Great Britain" Other="Scandinavia" />
+    <Connected Name="Great Britain" Other="Iceland" />
+    <Connected Name="Greenland" Other="Iceland" />
+    <Connected Name="Greenland" Other="Svalbard" />
+    <Connected Name="Greenland" Other="Oikiqtaluk" />
+    <Connected Name="Greenland" Other="Quebec" />
+    <Connected Name="Hawaii" Other="Western United States" />
+    <Connected Name="Hawaii" Other="Japan" />
+    <Connected Name="Iceland" Other="Scandinavia" />
+    <Connected Name="India" Other="Middle East" />
+    <Connected Name="India" Other="Siam" />
+    <Connected Name="Indonesia" Other="Siam" />
+    <Connected Name="Indonesia" Other="Philippines" />
+    <Connected Name="Indonesia" Other="New Guinea" />
+    <Connected Name="Indonesia" Other="Western Australia" />
+    <Connected Name="Irkutsk" Other="Mongolia" />
+    <Connected Name="Irkutsk" Other="Siberia" />
+    <Connected Name="Irkutsk" Other="Yakutsk" />
+    <Connected Name="Irkutsk" Other="Kamchatka" />
+    <Connected Name="Japan" Other="Philippines" />
+    <Connected Name="Japan" Other="Mongolia" />
+    <Connected Name="Japan" Other="Kamchatka" />
+    <Connected Name="Kamchatka" Other="Yakutsk" />
+    <Connected Name="Kamchatka" Other="Irkutsk" />
+    <Connected Name="Kamchatka" Other="Mongolia" />
+    <Connected Name="Madagascar" Other="South Africa" />
+    <Connected Name="Middle East" Other="South Europe" />
+    <Connected Name="Middle East" Other="Ukraine" />
+    <Connected Name="Mongolia" Other="Siberia" />
+    <Connected Name="North Africa" Other="Western Europe" />
+    <Connected Name="North Africa" Other="South Europe" />
+    <Connected Name="North Europe" Other="South Europe" />
+    <Connected Name="North Europe" Other="Western Europe" />
+    <Connected Name="North Europe" Other="Scandinavia" />
+    <Connected Name="North Europe" Other="Ukraine" />
+    <Connected Name="New Guinea" Other="Western Australia" />
+    <Connected Name="Northwest Territory" Other="Ontario" />
+    <Connected Name="Northwest Territory" Other="Oikiqtaluk" />
+    <Connected Name="Oikiqtaluk" Other="Ontario" />
+    <Connected Name="Oikiqtaluk" Other="Quebec" />
+    <Connected Name="Ontario" Other="Quebec" />
+    <Connected Name="Ontario" Other="Western United States" />
+    <Connected Name="Peru" Other="Venezuela" />
+    <Connected Name="South Europe" Other="Western Europe" />
+    <Connected Name="South Europe" Other="Ukraine" />
+    <Connected Name="Scandinavia" Other="Svalbard" />
+    <Connected Name="Scandinavia" Other="Ukraine" />
+    <Connected Name="Siberia" Other="Ural" />
+    <Connected Name="Siberia" Other="Yakutsk" />
+    <Connected Name="Ukraine" Other="Ural" />
   </Connections>
 </World>
