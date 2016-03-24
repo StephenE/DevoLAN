@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" ?> 
+﻿<?xml version="1.0" encoding="utf-8" ?>
 <World>
   <Continent Name="North America">
     <Region Name="Afghanistan" />
@@ -66,5 +66,31 @@
     <Connected Name="Argentina" Other="Brazil" />
     <Connected Name="Argentina" Other="Peru" />
     <Connected Name="Argentina" Other="New Zealand" />
+    <Connected Name="Brazil" Other="Venezuela" />
+    <Connected Name="Brazil" Other="Peru" />
+    <Connected Name="Central America" Other="Eastern United States" />
+    <Connected Name="Central America" Other="Western United States" />
+    <Connected Name="Central America" Other="Venezuela" />
+    <Connected Name="China" Other="Siam" />
+    <Connected Name="China" Other="India" />
+    <Connected Name="China" Other="Ural" />
+    <Connected Name="China" Other="Siberia" />
+    <Connected Name="China" Other="Mongolia" />
+    <Connected Name="Congo" Other="North Africa" />
+    <Connected Name="Congo" Other="South Africa" />
+    <Connected Name="Congo" Other="Eastern Africa" />
+    <Connected Name="Eastern Africa" Other="Madagascar" />
+    <Connected Name="Eastern Africa" Other="South Africa" />
+    <Connected Name="Eastern Africa" Other="North Africa" />
+    <Connected Name="Eastern Africa" Other="Egypt" />
+    <Connected Name="Eastern Australia" Other="Western Australia" />
+    <Connected Name="Eastern Australia" Other="New Guinea" />
+    <Connected Name="Eastern Australia" Other="New Zealand" />
+    <Connected Name="Eastern United States" Other="Western United States" />
+    <Connected Name="Eastern United States" Other="Ontario" />
+    <Connected Name="Eastern United States" Other="Quebec" />
+    <Connected Name="Egypt" Other="North Africa" />
+    <Connected Name="Egypt" Other="Middle East" />
+    <Connected Name="Egypt" Other="South Europe" />
   </Connections>
 </World>
