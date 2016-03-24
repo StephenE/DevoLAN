@@ -322,7 +322,7 @@
 			
 			var data = "?sessionId=" + currentGame;
 			updatePlayers(currentGame, data, playersResponse, playersResponse);
-			sendAjax("GET", "http://devolan.azurewebsites.net/api/World/RegionList", data, "adv", updateResponse, updateResponse, true);
+			sendAjax("GET", apiUriBase + "api/World/RegionList", data, "adv", updateResponse, updateResponse, true);
 		}
 		
 		function updateResponse(){
@@ -340,9 +340,9 @@
 				for(y = 0; y < cpLength; y++){
 					if(world[x].OwnerId === currentPlayers[y].UserId){
 						curColour = currentPlayers[y].Colour;
-					}
-				}
-				
+			}
+		}
+	
 				console.log(world[x].Name + " belongs to " + curColour);
 				
 				addClass(target, "player-" + curColour);
@@ -531,7 +531,7 @@
 		
 		playAudio(target);
 	}
-	
+		
 	function stopAudio(target){
 		console.log("Stopping " + target + ".");
 		
@@ -657,8 +657,8 @@
 		
 		function toggleClass(target, clss){
 			getID(target).classList.toggle(clss);
-		}
-		
+			}
+			
 		function checkClass(target, clss){
 			return getID(target).classList.contains(clss);
 		}
@@ -678,11 +678,11 @@
 		}
 
 	// Styles
-		function writeStyle(t, v){
-			document.getElementById(t).setAttribute("style", v);
-			
-			return;
-		}
+			function writeStyle(t, v){
+				document.getElementById(t).setAttribute("style", v);
+				
+				return;
+			}
 		
 	// Add Event Listener
 		function addEvent(target, ev, func, c){
