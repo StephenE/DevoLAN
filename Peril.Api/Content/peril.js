@@ -332,7 +332,24 @@
 				window.addEventListener("resize", function(){resizeBoard()}, true);
 				resizeBoard();
 		}
-		
+	
+	// Hud
+		function showHud() {
+
+		}
+
+		function hideHud() {
+
+		}
+
+		function endTurn(gameId, phaseId) {
+			var data = "?sessionId=" + gameId + "&phaseId=" + phaseId;
+			sendAjax("GET", apiUriBase + "/api/Game/EndPhase", data, "json", onEndTurnResponse, onEndTurnResponse, true);
+		}
+
+		function onEndTurnResponse() {
+			// No response expected.
+		}
 // Message Box
 	function messageBox(title, message){
 		hideOverlay();
