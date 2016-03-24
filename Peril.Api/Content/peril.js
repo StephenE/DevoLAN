@@ -6,6 +6,8 @@
 	
 	var maxPlayers = 14;
 	
+	var currentPlayers = {};
+	
 	var system = {};
 	system.music = 1;
 	system.sfx = 1;
@@ -45,23 +47,25 @@
 					loadScreen("browser");
 				}
 				
-				addEvent("loginButton", "click", function(){playAudio("sfx", "button"); login();}, false);
-				addEvent("registerButton", "click", function(){playAudio("sfx", "button"); register();}, false);
+				addEvent("loginButton", "click", function(){loadAudio("sfx", "button"); login();}, false);
+				addEvent("registerButton", "click", function(){loadAudio("sfx", "button"); register();}, false);
 				break;
 				
 			case "browser":
 				sessions();
 				
-				addEvent("createButton", "click", function(){playAudio("sfx", "button"); hostGame();}, false)
-				addEvent("logoutButton", "click", function(){playAudio("sfx", "confirm"); deleteCookie("userToken"); loadScreen("login");}, false)
+				writeHTML("welcomeTitle", "Greetings, " + userToken.userName + ". Please select a game session to join.")
+				
+				addEvent("createButton", "click", function(){loadAudio("sfx", "button"); hostGame();}, false)
+				addEvent("logoutButton", "click", function(){loadAudio("sfx", "confirm"); deleteCookie("userToken"); loadScreen("login");}, false)
 				break;
 				
 			case "board":
-				writeClass("body", "bckWater");
+				addClass("body", "bckWater");
 				
 				updateBoard();
 				
-				setTimeout(function(){hideOverlay(); playAudio("music", "planning");}, 1500);
+				setTimeout(function(){hideOverlay(); loadAudio("music", "planning");}, 1500);
 				break;
 		}
 	}
@@ -211,7 +215,7 @@
 				var y = 0;
 				
 				for(y = 0; y < x; y++){
-					addEvent("g-" + y, "click", function(){currentGame = getData(this.id, "gameid"); playAudio("sfx", "button"); checkPlayers(currentGame);});
+					addEvent("g-" + y, "click", function(){currentGame = getData(this.id, "gameid"); loadAudio("sfx", "button"); checkPlayers(currentGame);});
 				}
 			
 			// Overlay
@@ -223,7 +227,7 @@
 			console.log("Checking game " + gameid + "...");
 			
 			var data = "?sessionId=" + gameid;
-			sendAjax("GET", apiUriBase + "/api/Game/Players", data, "adv", checkResponse, checkResponse, true);
+			updatePlayers(gameid, data, checkResponse, checkResponse);
 			
 			showOverlay("Checking Game...", "<img src='Content/images/waiting.svg' />");
 		}
@@ -236,12 +240,14 @@
 				var x = 0;
 				var usedColours = [];
 				
+				currentPlayers = JSON.parse(this.responseText);
+				
 				for(x = 0; x < players.length; x++){
 					usedColours[x] = players[x].Colour;
 					
 					if(players[x].Name === userToken.userName){
 						console.log("Player is already part of game. Rejoining.");
-						joinGame(currentGame, players[x].Colour);
+						enterGame();
 						return true;
 					}
 				}
@@ -263,7 +269,7 @@
 					addEvent("b-cancel", "click", function(){hideOverlay();});
 					for(x = 0; x < maxPlayers; x++){
 						if(usedColours.indexOf(x) < 0){
-							addEvent("b-" + x, "click", function(){playAudio("sfx", "confirm"); joinGame(currentGame, getData(this.id, "colour"));});
+							addEvent("b-" + x, "click", function(){loadAudio("sfx", "confirm"); joinGame(currentGame, getData(this.id, "colour"));});
 						}
 					}
 		}
@@ -283,10 +289,7 @@
 				case 204:
 					console.log("Join request successful.");
 					
-					fadeAudio("music", 0, 1.5);
-					showOverlay("Entering Game...", "<img src='Content/images/waiting.svg' />", true);
-					
-					var timer = setTimeout(function(){loadScreen("board", true);}, 1500);
+					enterGame();
 					break;
 					
 				default:
@@ -295,6 +298,16 @@
 					messageBox("Join failed.", "Unable to join game.");
 					break;
 			}
+		}
+		
+	// Enter Game
+		function enterGame(){
+			console.log("Entering game...")
+			
+			fadeAudio("music", 0, 1.5);
+			showOverlay("Entering Game...", "<img src='Content/images/waiting.svg' />", true);
+			
+			var timer = setTimeout(function(){loadScreen("board", true);}, 1500);
 		}
 		
 	// Host Game
@@ -308,6 +321,7 @@
 			console.log("Getting current game board status...");
 			
 			var data = "?sessionId=" + currentGame;
+			updatePlayers(currentGame, data, playersResponse, playersResponse);
 			sendAjax("GET", apiUriBase + "api/World/RegionList", data, "adv", updateResponse, updateResponse, true);
 		}
 		
@@ -318,21 +332,48 @@
 			var x = 0;
 			
 			for(x = 0; x < world.length; x++){
-				console.log("Territory: territory" + world[x].Name.replace(" ", ""))
 				var target = "territory" + world[x].Name.replace(/ /g, "");
+				var y = 0;
+				var cpLength = currentPlayers.length;
+				var curColour = "";
 				
-				setFillColour(target, "#ff0000");
-				//setData(target, RegionId, world[x].RegionId);
+				for(y = 0; y < cpLength; y++){
+					if(world[x].OwnerId === currentPlayers[y].UserId){
+						curColour = currentPlayers[y].Colour;
 			}
 		}
 	
-	// Setup Board
-		function boardSetup(){
-			// Resize Listener
-				window.addEventListener("resize", function(){resizeBoard()}, true);
-				resizeBoard();
+				console.log(world[x].Name + " belongs to " + curColour);
+				
+				addClass(target, "player-" + curColour);
+				
+				setData(target, "RegionId", world[x].RegionId);
+				setData(target, "ContinentId", world[x].ContinentId);
+				setData(target, "OwnerId", world[x].OwnerId);
+				setData(target, "TroopCount", world[x].TroopCount);
+			}
+		}
+		
+	// Update Player Information
+		function updatePlayers(gameid, data, eventDone, eventError){
+			console.log("Getting player information for game " + gameid + ".");
+			
+			sendAjax("GET", apiUriBase + "/api/Game/Players", data, "adv", eventDone, eventError, true);
+		}
+		
+		function playersResponse(){
+			console.log("Updating player information...");
+			
+			currentPlayers = JSON.parse(this.responseText);
 		}
 	
+	// Setup Board
+		//function boardSetup(){
+			// Resize Listener
+				//window.addEventListener("resize", function(){resizeBoard()}, true);
+				//resizeBoard();
+		//}
+		
 	// Hud
 		function showHud() {
 
@@ -355,7 +396,7 @@
 		hideOverlay();
 		
 		writeHTML("message", "<h3>" + title + "</h3><p>" + message + "</p>");
-		writeClass("message", "show");
+		addClass("message", "show");
 	}
 		
 // Overlay
@@ -363,10 +404,10 @@
 		//console.log("Showing overlay.");
 		
 		writeHTML("overlayContent", "<h1>" + title + "</h1>" + content);
-		writeClass("overlay", "show");
+		addClass("overlay", "show");
 		
 		if(blackout){
-			writeClass("overlay", " blackout", 1);
+			addClass("overlay", "blackout", 1);
 		}
 	}
 	
@@ -374,10 +415,10 @@
 		//console.log("Hiding overlay.");
 		
 		if(fade){
-			writeClass("overlay", "show");
+			removeClass("overlay", "blackout");
 			setTimeout(hideOverlay, 1500);
 		} else {
-			writeClass("overlay", "hide");
+			removeClass("overlay", "show");
 		}
 	}
 	
@@ -453,10 +494,10 @@
 		function toggleMusic(){
 			if(system.music == 0){
 				system.music = 1;
-				getID("music").volume = 0.5;
+				playAudio("music");
 			} else {
 				system.music = 0;
-				getID("music").volume = 0;
+				stopAudio("music");
 			}
 			
 			menuRefresh();
@@ -466,37 +507,52 @@
 		function toggleSFX(){
 			if(system.sfx == 0){
 				system.sfx = 1;
-				getID("sfx").volume = 1;
+				playAudio("sfx");
 			} else {
 				system.sfx = 0;
-				getID("sfx").volume = 0;
+				stopAudio("sfx");
 			}
 			
 			menuRefresh();
 		}
 		
 // Audio Handling
-	function playAudio(target, sound){
-		//console.log("Playing " + sound + " on " + target + " channel.");
+	function playAudio(target){
+		console.log("Playing " + target + ".");
 		
 		var player = getID(target);
-		var source = getID(target + "Source");
-		
-		player.pause();
-		source.src = "Content/media/" + sound + ".mp3";
 		
 		switch(target){
 			case "sfx":
-				setAudioVolume(target, system.sfxVolume);
+				if(system.sfx){
+					player.play();
+				}
 				break;
 				
 			case "music":
-				setAudioVolume(target, system.musicVolume);
+				if(system.music){
+					player.play();
+				}
 				break;
 		}
+	}
+	
+	function loadAudio(target, sound){
+		console.log("Loading " + sound + " on " + target + " channel.");
 		
-		player.load();
-		player.play();
+		var source = getID(target + "Source");
+		
+		stopAudio(target);
+		source.src = "Content/media/" + sound + ".mp3";
+		getID(target).load();
+		
+		playAudio(target);
+	}
+		
+	function stopAudio(target){
+		console.log("Stopping " + target + ".");
+		
+		getID(target).pause();
 	}
 	
 	function setAudioVolume(target, level){
@@ -603,15 +659,25 @@
 	}
 
 // DOM Requests
-	// Write Classes
-		function writeClass(t, v, m){
-			if(m == 1){
-				document.getElementById(t).className += v;
-			} else {
-				document.getElementById(t).className = v;
+	// Classes
+		function addClass(target, clss){
+			getID(target).classList.add(clss)
+		}
+		
+		function removeClass(target, clss){
+			//console.log("Removing " + clss + " from " + target + ".");
+			
+			if(checkClass(target, clss)){
+				getID(target).classList.remove(clss);
+			}
+		}
+		
+		function toggleClass(target, clss){
+			getID(target).classList.toggle(clss);
 			}
 			
-			return;
+		function checkClass(target, clss){
+			return getID(target).classList.contains(clss);
 		}
 		
 	// Get Data
@@ -620,7 +686,7 @@
 		}
 		
 		function setData(target, data, value){
-			getID(target).dataset.data = value;
+			getID(target).setAttribute("data-" + data, value);
 		}
 		
 	// Get Element by ID
@@ -628,23 +694,7 @@
 			return document.getElementById(target);
 		}
 
-	// Element Styles
-		// Reset Series of Styles
-			function resetStyles(prefix, max, base){
-				try{
-					var x = 0;
-					
-					for(x = 0; x < max; x++){
-						writeClass(prefix + x, base);
-					}
-					
-				} catch(err){
-					console.log("Done " + x);
-					
-				}
-			}
-			
-		// Write Styles
+	// Styles
 			function writeStyle(t, v){
 				document.getElementById(t).setAttribute("style", v);
 				

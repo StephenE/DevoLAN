@@ -1,64 +1,54 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <World>
-  <Continent Name="Europe" Bonus="5">
-    <Region Name="Great Britain" />
-    <Region Name="Iceland" />
-    <Region Name="North Europe" />
-    <Region Name="Scandinavia" />
-    <Region Name="South Europe" />
-    <Region Name="Svalbard" />
-    <Region Name="Ukraine" />
-    <Region Name="Western Europe" />
-  </Continent>
-  <Continent Name="Africa" Bonus="3">
-    <Region Name="Congo" />
-    <Region Name="Eastern Africa" />
-    <Region Name="Egypt" />
-    <Region Name="Madagascar" />
-    <Region Name="North Africa" />
-    <Region Name="South Africa" />
-  </Continent>
-  <Continent Name="South America" Bonus="2">
+  <Continent Name="North America">
+    <Region Name="Afghanistan" />
+    <Region Name="Alaska" />
+    <Region Name="Alberta" />
     <Region Name="Argentina" />
     <Region Name="Brazil" />
-    <Region Name="Falklands" />
-    <Region Name="Peru" />
-    <Region Name="Venezuela" />
-  </Continent>
-  <Continent Name="Australasia" Bonus="3">
-    <Region Name="Eastern Australia" />
-    <Region Name="Indonesia" />
-    <Region Name="New Guinea" />
-    <Region Name="New Zealand" />
-    <Region Name="Philippines" />
-    <Region Name="Western Australia" />
-  </Continent>
-  <Continent Name="Asia" Bonus="7">
-    <Region Name="Afghanistan" />
+    <Region Name="Central America" />
     <Region Name="China" />
+    <Region Name="Congo" />
+    <Region Name="Eastern Africa" />
+    <Region Name="Eastern Australia" />
+    <Region Name="Eastern United States" />
+    <Region Name="Egypt" />
+    <Region Name="Falklands" />
+    <Region Name="Great Britain" />
+    <Region Name="Greenland" />
+    <Region Name="Hawaii" />
+    <Region Name="Iceland" />
     <Region Name="India" />
+    <Region Name="Indonesia" />
     <Region Name="Irkutsk" />
     <Region Name="Japan" />
     <Region Name="Kamchatka" />
+    <Region Name="Madagascar" />
     <Region Name="Middle East" />
     <Region Name="Mongolia" />
+    <Region Name="North Africa" />
+    <Region Name="North Europe" />
+    <Region Name="New Guinea" />
+    <Region Name="New Zealand" />
+    <Region Name="Northwest Territory" />
+    <Region Name="Oikatuk" />
+    <Region Name="Ontario" />
+    <Region Name="Peru" />
+    <Region Name="Philippines" />
+    <Region Name="Quebec" />
+    <Region Name="South Africa" />
+    <Region Name="South Europe" />
+    <Region Name="Scandinavia" />
     <Region Name="Siam" />
     <Region Name="Siberia" />
+    <Region Name="Svalbard" />
+    <Region Name="Ukraine" />
     <Region Name="Ural" />
-    <Region Name="Yakutsk" />
-  </Continent>
-  <Continent Name="North America" Bonus="5">
-    <Region Name="Alaska" />
-    <Region Name="Alberta" />
-    <Region Name="Central America" />
-    <Region Name="Eastern United States" />
-    <Region Name="Greenland" />
-    <Region Name="Hawaii" />
-    <Region Name="Northwest Territory" />
-    <Region Name="Oikiqtaluk" />
-    <Region Name="Ontario" />
-    <Region Name="Quebec" />
+    <Region Name="Venezuela" />
+    <Region Name="Western Australia" />
+    <Region Name="Western Europe" />
     <Region Name="Western United States" />
+    <Region Name="Yakustk" />
   </Continent>
   <Connections>
     <Connected Name="Afghanistan" Other="China" />
@@ -78,7 +68,6 @@
     <Connected Name="Argentina" Other="New Zealand" />
     <Connected Name="Brazil" Other="Venezuela" />
     <Connected Name="Brazil" Other="Peru" />
-    <Connected Name="Brazil" Other="North Africa" />
     <Connected Name="Central America" Other="Eastern United States" />
     <Connected Name="Central America" Other="Western United States" />
     <Connected Name="Central America" Other="Venezuela" />
@@ -103,58 +92,5 @@
     <Connected Name="Egypt" Other="North Africa" />
     <Connected Name="Egypt" Other="Middle East" />
     <Connected Name="Egypt" Other="South Europe" />
-    <Connected Name="Falklands" Other="South Africa" />
-    <Connected Name="Great Britain" Other="Western Europe" />
-    <Connected Name="Great Britain" Other="North Europe" />
-    <Connected Name="Great Britain" Other="Scandinavia" />
-    <Connected Name="Great Britain" Other="Iceland" />
-    <Connected Name="Greenland" Other="Iceland" />
-    <Connected Name="Greenland" Other="Svalbard" />
-    <Connected Name="Greenland" Other="Oikiqtaluk" />
-    <Connected Name="Greenland" Other="Quebec" />
-    <Connected Name="Hawaii" Other="Western United States" />
-    <Connected Name="Hawaii" Other="Japan" />
-    <Connected Name="Iceland" Other="Scandinavia" />
-    <Connected Name="India" Other="Middle East" />
-    <Connected Name="India" Other="Siam" />
-    <Connected Name="Indonesia" Other="Siam" />
-    <Connected Name="Indonesia" Other="Philippines" />
-    <Connected Name="Indonesia" Other="New Guinea" />
-    <Connected Name="Indonesia" Other="Western Australia" />
-    <Connected Name="Irkutsk" Other="Mongolia" />
-    <Connected Name="Irkutsk" Other="Siberia" />
-    <Connected Name="Irkutsk" Other="Yakutsk" />
-    <Connected Name="Irkutsk" Other="Kamchatka" />
-    <Connected Name="Japan" Other="Philippines" />
-    <Connected Name="Japan" Other="Mongolia" />
-    <Connected Name="Japan" Other="Kamchatka" />
-    <Connected Name="Kamchatka" Other="Yakutsk" />
-    <Connected Name="Kamchatka" Other="Irkutsk" />
-    <Connected Name="Kamchatka" Other="Mongolia" />
-    <Connected Name="Madagascar" Other="South Africa" />
-    <Connected Name="Middle East" Other="South Europe" />
-    <Connected Name="Middle East" Other="Ukraine" />
-    <Connected Name="Mongolia" Other="Siberia" />
-    <Connected Name="North Africa" Other="Western Europe" />
-    <Connected Name="North Africa" Other="South Europe" />
-    <Connected Name="North Europe" Other="South Europe" />
-    <Connected Name="North Europe" Other="Western Europe" />
-    <Connected Name="North Europe" Other="Scandinavia" />
-    <Connected Name="North Europe" Other="Ukraine" />
-    <Connected Name="New Guinea" Other="Western Australia" />
-    <Connected Name="Northwest Territory" Other="Ontario" />
-    <Connected Name="Northwest Territory" Other="Oikiqtaluk" />
-    <Connected Name="Oikiqtaluk" Other="Ontario" />
-    <Connected Name="Oikiqtaluk" Other="Quebec" />
-    <Connected Name="Ontario" Other="Quebec" />
-    <Connected Name="Ontario" Other="Western United States" />
-    <Connected Name="Peru" Other="Venezuela" />
-    <Connected Name="South Europe" Other="Western Europe" />
-    <Connected Name="South Europe" Other="Ukraine" />
-    <Connected Name="Scandinavia" Other="Svalbard" />
-    <Connected Name="Scandinavia" Other="Ukraine" />
-    <Connected Name="Siberia" Other="Ural" />
-    <Connected Name="Siberia" Other="Yakutsk" />
-    <Connected Name="Ukraine" Other="Ural" />
   </Connections>
 </World>

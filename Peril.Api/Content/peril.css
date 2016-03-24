@@ -347,7 +347,7 @@
 		
 		path{
 			fill: inherit;
-			stroke: black;
+			stroke: inherit;
 			
 			transition: fill 0.4s ease-out;
 		}
@@ -357,6 +357,7 @@
 			fill: white;
 			font-family:Segoe UI, sans-serif;
 			text-anchor:start;
+			stroke: none;
 			
 			transition:font-size 0.25s ease-out;
 		}
@@ -375,7 +376,6 @@
 	/* Groups */
 		g{
 			cursor: pointer;
-			fill: rgba(150,150,150,0.60);
 		}
 		
 		g:hover > .label{
@@ -384,8 +384,7 @@
 		}
 		
 		g:hover > path{
-			fill: rgba(210,210,210,0.6);
-			stroke: white;
+			filter: invert(25%);
 		}
 
 /* Interface */
@@ -508,6 +507,8 @@
 			top: 0px;
 			left: 0px;
 			
+			opacity: 0;
+			
 			background: rgba(0,0,0,0.75);
 			
 			transition: opacity 0.5s ease-out;
@@ -586,87 +587,119 @@
 		}
 		
 /* Player Colours */
+	.player-{
+		fill: rgba(150,150,150,0.60);
+	}
+	
 	.player-0{
 		background-color:Black;
 		fill:Black;
+		
+		stroke: white;
 		color:white;
 	}
 	
 	.player-1{
 		background-color:RoyalBlue;
 		fill:RoyalBlue;
+		
+		stroke: white;
 		color:White;
 	}
 	
 	.player-2{
 		background-color:ForestGreen;
 		fill:ForestGreen;
+		
+		stroke: white;
 		color:White;
 	}
 	
 	.player-3{
 		background-color:FireBrick;
 		fill:FireBrick;
+		
+		stroke: white;
 		color:White;
 	}
 	
 	.player-4{
 		background-color:Orange;
 		fill:Orange;
+		
+		stroke: white;
 		color:White;
 	}
 	
 	.player-5{
 		background-color:Yellow;
 		fill:Yellow;
+		
+		stroke: black;
 		color:Black;
 	}
 	
 	.player-6{
 		background-color:Purple;
 		fill:Purple;
+		
+		stroke: white;
 		color:White;
 	}
 	
 	.player-7{
 		background-color:HotPink;
 		fill:HotPink;
+		
+		stroke: white;
 		color:White;
 	}
 	
 	.player-8{
 		background-color:GhostWhite;
 		fill:GhostWhite;
+		
+		stroke: black;
 		color:Black;
 	}
 	
 	.player-9{
 		background-color:OrangeRed;
 		fill:OrangeRed;
+		
+		stroke: white;
 		color:White;
 	}
 	
 	.player-10{
 		background-color:GreenYellow;
 		fill:GreenYellow;
+		
+		stroke: black;
 		color:Black;
 	}
 	
 	.player-11{
 		background-color:LightSeaGreen;
 		fill:LightSeaGreen;
+		
+		stroke: white;
 		color:White;
 	}
 	
 	.player-12{
 		background-color:MediumOrchid;
 		fill:MediumOrchid;
+		
+		stroke: white;
 		color:White;
 	}
 	
 	.player-13{
 		background-color:Indigo;
 		fill:Indigo;
+		
+		stroke: white;
 		color:White;
 	}
 	
