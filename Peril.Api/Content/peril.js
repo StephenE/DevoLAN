@@ -193,7 +193,7 @@
 			
 			// Assemble Game Browser
 				for(x = 0; x < sessions.length; x++){
-					build += "<tr id='g-" + x + "' data-gameid='" + sessions[x].GameId + "'>";
+					build += "<tr id='g-" + x + "' data-gameid='" + sessions[x].GameId + "' + class='hoverHighlight'>";
 						build += "<td>" + sessions[x].GameId + "</td>";
 						build += "<td>" + sessions[x].PhaseId + "</td>";
 						
