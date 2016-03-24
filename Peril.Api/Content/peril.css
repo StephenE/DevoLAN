@@ -336,6 +336,7 @@
 	/* Shapes */
 		circle{
 			fill: rgba(90, 90, 90, 1);
+            stroke: none;
 		}
 		
 		line{
@@ -384,7 +385,7 @@
 		}
 		
 		g:hover > path{
-			filter: invert(25%);
+			filter: invert(50%);
 		}
 
 /* Interface */
@@ -592,10 +593,10 @@
 	}
 	
 	.player-0{
-		background-color:Black;
-		fill:Black;
+		background-color:#101010;
+		fill:#101010;
 		
-		stroke: white;
+		stroke: black;
 		color:white;
 	}
 	
@@ -603,7 +604,7 @@
 		background-color:RoyalBlue;
 		fill:RoyalBlue;
 		
-		stroke: white;
+		stroke: black;
 		color:White;
 	}
 	
@@ -611,7 +612,7 @@
 		background-color:ForestGreen;
 		fill:ForestGreen;
 		
-		stroke: white;
+		stroke: black;
 		color:White;
 	}
 	
@@ -619,7 +620,7 @@
 		background-color:FireBrick;
 		fill:FireBrick;
 		
-		stroke: white;
+		stroke: black;
 		color:White;
 	}
 	
@@ -627,7 +628,7 @@
 		background-color:Orange;
 		fill:Orange;
 		
-		stroke: white;
+		stroke: black;
 		color:White;
 	}
 	
@@ -643,7 +644,7 @@
 		background-color:Purple;
 		fill:Purple;
 		
-		stroke: white;
+		stroke: black;
 		color:White;
 	}
 	
@@ -651,12 +652,12 @@
 		background-color:HotPink;
 		fill:HotPink;
 		
-		stroke: white;
+		stroke: black;
 		color:White;
 	}
 	
 	.player-8{
-		background-color:GhostWhite;
+		background-color:Ghostblack;
 		fill:GhostWhite;
 		
 		stroke: black;
@@ -667,7 +668,7 @@
 		background-color:OrangeRed;
 		fill:OrangeRed;
 		
-		stroke: white;
+		stroke: black;
 		color:White;
 	}
 	
@@ -683,7 +684,7 @@
 		background-color:LightSeaGreen;
 		fill:LightSeaGreen;
 		
-		stroke: white;
+		stroke: black;
 		color:White;
 	}
 	
@@ -691,7 +692,7 @@
 		background-color:MediumOrchid;
 		fill:MediumOrchid;
 		
-		stroke: white;
+		stroke: black;
 		color:White;
 	}
 	
@@ -699,7 +700,7 @@
 		background-color:Indigo;
 		fill:Indigo;
 		
-		stroke: white;
+		stroke: black;
 		color:White;
 	}
 	
