@@ -2,6 +2,7 @@
 	var userToken = "";
 	var screenTarget = "";
 	var currentGame = "";
+	var apiUriBase = "http://devolan.azurewebsites.net/";
 	
 	var system = {};
 	system.music = 1;
@@ -73,7 +74,7 @@
 			
 			// Request
 				var data = "grant_type=password&" + "username=" + loginUN + "&password=" + loginPW;
-				sendAjax("POST", "http://devolan.azurewebsites.net/Token", "", "form", loginResponse, loginResponse, false, data);
+				sendAjax("POST", apiUriBase + "/Token", "", "form", loginResponse, loginResponse, false, data);
 				
 				showOverlay("Logging in...", "<img src='Content/images/waiting.svg' />");
 		}
@@ -125,7 +126,7 @@
 			
 			// Request
 				var data = '{"Email":"' + regUN + '", "Password":"' + regPW + '", "ConfirmPassword":"' + regPWC + '"}';
-				sendAjax("POST", "http://devolan.azurewebsites.net/api/account/register", "", "json", regResponse, regResponse, false, data);
+				sendAjax("POST", apiUriBase + "/api/account/register", "", "json", regResponse, regResponse, false, data);
 				
 				showOverlay("Registering...", "<img src='Content/images/waiting.svg' />");
 		}
@@ -154,7 +155,7 @@
 			console.log("Retrieving game sessions...");
 			
 			var data = "";
-			sendAjax("GET", "http://devolan.azurewebsites.net/api/Game/Sessions", data, "adv", sesResponse, sesResponse, true);
+			sendAjax("GET", apiUriBase + "/api/Game/Sessions", data, "adv", sesResponse, sesResponse, true);
 			
 			showOverlay("Finding Games...", "<img src='Content/images/waiting.svg' />");
 		}
@@ -175,7 +176,7 @@
 						build += "<td>";
 							if(sessions[x].PhaseType == 0){
 								build += "Open";
-							} else if(session[x].PhaseType < 8){
+							} else if (sessions[x].PhaseType < 8) {
 								build += "In Progress";
 							} else {
 								build += "Closed";
@@ -207,7 +208,7 @@
 			console.log("Checking game " + gameid + "...");
 			
 			var data = "?sessionId=" + gameid;
-			sendAjax("GET", "http://devolan.azurewebsites.net/api/Game/Players", data, "adv", checkResponse, checkResponse, true);
+			sendAjax("GET", apiUriBase + "/api/Game/Players", data, "adv", checkResponse, checkResponse, true);
 			
 			showOverlay("Checking Game...", "<img src='Content/images/waiting.svg' />");
 		}
@@ -258,7 +259,7 @@
 			console.log("Joining game " + gameid + " as " + colour + "...");
 			
 			var data = "?sessionId=" + gameid + "&colour=" + colour;
-			sendAjax("POST", "http://devolan.azurewebsites.net/api/Game/JoinGame", data, "adv", joinResponse, joinResponse, true);
+			sendAjax("POST", apiUriBase + "/api/Game/JoinGame", data, "adv", joinResponse, joinResponse, true);
 				
 			showOverlay("Joining Game...", "<img src='Content/images/waiting.svg' />");
 		}
