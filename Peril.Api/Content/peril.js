@@ -65,7 +65,10 @@
 				
 				updateBoard();
 				
-				setTimeout(function(){hideOverlay(); loadAudio("music", "planning");}, 1500);
+				setTimeout(function () { hideOverlay(); loadAudio("music", "planning"); }, 1500);
+
+				window.addEventListener("resize", function () { resizeBoard() }, true);
+			    resizeBoard();
 
 				addEvent("hudButtonEndTurn", "click", function () { loadAudio("sfx", "button"); endTurn(currentGame.gameid, "00000000-0000-0000-0000-000000000000"); }, false)
 				break;
@@ -385,13 +388,6 @@
 		    currentGame.PhaseId = gamestate.PhaseId;
 		    currentGame.PhaseType = gamestate.PhaseType;
 		}
-	
-	// Setup Board
-		//function boardSetup(){
-			// Resize Listener
-				//window.addEventListener("resize", function(){resizeBoard()}, true);
-				//resizeBoard();
-		//}
 		
 	// Hud
 		function showHud() {

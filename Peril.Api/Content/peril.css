@@ -335,7 +335,7 @@
 	
 	/* Shapes */
 		circle{
-			fill: rgba(90, 90, 90, 1);
+			fill: inherit;
             stroke: none;
 		}
 		
@@ -385,7 +385,7 @@
 		}
 		
 		g:hover > path{
-			filter: invert(50%);
+			filter: invert(100%);
 		}
 
 /* Interface */
@@ -587,117 +587,121 @@
 		}
 		
 /* Player Colours */
-	.player-{
-		fill: rgba(150,150,150,0.60);
+	.player-, g{
+        background-color: rgba(150, 150, 150, 1);
+		fill: rgba(150, 150, 150, 0.75);
+
+        stroke: black;
+        color: white;
 	}
 	
 	.player-0{
-		background-color:#101010;
-		fill:#101010;
+		background-color:rgba(24, 24, 24, 1);
+		fill:rgba(24, 24, 24, 0.75);
 		
 		stroke: black;
-		color:white;
+		color: white;
 	}
 	
 	.player-1{
-		background-color:RoyalBlue;
-		fill:RoyalBlue;
+		background-color:rgba(65, 105, 225, 1);
+		fill:rgba(65,105,225,0.75);
 		
 		stroke: black;
 		color:White;
 	}
 	
 	.player-2{
-		background-color:ForestGreen;
-		fill:ForestGreen;
+		background-color:rgba(34, 139, 34, 1);
+		fill:rgba(34,139,34 ,0.75);
 		
 		stroke: black;
 		color:White;
 	}
 	
 	.player-3{
-		background-color:FireBrick;
-		fill:FireBrick;
+		background-color:rgba(178, 34, 34 , 1);
+		fill:rgba(178,34,34 ,0.75);
 		
 		stroke: black;
 		color:White;
 	}
 	
 	.player-4{
-		background-color:Orange;
-		fill:Orange;
+		background-color:rgba(255, 165, 0, 1);
+		fill:rgba(255,165,0 ,0.75);
 		
 		stroke: black;
 		color:White;
 	}
 	
 	.player-5{
-		background-color:Yellow;
-		fill:Yellow;
+		background-color:rgba(255, 255, 0, 1);
+		fill:rgba(255, 255, 0, 0.75);
 		
 		stroke: black;
 		color:Black;
 	}
 	
 	.player-6{
-		background-color:Purple;
-		fill:Purple;
+		background-color:rgba(128, 0, 128, 1);
+		fill:rgba(128, 0, 128, 0.75);
 		
 		stroke: black;
 		color:White;
 	}
 	
 	.player-7{
-		background-color:HotPink;
-		fill:HotPink;
+		background-color:rgba(255, 105, 180, 1);
+		fill:rgba(255, 105, 180, 0.75);
 		
 		stroke: black;
 		color:White;
 	}
 	
 	.player-8{
-		background-color:ghostwhite;
-		fill:ghostwhite;
+		background-color:rgba(248, 248, 255, 1);
+		fill:rgba(248, 248, 255, 0.75);
 		
 		stroke: black;
 		color:Black;
 	}
 	
 	.player-9{
-		background-color:OrangeRed;
-		fill:OrangeRed;
+		background-color:rgba(255, 69, 0, 1);
+		fill:rgba(255, 69, 0, 0.75);
 		
 		stroke: black;
 		color:White;
 	}
 	
 	.player-10{
-		background-color:GreenYellow;
-		fill:GreenYellow;
+		background-color:rgba(173, 255, 47, 1);
+		fill:rgba(173, 255, 47, 0.75);
 		
 		stroke: black;
 		color:Black;
 	}
 	
 	.player-11{
-		background-color:LightSeaGreen;
-		fill:LightSeaGreen;
+		background-color:rgba(32, 178, 170, 1);
+		fill:rgba(32, 178, 170, 0.75);
 		
 		stroke: black;
-		color:White;
+		color: white;
 	}
 	
 	.player-12{
-		background-color:MediumOrchid;
-		fill:MediumOrchid;
+		background-color: rgba(186, 85, 211, 1);
+		fill: rgba(186, 85, 211, 0.75);
 		
 		stroke: black;
 		color:White;
 	}
 	
 	.player-13{
-		background-color:Indigo;
-		fill:Indigo;
+		background-color: rgba(75, 0, 130, 1);
+		fill: rgba(75, 0, 130, 0.75);
 		
 		stroke: black;
 		color:White;
