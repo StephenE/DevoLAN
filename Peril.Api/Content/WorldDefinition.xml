@@ -31,7 +31,7 @@
     <Region Name="New Guinea" />
     <Region Name="New Zealand" />
     <Region Name="Northwest Territory" />
-    <Region Name="Oikatuk" />
+    <Region Name="Oikiqtaluk" />
     <Region Name="Ontario" />
     <Region Name="Peru" />
     <Region Name="Philippines" />
@@ -48,7 +48,7 @@
     <Region Name="Western Australia" />
     <Region Name="Western Europe" />
     <Region Name="Western United States" />
-    <Region Name="Yakustk" />
+    <Region Name="Yakutsk" />
   </Continent>
   <Connections>
     <Connected Name="Afghanistan" Other="China" />
