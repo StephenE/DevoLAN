@@ -315,6 +315,15 @@
 			console.log("Updating board to current state...");
 			
 			var world = JSON.parse(this.responseText);
+			var x = 0;
+			
+			for(x = 0; x < world.length; x++){
+				console.log("Territory: territory" + world[x].Name.replace(" ", ""))
+				var target = "territory" + world[x].Name.replace(/ /g, "");
+				
+				setFillColour(target, "#ff0000");
+				//setData(target, RegionId, world[x].RegionId);
+			}
 		}
 	
 	// Setup Board
@@ -591,6 +600,10 @@
 	// Get Data
 		function getData(target, data){
 			return getID(target).getAttribute("data-" + data);
+		}
+		
+		function setData(target, data, value){
+			getID(target).dataset.data = value;
 		}
 		
 	// Get Element by ID
