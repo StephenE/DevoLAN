@@ -1,11 +1,11 @@
 // Global Variables
 	var userToken = "";
 	var screenTarget = "";
-	var currentGame = "";
 	var apiUriBase = "http://devolan.azurewebsites.net/";
 	
 	var maxPlayers = 14;
 	
+	var currentGame = {};
 	var currentPlayers = {};
 	
 	var system = {};
@@ -19,7 +19,7 @@
 		console.log("Loading " + screen + "...");
 		
 		var url = "Content/parts/" + screen + ".html";
-		sendAjax("GET", url, "", "form", displayScreen, displayScreen, false);
+		sendAjax("GET", url, "", "form", displayScreen, displayScreen, false, "", true);
 		
 		screenTarget = screen;
 		
@@ -67,7 +67,7 @@
 				
 				setTimeout(function(){hideOverlay(); loadAudio("music", "planning");}, 1500);
 
-				addEvent("hudButtonEndTurn", "click", function () { loadAudio("sfx", "button"); endTurn(currentGame, "00000000-0000-0000-0000-000000000000"); }, false)
+				addEvent("hudButtonEndTurn", "click", function () { loadAudio("sfx", "button"); endTurn(currentGame.gameid, "00000000-0000-0000-0000-000000000000"); }, false)
 				break;
 		}
 	}
@@ -95,7 +95,7 @@
 			
 			// Request
 				var data = "grant_type=password&" + "username=" + loginUN + "&password=" + loginPW;
-				sendAjax("POST", apiUriBase + "/Token", "", "form", loginResponse, loginResponse, false, data);
+				sendAjax("POST", "/Token", "", "form", loginResponse, loginResponse, false, data);
 				
 				showOverlay("Logging in...", "<img src='Content/images/waiting.svg' />");
 		}
@@ -147,7 +147,7 @@
 			
 			// Request
 				var data = '{"Email":"' + regUN + '", "Password":"' + regPW + '", "ConfirmPassword":"' + regPWC + '"}';
-				sendAjax("POST", apiUriBase + "/api/account/register", "", "json", regResponse, regResponse, false, data);
+				sendAjax("POST", "/api/account/register", "", "json", regResponse, regResponse, false, data);
 				
 				showOverlay("Registering...", "<img src='Content/images/waiting.svg' />");
 		}
@@ -176,7 +176,7 @@
 			console.log("Retrieving game sessions...");
 			
 			var data = "";
-			sendAjax("GET", apiUriBase + "/api/Game/Sessions", data, "adv", sesResponse, sesResponse, true);
+			sendAjax("GET", "/api/Game/Sessions", data, "adv", sesResponse, sesResponse, true);
 			
 			showOverlay("Finding Games...", "<img src='Content/images/waiting.svg' />");
 		}
@@ -217,7 +217,7 @@
 				var y = 0;
 				
 				for(y = 0; y < x; y++){
-					addEvent("g-" + y, "click", function(){currentGame = getData(this.id, "gameid"); loadAudio("sfx", "button"); checkPlayers(currentGame);});
+					addEvent("g-" + y, "click", function(){currentGame.gameid = getData(this.id, "gameid"); loadAudio("sfx", "button"); checkPlayers(currentGame.gameid);});
 				}
 			
 			// Overlay
@@ -271,7 +271,7 @@
 					addEvent("b-cancel", "click", function(){hideOverlay();});
 					for(x = 0; x < maxPlayers; x++){
 						if(usedColours.indexOf(x) < 0){
-							addEvent("b-" + x, "click", function(){loadAudio("sfx", "confirm"); joinGame(currentGame, getData(this.id, "colour"));});
+							addEvent("b-" + x, "click", function(){loadAudio("sfx", "confirm"); joinGame(currentGame.gameid, getData(this.id, "colour"));});
 						}
 					}
 		}
@@ -281,7 +281,7 @@
 			console.log("Joining game " + gameid + " as " + colour + "...");
 			
 			var data = "?sessionId=" + gameid + "&colour=" + colour;
-			sendAjax("POST", apiUriBase + "/api/Game/JoinGame", data, "adv", joinResponse, joinResponse, true);
+			sendAjax("POST", "/api/Game/JoinGame", data, "adv", joinResponse, joinResponse, true);
 				
 			showOverlay("Joining Game...", "<img src='Content/images/waiting.svg' />");
 		}
@@ -322,9 +322,11 @@
 		function updateBoard(){
 			console.log("Getting current game board status...");
 			
-			var data = "?sessionId=" + currentGame;
-			updatePlayers(currentGame, data, playersResponse, playersResponse);
-			sendAjax("GET", apiUriBase + "api/World/RegionList", data, "adv", updateResponse, updateResponse, true);
+			var data = "?sessionId=" + currentGame.gameid;
+
+			updatePlayers(currentGame.gameid, data, playersResponse, playersResponse);
+			sendAjax("GET", "api/World/RegionList", data, "adv", updateResponse, updateResponse, true);
+			updateGameState(currentGame.gameid);
 		}
 		
 		function updateResponse(){
@@ -342,10 +344,8 @@
 				for(y = 0; y < cpLength; y++){
 					if(world[x].OwnerId === currentPlayers[y].UserId){
 						curColour = currentPlayers[y].Colour;
-			}
-		}
-	
-				console.log(world[x].Name + " belongs to " + curColour);
+			        }
+		        }
 				
 				addClass(target, "player-" + curColour);
 				
@@ -360,13 +360,30 @@
 		function updatePlayers(gameid, data, eventDone, eventError){
 			console.log("Getting player information for game " + gameid + ".");
 			
-			sendAjax("GET", apiUriBase + "/api/Game/Players", data, "adv", eventDone, eventError, true);
+			sendAjax("GET", "/api/Game/Players", data, "adv", eventDone, eventError, true);
 		}
 		
 		function playersResponse(){
 			console.log("Updating player information...");
 			
 			currentPlayers = JSON.parse(this.responseText);
+		}
+
+    // Update Phase Information
+		function updateGameState(gameid) {
+		    console.log("Getting game state information...");
+
+		    var data = "?sessionId=" + currentGame.gameid;
+            sendAjax("GET", "api/Game/Session", data, "adv", gameStateResponse, gameStateResponse, true)
+		}
+
+		function gameStateResponse() {
+		    console.log("Updating current game state.");
+
+		    var gamestate = JSON.parse(this.responseText);
+
+		    currentGame.PhaseId = gamestate.PhaseId;
+		    currentGame.PhaseType = gamestate.PhaseType;
 		}
 	
 	// Setup Board
@@ -388,7 +405,7 @@
 		function endTurn(gameId, phaseId) {
 		    // Technically, only the session host can do this. Anyone else will get an error and be ignored - they should EndPhase, but for DevoLAN 31 that doesn't actual do anything!
 			var data = "?sessionId=" + gameId + "&phaseId=" + phaseId + "&force=true";
-			sendAjax("POST", apiUriBase + "/api/Game/AdvanceNextPhase", data, "json", onEndTurnResponse, onEndTurnResponse, true);
+			sendAjax("POST", "/api/Game/AdvanceNextPhase", data, "json", onEndTurnResponse, onEndTurnResponse, true);
 		}
 
 		function onEndTurnResponse() {
@@ -568,9 +585,11 @@
 	function fadeAudio(target, level, duration){
 		//console.log("Fading " + target + " to " + level + " over " + duration + " seconds.");
 		
-		var player = getID(target);
+	    var player = getID(target);
+	    var initial = player.volume;
+
 		duration = (duration * 1000) / (duration * 25);
-		level = player.volume / duration;
+		level = initial / duration;
 		
 		var timer = setInterval(function(){
 				try{
@@ -580,7 +599,9 @@
 					clearInterval(timer);
 				}
 
-				if(player.volume === 0.0){
+				if (player.volume === 0.0) {
+				    stopAudio(target);
+                    setAudioVolume(target, initial)
 					clearInterval(timer);
 				}
 			}, duration);
@@ -628,13 +649,17 @@
 		}
 		
 // AJAX Requests
-	function sendAjax(method, url, urlData, content, evt1, evt2, auth, sendData){
+	function sendAjax(method, url, urlData, content, eventLoad, eventError, auth, sendData, noURI){
 		var ajaxRequest = new XMLHttpRequest();
 		
-		ajaxRequest.open(method, url + urlData);
+		if (noURI) {
+		    ajaxRequest.open(method, url + urlData);
+		} else {
+		    ajaxRequest.open(method, apiUriBase + url + urlData);
+		}
 		
-		ajaxRequest.addEventListener("load", evt1);
-		ajaxRequest.addEventListener("error", evt2);
+		ajaxRequest.addEventListener("load", eventLoad);
+		ajaxRequest.addEventListener("error", eventError);
 			
 		if(auth){
 			ajaxRequest.setRequestHeader("Accept", "text/html");
