@@ -308,7 +308,7 @@
 			console.log("Getting current game board status...");
 			
 			var data = "?sessionId=" + currentGame;
-			sendAjax("GET", "http://devolan.azurewebsites.net/api/World/RegionList", data, "adv", updateResponse, updateResponse, true);
+			sendAjax("GET", apiUriBase + "api/World/RegionList", data, "adv", updateResponse, updateResponse, true);
 		}
 		
 		function updateResponse(){
