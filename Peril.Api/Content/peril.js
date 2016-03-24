@@ -66,6 +66,8 @@
 				updateBoard();
 				
 				setTimeout(function(){hideOverlay(); loadAudio("music", "planning");}, 1500);
+
+				addEvent("hudButtonEndTurn", "click", function () { loadAudio("sfx", "button"); endTurn(currentGame, "00000000-0000-0000-0000-000000000000"); }, false)
 				break;
 		}
 	}
@@ -384,8 +386,9 @@
 		}
 
 		function endTurn(gameId, phaseId) {
-			var data = "?sessionId=" + gameId + "&phaseId=" + phaseId;
-			sendAjax("GET", apiUriBase + "/api/Game/EndPhase", data, "json", onEndTurnResponse, onEndTurnResponse, true);
+		    // Technically, only the session host can do this. Anyone else will get an error and be ignored - they should EndPhase, but for DevoLAN 31 that doesn't actual do anything!
+			var data = "?sessionId=" + gameId + "&phaseId=" + phaseId + "&force=true";
+			sendAjax("POST", apiUriBase + "/api/Game/AdvanceNextPhase", data, "json", onEndTurnResponse, onEndTurnResponse, true);
 		}
 
 		function onEndTurnResponse() {
