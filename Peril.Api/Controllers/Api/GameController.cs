@@ -569,6 +569,21 @@ namespace Peril.Api.Controllers.Api
                 // Award player a reinforcement for every 3 regions they own, minimum of at least 3 reinforcements
                 reinforcements[playerWithRegions.Key] = (UInt32)Math.Max(3, playerWithRegions.Count() / 3);
             }
+
+            var regionByContinent = from region in regions
+                                    group region by region.ContinentId into continent
+                                    select continent;
+            foreach(var continent in regionByContinent)
+            {
+                var ownersInContinent = from region in continent
+                                        group region by region.OwnerId into owner
+                                        select owner;
+                if(ownersInContinent.Count() == 1)
+                {
+                    reinforcements[ownersInContinent.First().Key] += 5;
+                }
+            }
+
             await NationRepository.SetAvailableReinforcements(sessionId, reinforcements);
         }
 
