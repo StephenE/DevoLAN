@@ -75,7 +75,7 @@
 				addClass("body", "bckWater");
 				
 				updateGameState();
-				gamePulse = setInterval(updateGameState, 5000);
+				gamePulse = setInterval(updateGameState, 2500);
 				
 				setTimeout(function () { hideOverlay(true); loadAudio("music", "planning"); }, 1500);
 
@@ -472,22 +472,27 @@
 
 		        case 2:
 		            instruction = "Combat Orders: Assign combat orders."
+		            endTurn(currentGame.GameId, currentGame.PhaseId);
 		            break;
 
 		        case 3:
 		            instruction = "Combat Phase: Showing border clashes.";
+		            endTurn(currentGame.GameId, currentGame.PhaseId);
 		            break;
 
 		        case 4:
 		            instruction = "Combat Phase: Showing mass invasions.";
+		            endTurn(currentGame.GameId, currentGame.PhaseId);
 		            break;
 
 		        case 5:
 		            instruction = "Combat Phase: Showing invasions.";
+		            endTurn(currentGame.GameId, currentGame.PhaseId);
 		            break;
 
 		        case 6:
 		            instruction = "Combat Phase: Showing spoils of war";
+		            endTurn(currentGame.GameId, currentGame.PhaseId);
 		            break;
 
 		        case 7:
