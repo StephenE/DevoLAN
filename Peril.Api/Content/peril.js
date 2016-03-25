@@ -2,7 +2,8 @@
 	var userToken = "";
 	var screenTarget = "";
 	var gamePulse = "";
-    var interactionTarget = ";"
+	var interactionTarget = ";"
+	var firstRun = true;
 
     var apiUriBase = "http://devolan.azurewebsites.net/";
 	var maxPlayers = 14;
@@ -336,6 +337,7 @@
 		function enterGame(){
 			console.log("Entering game...")
 			
+			firstRun = true;
 			fadeAudio("music", 0, 1.5);
 			showOverlay("Entering Game...", "<img src='Content/images/waiting.svg' />", true);
 			
@@ -403,22 +405,20 @@
 		
 	// Update Player Information
 		function updatePlayers(gameid, eventDone, eventError){
-			console.log("Getting player information for game " + gameid + ".");
+			//console.log("Getting player information for game " + gameid + ".");
 			
 			var data = "?sessionId=" + currentGame.GameId;
 			sendAjax("GET", "/api/Game/Players", data, "adv", eventDone, eventError, true);
 		}
 		
 		function playersResponse(){
-			console.log("Updating player information...");
+			//console.log("Updating player information...");
 			
 			currentPlayers = JSON.parse(this.responseText);
 
 			var x = 0;
 			
 			for (x = 0; x < currentPlayers.length; x++) {
-			    console.log("Checking " + currentPlayers[x].Name + " | " + userToken.userName);
-
 			    if(currentPlayers[x].Name === userToken.userName){
                     addClass("hud", "player-" + currentPlayers[x].Colour);
 		        }
@@ -427,14 +427,14 @@
 
     // Update Phase Information
 		function updateGameState(gameid) {
-		    console.log("Getting game state information...");
+		    //console.log("Getting game state information...");
 
 		    var data = "?sessionId=" + currentGame.GameId;
             sendAjax("GET", "api/Game/Session", data, "adv", gameStateResponse, gameStateResponse, true)
 		}
 
 		function gameStateResponse() {
-		    console.log("Updating current game state.");
+		    //console.log("Updating current game state.");
 
 		    var gamestate = JSON.parse(this.responseText);
 
@@ -445,7 +445,7 @@
 		        currentGame.PhaseType = gamestate.PhaseType;
 		        showPhase(currentGame.PhaseType);
 
-		        if (currentGame.PhaseType === 0) {
+		        if (currentGame.PhaseType === 0 || firstRun === true) {
 		            updatePlayers(currentGame.GameId, playersResponse, playersResponse);
 		        }
 
