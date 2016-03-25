@@ -1,11 +1,16 @@
 // Global Variables
 	var userToken = "";
 	var screenTarget = "";
+	var gamePulse = "";
+
 	var apiUriBase = "http://devolan.azurewebsites.net/";
-	
 	var maxPlayers = 14;
 	
 	var currentGame = {};
+	currentGame.GameId = "";
+	currentGame.PhaseId = "";
+	currentGame.PhaseType = 0;
+
 	var currentPlayers = {};
 	
 	var system = {};
@@ -64,13 +69,14 @@
 				addClass("body", "bckWater");
 				
 				updateBoard();
+				gamePulse = setInterval(updateBoard, 10000);
 				
 				setTimeout(function () { hideOverlay(); loadAudio("music", "planning"); }, 1500);
 
 				window.addEventListener("resize", function () { resizeBoard() }, true);
 			    resizeBoard();
 
-				addEvent("hudButtonEndTurn", "click", function () { loadAudio("sfx", "button"); endTurn(currentGame.gameid, "00000000-0000-0000-0000-000000000000"); }, false)
+				addEvent("hudButtonEndTurn", "click", function () { loadAudio("sfx", "button"); endTurn(currentGame.GameId, "00000000-0000-0000-0000-000000000000"); }, false)
 				break;
 		}
 	}
@@ -220,7 +226,7 @@
 				var y = 0;
 				
 				for(y = 0; y < x; y++){
-					addEvent("g-" + y, "click", function(){currentGame.gameid = getData(this.id, "gameid"); loadAudio("sfx", "button"); checkPlayers(currentGame.gameid);});
+					addEvent("g-" + y, "click", function(){currentGame.GameId = getData(this.id, "gameid"); loadAudio("sfx", "button"); checkPlayers(currentGame.GameId);});
 				}
 			
 			// Overlay
@@ -274,7 +280,7 @@
 					addEvent("b-cancel", "click", function(){hideOverlay();});
 					for(x = 0; x < maxPlayers; x++){
 						if(usedColours.indexOf(x) < 0){
-							addEvent("b-" + x, "click", function(){loadAudio("sfx", "confirm"); joinGame(currentGame.gameid, getData(this.id, "colour"));});
+							addEvent("b-" + x, "click", function(){loadAudio("sfx", "confirm"); joinGame(currentGame.GameId, getData(this.id, "colour"));});
 						}
 					}
 		}
@@ -325,11 +331,15 @@
 		function updateBoard(){
 			console.log("Getting current game board status...");
 			
-			var data = "?sessionId=" + currentGame.gameid;
+			var data = "?sessionId=" + currentGame.GameId;
 
-			updatePlayers(currentGame.gameid, data, playersResponse, playersResponse);
+			updateGameState(currentGame.GameId);
+
+			if (currentGame.PhaseType === 0) {
+			    updatePlayers(currentGame.GameId, data, playersResponse, playersResponse);
+			}
+
 			sendAjax("GET", "api/World/RegionList", data, "adv", updateResponse, updateResponse, true);
-			updateGameState(currentGame.gameid);
 		}
 		
 		function updateResponse(){
@@ -351,7 +361,8 @@
 		        }
 				
 				addClass(target, "player-" + curColour);
-				
+				setTextContent(target + "-counter", world[x].TroopCount);
+
 				setData(target, "RegionId", world[x].RegionId);
 				setData(target, "ContinentId", world[x].ContinentId);
 				setData(target, "OwnerId", world[x].OwnerId);
@@ -376,7 +387,7 @@
 		function updateGameState(gameid) {
 		    console.log("Getting game state information...");
 
-		    var data = "?sessionId=" + currentGame.gameid;
+		    var data = "?sessionId=" + currentGame.GameId;
             sendAjax("GET", "api/Game/Session", data, "adv", gameStateResponse, gameStateResponse, true)
 		}
 
@@ -385,8 +396,55 @@
 
 		    var gamestate = JSON.parse(this.responseText);
 
-		    currentGame.PhaseId = gamestate.PhaseId;
-		    currentGame.PhaseType = gamestate.PhaseType;
+		    if (gamestate.PhaseType !== currentGame.PhaseType){
+		        currentGame.PhaseId = gamestate.PhaseId;
+		        currentGame.PhaseType = gamestate.PhaseType;
+
+		        showPhase(currentGame.PhaseType);
+		    }
+		}
+
+    // Game Phase Controller
+		function showPhase(phaseType) {
+            console.log("Entering phase " + phaseType + ".")
+
+		    var instruction = "";
+
+		    switch (currentGame.PhaseType) {
+		        case 0:
+		            instruction = "Waiting for host to begin the game...";
+		            break;
+
+		        case 1:
+		            instruction = "Reinforcements Phase: Deploy reinforcements."
+		            break;
+
+		        case 2:
+		            instruction = "Combat Orders: Assign combat orders."
+		            break;
+
+		        case 3:
+		            instruction = "Combat Phase: Showing border clashes.";
+		            break;
+
+		        case 4:
+		            instruction = "Combat Phase: Showing mass invasions.";
+		            break;
+
+		        case 5:
+		            instruction = "Combat Phase: Showing invasions.";
+		            break;
+
+		        case 6:
+		            instruction = "Combat Phase: Showing spoils of war";
+		            break;
+
+		        case 7:
+		            instruction = "Redeployment Phase: Redeploy your troops.";
+		            break;
+		    }
+
+		    writeHTML("hudTextInstructions", instruction);
 		}
 		
 	// Hud
@@ -703,7 +761,7 @@
 			return getID(target).classList.contains(clss);
 		}
 		
-	// Get Data
+	// Data
 		function getData(target, data){
 			return getID(target).getAttribute("data-" + data);
 		}
@@ -718,27 +776,32 @@
 		}
 
 	// Styles
-			function writeStyle(t, v){
-				document.getElementById(t).setAttribute("style", v);
+		function writeStyle(t, v){
+			document.getElementById(t).setAttribute("style", v);
 				
-				return;
-			}
-		
-	// Add Event Listener
-		function addEvent(target, ev, func, c){
-			getID(target).addEventListener(ev, func, c);
+			return;
 		}
 		
-	// Write innerHTML
-		function writeHTML(t, v, m){
-			if(m == 1){
-				document.getElementById(t).innerHTML += v;
+	// Event Listeners
+		function addEvent(target, evnt, func, c){
+			getID(target).addEventListener(evnt, func, c);
+		}
+		
+	// innerHTML
+		function writeHTML(target, value, append){
+			if(append === true){
+				document.getElementById(target).innerHTML += value;
 			} else {
-				document.getElementById(t).innerHTML = v;
+				document.getElementById(target).innerHTML = value;
 			}
+		}
+
+    // Text Content
+		function setTextContent(target, text) {
+		    getID(target).textContent = text;
 		}
 	
-	// Get Value
+	// Values
 		function getValue(target){
 			return getID(target).value;
 		}
