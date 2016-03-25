@@ -273,7 +273,7 @@
 
 		function colourSelectionScreen(mode, usedColours) {
 		    if (mode === "host") {
-		        var usedColours = [];
+		        usedColours = [];
 		    }
 
 		    var x = 0;
@@ -516,7 +516,7 @@
 
 		        case 2:
 		            console.log("Resolving attack...");
-		            var targetRegionSelection = "<select name=\"target\">";
+		            var targetRegionSelection = "<select id='attackTarget'>";
 		            var connectedRegions = getData(this.id, "ConnectedRegions").split(',');
 		            
 		            for (var index = 0, numberOfRegions = connectedRegions.length; index < numberOfRegions; ++index)
@@ -527,10 +527,13 @@
 		            targetRegionSelection += "</select>";
 		            var targetRegionTroops = getData(this.id, "TroopCount") - 1;
 		            if (targetRegionTroops > 0) {
-		                var data = targetRegionSelection + "<br /><input type=\"number\" name=\"troops\" min=\"1\" value=\"1\" max=\"" + targetRegionTroops + "\" /><br /><input type=\"submit\" id=\"buttonAttackCommit\" value=\"Attack!\"><input type=\"submit\" id=\"buttonAttackCancel\" value=\"Cancel!\">"
+		                var data = targetRegionSelection + "<br /><input type=\"number\" id='attackTroops' min=\"1\" value=\"1\" max=\"" + targetRegionTroops + "\" /><br /><input type=\"submit\" id=\"buttonAttackCommit\" value=\"Attack!\"><input type=\"submit\" id=\"buttonAttackCancel\" value=\"Cancel!\">"
 		                showOverlay("Attack from " + this.id, data);
-		                addEvent("buttonAttackCommit", "click", hideOverlay, false);
-		                addEvent("buttonAttackCancel", "click", hideOverlay, false);
+
+		                console.log("Starting attack");
+
+		                addEvent("buttonAttackCommit", "click", function () { orderAttack(currentGame.GameId, getData(interactionTarget, "RegionId"), getValue("attackTroops"), getValue("attackTarget")); }, false);
+		                addEvent("buttonAttackCancel", "click", function () { hideOverlay(); }, false);
 		            }
 		            else {
 		                showOverlay("Not enough troops", "<img src='Content/images/error.svg' />");
@@ -605,7 +608,8 @@
 
 		function onOrderAttackResponse() {
 		    switch(this.status){
-		        case 204:
+		        case 200:
+                case 204:
 		            console.log("Attack order successful");
                     // TODO: Visual Feedback?
 		            break;
