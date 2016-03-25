@@ -472,7 +472,6 @@
 
 		        case 2:
 		            instruction = "Combat Orders: Assign combat orders."
-		            endTurn(currentGame.GameId, currentGame.PhaseId);
 		            break;
 
 		        case 3:
