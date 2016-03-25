@@ -367,11 +367,13 @@
 			font-size:18px;
 			font-weight:700;
 			text-anchor:middle;
+            color: inherit;
 		}
 		
 		text.label{
 			font-size:12px;
 			font-style:italic;
+            color: inherit;
 		}
 	
 	/* Groups */
@@ -658,7 +660,7 @@
 		fill:rgba(248, 248, 255, 0.75);
 		
 		stroke: black;
-		color:Black;
+		color: black;
 	}
 	
 	.player-9{
