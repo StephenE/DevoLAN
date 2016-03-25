@@ -468,6 +468,47 @@
 
 		    return this.responseText;
 		}
+
+    // Combat
+		function orderAttack(gameId, sourceRegionId, numberOfTroops, targetRegionId) {
+		    console.log("Attacking from " + sourceRegionId + " to " + targetRegionId);
+
+		    var data = "?sessionId=" + gameId + "&regionId=" + sourceRegionId + "&numberOfTroops=" + numberOfTroops + "&targetRegionId=" + targetRegionId;
+		    sendAjax("POST", "api/Region/Attack", data, "json", onOrderAttackResponse, onOrderAttackResponse, true);
+		}
+
+		function onOrderAttackResponse() {
+		    switch(this.status){
+		        case 204:
+		            console.log("Attack order successful");
+                    // TODO: Visual Feedback?
+		            break;
+		        case 400:
+		            console.log("Attack failed. Troops already committed");
+		            messageBox("Attack failed.", "There were not enough idle troops to attack with");
+		            break;
+		        case 402:
+		            console.log("Attack failed. Regions not connected");
+		            messageBox("Attack failed.", "Source and target region are not connected");
+		            break;
+		        case 404:
+		            console.log("Attack failed. Invalid region id");
+		            messageBox("Attack failed.", "Invalid region");
+		            break;
+		        case 406:
+		            console.log("Attack failed. Not owner of source, or owner of target");
+		            messageBox("Attack failed.", "Not owner of source region, or you are the owner of the target region!");
+		            break;
+		        case 417:
+		            console.log("Attack failed. Invalid session phase");
+		            messageBox("Attack failed.", "The combat orders phase is over");
+		            break;
+		        default:
+		            console.log("Join request failed.");
+		            messageBox("Attack failed.", "Not sure why -  Error code" + this.status);
+		            break;
+		    }
+        }
 		
 	// Hud
 		function showHud() {
