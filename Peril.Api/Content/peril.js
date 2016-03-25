@@ -2,7 +2,8 @@
 	var userToken = "";
 	var screenTarget = "";
 	var gamePulse = "";
-    var interactionTarget = ";"
+	var interactionTarget = ";"
+	var firstRun = true;
 
     var apiUriBase = "http://devolan.azurewebsites.net/";
 	var maxPlayers = 14;
@@ -75,7 +76,7 @@
 				addClass("body", "bckWater");
 				
 				updateGameState();
-				gamePulse = setInterval(updateGameState, 5000);
+				gamePulse = setInterval(updateGameState, 2500);
 				
 				setTimeout(function () { hideOverlay(true); loadAudio("music", "planning"); }, 1500);
 
@@ -273,7 +274,7 @@
 
 		function colourSelectionScreen(mode, usedColours) {
 		    if (mode === "host") {
-		        var usedColours = [];
+		        usedColours = [];
 		    }
 
 		    var x = 0;
@@ -336,6 +337,7 @@
 		function enterGame(){
 			console.log("Entering game...")
 			
+			firstRun = true;
 			fadeAudio("music", 0, 1.5);
 			showOverlay("Entering Game...", "<img src='Content/images/waiting.svg' />", true);
 			
@@ -403,22 +405,20 @@
 		
 	// Update Player Information
 		function updatePlayers(gameid, eventDone, eventError){
-			console.log("Getting player information for game " + gameid + ".");
+			//console.log("Getting player information for game " + gameid + ".");
 			
 			var data = "?sessionId=" + currentGame.GameId;
 			sendAjax("GET", "/api/Game/Players", data, "adv", eventDone, eventError, true);
 		}
 		
 		function playersResponse(){
-			console.log("Updating player information...");
+			//console.log("Updating player information...");
 			
 			currentPlayers = JSON.parse(this.responseText);
 
 			var x = 0;
 			
 			for (x = 0; x < currentPlayers.length; x++) {
-			    console.log("Checking " + currentPlayers[x].Name + " | " + userToken.userName);
-
 			    if(currentPlayers[x].Name === userToken.userName){
                     addClass("hud", "player-" + currentPlayers[x].Colour);
 		        }
@@ -427,14 +427,14 @@
 
     // Update Phase Information
 		function updateGameState(gameid) {
-		    console.log("Getting game state information...");
+		    //console.log("Getting game state information...");
 
 		    var data = "?sessionId=" + currentGame.GameId;
             sendAjax("GET", "api/Game/Session", data, "adv", gameStateResponse, gameStateResponse, true)
 		}
 
 		function gameStateResponse() {
-		    console.log("Updating current game state.");
+		    //console.log("Updating current game state.");
 
 		    var gamestate = JSON.parse(this.responseText);
 
@@ -445,7 +445,7 @@
 		        currentGame.PhaseType = gamestate.PhaseType;
 		        showPhase(currentGame.PhaseType);
 
-		        if (currentGame.PhaseType === 0) {
+		        if (currentGame.PhaseType === 0 || firstRun === true) {
 		            updatePlayers(currentGame.GameId, playersResponse, playersResponse);
 		        }
 
@@ -476,18 +476,22 @@
 
 		        case 3:
 		            instruction = "Combat Phase: Showing border clashes.";
+		            endTurn(currentGame.GameId, currentGame.PhaseId);
 		            break;
 
 		        case 4:
 		            instruction = "Combat Phase: Showing mass invasions.";
+		            endTurn(currentGame.GameId, currentGame.PhaseId);
 		            break;
 
 		        case 5:
 		            instruction = "Combat Phase: Showing invasions.";
+		            endTurn(currentGame.GameId, currentGame.PhaseId);
 		            break;
 
 		        case 6:
 		            instruction = "Combat Phase: Showing spoils of war";
+		            endTurn(currentGame.GameId, currentGame.PhaseId);
 		            break;
 
 		        case 7:
@@ -516,7 +520,7 @@
 
 		        case 2:
 		            console.log("Resolving attack...");
-		            var targetRegionSelection = "<select name=\"target\">";
+		            var targetRegionSelection = "<select id='attackTarget'>";
 		            var connectedRegions = getData(this.id, "ConnectedRegions").split(',');
 		            
 		            for (var index = 0, numberOfRegions = connectedRegions.length; index < numberOfRegions; ++index)
@@ -527,10 +531,13 @@
 		            targetRegionSelection += "</select>";
 		            var targetRegionTroops = getData(this.id, "TroopCount") - 1;
 		            if (targetRegionTroops > 0) {
-		                var data = targetRegionSelection + "<br /><input type=\"number\" name=\"troops\" min=\"1\" value=\"1\" max=\"" + targetRegionTroops + "\" /><br /><input type=\"submit\" id=\"buttonAttackCommit\" value=\"Attack!\"><input type=\"submit\" id=\"buttonAttackCancel\" value=\"Cancel!\">"
+		                var data = targetRegionSelection + "<br /><input type=\"number\" id='attackTroops' min=\"1\" value=\"1\" max=\"" + targetRegionTroops + "\" /><br /><input type=\"submit\" id=\"buttonAttackCommit\" value=\"Attack!\"><input type=\"submit\" id=\"buttonAttackCancel\" value=\"Cancel!\">"
 		                showOverlay("Attack from " + this.id, data);
-		                addEvent("buttonAttackCommit", "click", hideOverlay, false);
-		                addEvent("buttonAttackCancel", "click", hideOverlay, false);
+
+		                console.log("Starting attack");
+
+		                addEvent("buttonAttackCommit", "click", function () { orderAttack(currentGame.GameId, getData(interactionTarget, "RegionId"), getValue("attackTroops"), getValue("attackTarget")); }, false);
+		                addEvent("buttonAttackCancel", "click", function () { hideOverlay(); }, false);
 		            }
 		            else {
 		                showOverlay("Not enough troops", "<img src='Content/images/error.svg' />");
@@ -605,33 +612,40 @@
 
 		function onOrderAttackResponse() {
 		    switch(this.status){
-		        case 204:
+		        case 200:
+                case 204:
 		            console.log("Attack order successful");
-                    // TODO: Visual Feedback?
+		            hideOverlay();
 		            break;
 		        case 400:
 		            console.log("Attack failed. Troops already committed");
-		            messageBox("Attack failed.", "There were not enough idle troops to attack with");
+		            showOverlay("Order failed: Not enough troops.", "<img src='Content/images/error.svg' />");
+		            setTimeout(hideOverlay, 1500);
 		            break;
 		        case 402:
 		            console.log("Attack failed. Regions not connected");
-		            messageBox("Attack failed.", "Source and target region are not connected");
+		            showOverlay("Order failed: Regions not connected.", "<img src='Content/images/error.svg' />");
+		            setTimeout(hideOverlay, 1500);
 		            break;
 		        case 404:
 		            console.log("Attack failed. Invalid region id");
-		            messageBox("Attack failed.", "Invalid region");
+		            showOverlay("Order failed: Invalid region.", "<img src='Content/images/error.svg' />");
+		            setTimeout(hideOverlay, 1500);
 		            break;
 		        case 406:
 		            console.log("Attack failed. Not owner of source, or owner of target");
-		            messageBox("Attack failed.", "Not owner of source region, or you are the owner of the target region!");
+		            showOverlay("Order failed: You don't own that territory!", "<img src='Content/images/error.svg' />");
+		            setTimeout(hideOverlay, 1500);
 		            break;
 		        case 417:
 		            console.log("Attack failed. Invalid session phase");
-		            messageBox("Attack failed.", "The combat orders phase is over");
+		            showOverlay("Order failed: The orders phase is over.", "<img src='Content/images/error.svg' />");
+		            setTimeout(hideOverlay, 1500);
 		            break;
 		        default:
-		            console.log("Join request failed.");
-		            messageBox("Attack failed.", "Not sure why -  Error code" + this.status);
+		            console.log("Attack failed. Unknown error..");
+		            showOverlay("Order failed: Unknown issue, sorry...", "<img src='Content/images/error.svg' />");
+		            setTimeout(hideOverlay, 1500);
 		            break;
 		    }
         }
@@ -656,7 +670,7 @@
 	        case 200:
 	        case 204:
 	            console.log("Advanced to next phase");
-	            // TODO: Visual Feedback?
+	            updateGameState(currentGame.GameId);
 	            break;
 	        case 401:
 	            console.log("Not owner of session");
