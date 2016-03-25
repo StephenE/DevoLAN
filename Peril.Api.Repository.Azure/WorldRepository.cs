@@ -1,13 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Peril.Core;
-using Microsoft.WindowsAzure.Storage;
+﻿using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
 using Peril.Api.Repository.Azure.Model;
+using Peril.Core;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
 
 namespace Peril.Api.Repository.Azure
 {
@@ -102,6 +101,7 @@ namespace Peril.Api.Repository.Azure
             try
             {
                 CloudTable dataTable = GetTableForSessionData(sessionId, 1);
+                await dataTable.CreateIfNotExistsAsync();
                 await dataTable.ExecuteBatchAsync(batchOperation);
             }
             catch (StorageException exception)
@@ -112,7 +112,7 @@ namespace Peril.Api.Repository.Azure
                 }
                 else
                 {
-                    throw exception;
+                    throw new Exception(exception.RequestInformation.ExtendedErrorInformation.ErrorMessage, exception);
                 }
             }
 
@@ -134,6 +134,7 @@ namespace Peril.Api.Repository.Azure
             try
             {
                 CloudTable dataTable = GetTableForSessionData(sessionId, 1);
+                await dataTable.CreateIfNotExistsAsync();
                 await dataTable.ExecuteBatchAsync(batchOperation);
             }
             catch (StorageException exception)
