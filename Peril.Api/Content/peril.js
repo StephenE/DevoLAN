@@ -10,7 +10,7 @@
 	var currentGame = {};
 	currentGame.GameId = "";
 	currentGame.PhaseId = "";
-	currentGame.PhaseType = 0;
+	currentGame.PhaseType = null;
 
 	var currentPlayers = {};
 
@@ -65,7 +65,7 @@
 				
 				writeHTML("welcomeTitle", "Greetings, " + userToken.userName + ". Please select a game session to join.")
 				
-				addEvent("createButton", "click", function(){loadAudio("sfx", "button"); hostGame();}, false)
+				addEvent("createButton", "click", function () { loadAudio("sfx", "button"); colourSelectionScreen("host"); }, false)
 				addEvent("logoutButton", "click", function(){loadAudio("sfx", "confirm"); deleteCookie("userToken"); loadScreen("login");}, false)
 				break;
 				
@@ -267,26 +267,42 @@
 					}
 				}
 
-				// Select Player Colour
-					var content = "<div class='boxContainer'>";
-						for(x = 0; x < maxPlayers; x++){
-							if(usedColours.indexOf(x) < 0){
-								content += "<div id='b-" + x + "' data-colour='" + x + "' class='box button player-" + x + "'><br/><br/></div>";
-							}
-						}
+				colourSelectionScreen("join");
+		}
 
-					content += "</div>";
-					content += "<input id='b-cancel' type='button' value='Cancel' />";
-					
-					showOverlay("Select Your Player Colour.", content);
-					
-				// Add Event Listeners
-					addEvent("b-cancel", "click", function(){hideOverlay();});
-					for(x = 0; x < maxPlayers; x++){
-						if(usedColours.indexOf(x) < 0){
-							addEvent("b-" + x, "click", function(){loadAudio("sfx", "confirm"); joinGame(currentGame.GameId, getData(this.id, "colour"));});
-						}
-					}
+		function colourSelectionScreen(mode) {
+		    if (mode === "host") {
+		        var usedColours = [];
+		    }
+
+		    var x = 0;
+		    var content = "<div class='boxContainer'>";
+		    for (x = 0; x < maxPlayers; x++) {
+		        if (usedColours.indexOf(x) < 0) {
+		            content += "<div id='b-" + x + "' data-colour='" + x + "' class='box button player-" + x + "'><br/><br/></div>";
+		        }
+		    }
+
+		    content += "</div>";
+		    content += "<input id='b-cancel' type='button' value='Cancel' />";
+
+		    showOverlay("Select Your Player Colour.", content);
+
+		    addEvent("b-cancel", "click", function () { hideOverlay(); });
+
+		    for (x = 0; x < maxPlayers; x++) {
+		        if (usedColours.indexOf(x) < 0) {
+		            switch(mode){
+		                case "join":
+		                    addEvent("b-" + x, "click", function () { loadAudio("sfx", "confirm"); joinGame(currentGame.GameId, getData(this.id, "colour")); });
+		                    break;
+
+		                case "host":
+		                    addEvent("b-" + x, "click", function () { loadAudio("sfx", "confirm"); hostGame(getData(this.id, "colour")); });
+		                    break;
+		            }
+		        }
+		    }
 		}
 	
 	// Join Game
@@ -326,14 +342,20 @@
 		}
 		
 	// Host Game
-		function hostGame(){
+		function hostGame(colour){
 		    console.log("Creating game...");
-		    var data = "?colour=1";
+		    var data = "?colour=" + colour;
 		    sendAjax("POST", "api/Game/StartNewGame", data, "json", onHostGameResponse, onHostGameResponse, true);
+
+		    showOverlay("Creating Game...", "<img src='Content/images/waiting.svg' />");
 		}
 
 		function onHostGameResponse() {
-            // TODO: Join game!
+            console.log("New game created.")
+		    var session = JSON.parse(this.responseText);
+
+		    currentGame.GameId = session.GameId;
+		    checkPlayers(currentGame.GameId);
 		}
 		
 // Game Board
@@ -342,13 +364,6 @@
 			console.log("Getting current game board status...");
 			
 			var data = "?sessionId=" + currentGame.GameId;
-
-			updateGameState(currentGame.GameId);
-
-			if (currentGame.PhaseType === 0) {
-			    updatePlayers(currentGame.GameId, data, playersResponse, playersResponse);
-			}
-
 			sendAjax("GET", "api/World/RegionList", data, "adv", updateResponse, updateResponse, true);
 		}
 		
@@ -397,8 +412,10 @@
 			var x = 0;
 			
 			for (x = 0; x < currentPlayers.length; x++) {
+			    console.log("Checking " + currentPlayers[x].Name + " | " + userToken.userName);
+
 			    if(currentPlayers[x].Name === userToken.userName){
-                    addClass("hud", "player-" + x);
+                    addClass("hud", "player-" + currentPlayers[x].Colour);
 		        }
             }
 		}
@@ -418,10 +435,16 @@
 
             // PhaseId doesn't change if the type doesn't, but we need to get it at least once
 		    currentGame.PhaseId = gamestate.PhaseId;
+
 		    if (gamestate.PhaseType !== currentGame.PhaseType){
 		        currentGame.PhaseType = gamestate.PhaseType;
-
 		        showPhase(currentGame.PhaseType);
+
+		        if (currentGame.PhaseType === 0) {
+		            var data = "?sessionId=" + currentGame.GameId;
+		            updatePlayers(currentGame.GameId, data, playersResponse, playersResponse);
+		        }
+
 		        updateBoard();
 		    }
 		}
@@ -514,7 +537,7 @@
 		        var data = "?sessionId=" + currentGame.GameId + "&regionId=" + RegionId + "&numberOfTroops=" + troops;
 		        sendAjax("POST", "api/Region/Deploy", data, "adv", deployResponse, deployResponse, true);
 		    } else {
-		        showOverlay("No more troops to deploy!", "");
+		        showOverlay("No more troops to deploy!", "<img src='Content/images/error.svg' />");
 		        setTimeout(hideOverlay, 1500);
 		    }
 		}
@@ -533,7 +556,8 @@
 		            break;
 
 		        default:
-
+		            showOverlay("No more troops to deploy!", "<img src='Content/images/error.svg' />");
+		            setTimeout(hideOverlay, 1500);
 		            break;
 		    }
 		}
