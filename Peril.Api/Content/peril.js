@@ -381,23 +381,24 @@
 				var y = 0;
 				var cpLength = currentPlayers.length;
 				var curColour = "";
-				
+
+				setData(target, "OwnerId", world[x].OwnerId);
+
+				for(y = 0; y < cpLength; y++){
+					if(world[x].OwnerId === currentPlayers[y].UserId){
+						curColour = currentPlayers[y].Colour;
+			        }
+		        }
+
 				addClass(target, "player-" + curColour);
 				setTextContent(target + "-counter", world[x].TroopCount);
 
 				setData(target, "RegionId", world[x].RegionId);
 				setData(target, "ContinentId", world[x].ContinentId);
-				setData(target, "OwnerId", world[x].OwnerId);
 				setData(target, "TroopCount", world[x].TroopCount);
 				setData(target, "ConnectedRegions", world[x].ConnectedRegions);
 
 				worldLookup[world[x].RegionId] = world[x].Name;
-
-				for (y = 0; y < cpLength; y++) {
-					if(world[x].OwnerId === currentPlayers[y].UserId){
-						curColour = currentPlayers[y].Colour;
-			        }
-				}
 
 				addEvent(target, "click", territoryInteraction, false);
 			}
