@@ -615,7 +615,7 @@
 		        case 200:
                 case 204:
 		            console.log("Attack order successful");
-                    // TODO: Visual Feedback?
+		            hideOverlay();
 		            break;
 		        case 400:
 		            console.log("Attack failed. Troops already committed");
