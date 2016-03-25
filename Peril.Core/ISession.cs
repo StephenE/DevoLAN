@@ -21,6 +21,10 @@ namespace Peril.Core
 
         Guid PhaseId { get; }
 
+        UInt32 Round { get; }
+
+        String OwnerId { get; }
+
         SessionPhase PhaseType { get; }
     }
 }

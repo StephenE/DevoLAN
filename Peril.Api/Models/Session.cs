@@ -24,10 +24,14 @@ namespace Peril.Api.Models
             GameId = repositorySession.GameId;
             PhaseId = repositorySession.PhaseId;
             PhaseType = repositorySession.PhaseType;
+            OwnerId = repositorySession.OwnerId;
+            Round = repositorySession.Round;
         }
 
         public Guid GameId { get; set; }
         public Guid PhaseId { get; set; }
+        public String OwnerId { get; set; }
+        public UInt32 Round { get; set; }
         public SessionPhase PhaseType { get; set; }
     }
 

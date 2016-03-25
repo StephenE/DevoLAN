@@ -7,15 +7,15 @@ namespace Peril.Api.Repository
 {
     public interface IWorldRepository
     {
-        Task<IEnumerable<ICombat>> GetCombat(Guid sessionId);
+        Task<IEnumerable<ICombat>> GetCombat(Guid sessionId, UInt32 round);
 
-        Task<IEnumerable<ICombat>> GetCombat(Guid sessionId, CombatType type);
+        Task<IEnumerable<ICombat>> GetCombat(Guid sessionId, UInt32 round, CombatType type);
 
-        Task<IEnumerable<Guid>> AddCombat(Guid sessionId, IEnumerable<Tuple<CombatType, IEnumerable<ICombatArmy>>> armies);
+        Task<IEnumerable<Guid>> AddCombat(Guid sessionId, UInt32 round, IEnumerable<Tuple<CombatType, IEnumerable<ICombatArmy>>> armies);
 
-        Task AddArmyToCombat(Guid sessionId, CombatType sourceType, IDictionary<Guid, IEnumerable<ICombatArmy>> armies);
+        Task AddArmyToCombat(Guid sessionId, UInt32 round, CombatType sourceType, IDictionary<Guid, IEnumerable<ICombatArmy>> armies);
 
-        Task AddCombatResults(Guid sessionId, IEnumerable<ICombatResult> results);
+        Task AddCombatResults(Guid sessionId, UInt32 round, IEnumerable<ICombatResult> results);
 
         IEnumerable<Int32> GetRandomNumberGenerator(Guid targetRegion, int minimum, int maximum);
     }

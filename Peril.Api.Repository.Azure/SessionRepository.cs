@@ -147,6 +147,14 @@ namespace Peril.Api.Repository.Azure
                         await commandQueueTable.CreateIfNotExistsAsync();
                     }
 
+                    // Increase the round number (if required)
+                    if(newPhase == SessionPhase.Victory)
+                    {
+                        session.RawRound += 1;
+                        var dataTable = GetTableForSessionData(session.GameId, session.Round);
+                        await dataTable.CreateIfNotExistsAsync();
+                    }
+
                     // Write entry back (fails on write conflict)
                     TableOperation insertOperation = TableOperation.Replace(session);
                     await SessionTable.ExecuteAsync(insertOperation);

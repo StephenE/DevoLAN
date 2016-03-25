@@ -23,7 +23,7 @@ namespace Peril.Api.Tests.Repository
             NumberGenerator = new Random(0);
         }
 
-        public Task<IEnumerable<ICombat>> GetCombat(Guid sessionId)
+        public Task<IEnumerable<ICombat>> GetCombat(Guid sessionId, UInt32 round)
         {
             List<ICombat> combat = BorderClashes.Select(combatPair => combatPair.Value as ICombat).ToList();
             combat.AddRange(MassInvasions.Select(combatPair => combatPair.Value));
@@ -32,7 +32,7 @@ namespace Peril.Api.Tests.Repository
             return Task.FromResult<IEnumerable<ICombat>>(combat);
         }
 
-        public Task<IEnumerable<ICombat>> GetCombat(Guid sessionId, CombatType combatType)
+        public Task<IEnumerable<ICombat>> GetCombat(Guid sessionId, UInt32 round, CombatType combatType)
         {
             switch(combatType)
             {
@@ -49,7 +49,7 @@ namespace Peril.Api.Tests.Repository
             throw new InvalidOperationException();
         }
 
-        public Task<IEnumerable<Guid>> AddCombat(Guid sessionId, IEnumerable<Tuple<CombatType, IEnumerable<ICombatArmy>>> armies)
+        public Task<IEnumerable<Guid>> AddCombat(Guid sessionId, UInt32 round, IEnumerable<Tuple<CombatType, IEnumerable<ICombatArmy>>> armies)
         {
             List<Guid> createdCombatIds = new List<Guid>();
             foreach(var combatData in armies)
@@ -87,7 +87,7 @@ namespace Peril.Api.Tests.Repository
             return Task.FromResult<IEnumerable<Guid>>(createdCombatIds);
         }
 
-        public Task AddArmyToCombat(Guid sessionId, CombatType sourceType, IDictionary<Guid, IEnumerable<ICombatArmy>> armies)
+        public Task AddArmyToCombat(Guid sessionId, UInt32 round, CombatType sourceType, IDictionary<Guid, IEnumerable<ICombatArmy>> armies)
         {
             foreach(var combatEntry in armies)
             {
@@ -114,7 +114,7 @@ namespace Peril.Api.Tests.Repository
             return Task.FromResult(false);
         }
 
-        public Task AddCombatResults(Guid sessionId, IEnumerable<ICombatResult> results)
+        public Task AddCombatResults(Guid sessionId, UInt32 round, IEnumerable<ICombatResult> results)
         {
             foreach(ICombatResult result in results)
             {

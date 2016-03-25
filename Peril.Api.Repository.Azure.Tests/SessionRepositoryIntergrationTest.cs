@@ -237,6 +237,31 @@ namespace Peril.Api.Repository.Azure.Tests
         [TestMethod]
         [TestCategory("Integration")]
         [TestCategory("SessionRepository")]
+        public async Task IntegrationTestSetSessionPhase_WithEndingRound()
+        {
+            // Arrange
+            SessionRepository repository = new SessionRepository(DevelopmentStorageAccountConnectionString);
+            Guid validGuid = new Guid("46DAC828-3EFC-45E2-9294-B39AE9403DAA");
+            ISession sessionDetails = await repository.SetupSession(validGuid, "CreatingUser");
+            UInt32 round = sessionDetails.Round;
+
+            // Act
+            await repository.SetSessionPhase(validGuid, sessionDetails.PhaseId, SessionPhase.Victory);
+
+            // Assert
+            TableOperation operation = TableOperation.Retrieve<SessionTableEntry>(validGuid.ToString(), "CreatingUser");
+            TableResult result = await SessionTable.ExecuteAsync(operation);
+            Assert.IsNotNull(result.Result);
+            Assert.IsInstanceOfType(result.Result, typeof(SessionTableEntry));
+            SessionTableEntry resultStronglyTyped = result.Result as SessionTableEntry;
+            Assert.AreNotEqual(sessionDetails.PhaseId, resultStronglyTyped.PhaseId);
+            Assert.AreEqual(SessionPhase.Victory, resultStronglyTyped.PhaseType);
+            Assert.AreNotEqual(round, resultStronglyTyped.Round);
+        }
+
+        [TestMethod]
+        [TestCategory("Integration")]
+        [TestCategory("SessionRepository")]
         public async Task IntegrationTestSetSessionPhase_WithCreateCommandQueueTable()
         {
             // Arrange

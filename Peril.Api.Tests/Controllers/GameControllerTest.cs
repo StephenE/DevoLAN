@@ -1322,6 +1322,7 @@ namespace Peril.Api.Tests.Controllers
             primaryUser.SetupDummySession(validGuid)
                        .SetupSessionPhase(SessionPhase.Redeployment);
             Guid currentSessionPhaseId = primaryUser.SessionRepository.SessionMap[validGuid].PhaseId;
+            UInt32 currentRound = primaryUser.SessionRepository.SessionMap[validGuid].Round;
 
             // Act
             await primaryUser.GameController.PostAdvanceNextPhase(validGuid, currentSessionPhaseId, true);
@@ -1329,6 +1330,7 @@ namespace Peril.Api.Tests.Controllers
             // Assert
             Assert.AreEqual(SessionPhase.Victory, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
             Assert.AreNotEqual(currentSessionPhaseId, primaryUser.SessionRepository.SessionMap[validGuid].PhaseId);
+            Assert.AreNotEqual(currentRound, primaryUser.SessionRepository.SessionMap[validGuid].Round);
         }
 
         [TestMethod]
