@@ -73,7 +73,7 @@
 				addClass("body", "bckWater");
 				
 				updateGameState();
-				gamePulse = setInterval(updateGameState, 10000);
+				gamePulse = setInterval(updateGameState, 5000);
 				
 				setTimeout(function () { hideOverlay(true); loadAudio("music", "planning"); }, 1500);
 
@@ -241,8 +241,7 @@
 		function checkPlayers(gameid){
 			console.log("Checking game " + gameid + "...");
 			
-			var data = "?sessionId=" + gameid;
-			updatePlayers(gameid, data, checkResponse, checkResponse);
+			updatePlayers(gameid, checkResponse, checkResponse);
 			
 			showOverlay("Checking Game...", "<img src='Content/images/waiting.svg' />");
 		}
@@ -267,10 +266,10 @@
 					}
 				}
 
-				colourSelectionScreen("join");
+				colourSelectionScreen("join", usedColours);
 		}
 
-		function colourSelectionScreen(mode) {
+		function colourSelectionScreen(mode, usedColours) {
 		    if (mode === "host") {
 		        var usedColours = [];
 		    }
@@ -398,9 +397,10 @@
 		}
 		
 	// Update Player Information
-		function updatePlayers(gameid, data, eventDone, eventError){
+		function updatePlayers(gameid, eventDone, eventError){
 			console.log("Getting player information for game " + gameid + ".");
 			
+			var data = "?sessionId=" + currentGame.GameId;
 			sendAjax("GET", "/api/Game/Players", data, "adv", eventDone, eventError, true);
 		}
 		
@@ -441,8 +441,7 @@
 		        showPhase(currentGame.PhaseType);
 
 		        if (currentGame.PhaseType === 0) {
-		            var data = "?sessionId=" + currentGame.GameId;
-		            updatePlayers(currentGame.GameId, data, playersResponse, playersResponse);
+		            updatePlayers(currentGame.GameId, playersResponse, playersResponse);
 		        }
 
 		        updateBoard();
@@ -462,6 +461,7 @@
 
 		        case 1:
 		            instruction = "Reinforcements Phase: Deploy reinforcements."
+		            updatePlayers(currentGame.GameId, playersResponse, playersResponse);
 		            reinforcementsPhase(currentGame.GameId);
 		            break;
 
@@ -534,6 +534,8 @@
 		    console.log("Deploying troops to " + RegionId + ".");
             
 		    if (currentPhase.reinforcements > 0) {
+		        currentPhase.reinforcements -= 1;
+
 		        var data = "?sessionId=" + currentGame.GameId + "&regionId=" + RegionId + "&numberOfTroops=" + troops;
 		        sendAjax("POST", "api/Region/Deploy", data, "adv", deployResponse, deployResponse, true);
 		    } else {
@@ -548,14 +550,13 @@
 		    switch (this.status) {
 		        case 200:
 		            var TroopCount = +getData(interactionTarget, "TroopCount") + 1;
-		            currentPhase.reinforcements -= 1;
-
 		            writeHTML("hudTextInformation", "You have " + currentPhase.reinforcements + " reinforcements to deploy.");
 		            writeHTML(interactionTarget + "-counter", TroopCount);
                     setData(interactionTarget, "TroopCount", TroopCount)
 		            break;
 
 		        default:
+		            currentPhase.reinforcements += 1;
 		            showOverlay("No more troops to deploy!", "<img src='Content/images/error.svg' />");
 		            setTimeout(hideOverlay, 1500);
 		            break;
