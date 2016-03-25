@@ -76,7 +76,7 @@
 				window.addEventListener("resize", function () { resizeBoard() }, true);
 			    resizeBoard();
 
-				addEvent("hudButtonEndTurn", "click", function () { loadAudio("sfx", "button"); endTurn(currentGame.GameId, "00000000-0000-0000-0000-000000000000"); }, false)
+			    addEvent("hudButtonEndTurn", "click", function () { loadAudio("sfx", "button"); endTurn(currentGame.GameId, currentGame.PhaseId); }, false)
 				break;
 		}
 	}
@@ -323,7 +323,13 @@
 		
 	// Host Game
 		function hostGame(){
-			console.log("Creating game...");
+		    console.log("Creating game...");
+		    var data = "?colour=1";
+		    sendAjax("POST", "api/Game/StartNewGame", data, "json", onHostGameResponse, onHostGameResponse, true);
+		}
+
+		function onHostGameResponse() {
+            // TODO: Join game!
 		}
 		
 // Game Board
@@ -396,8 +402,9 @@
 
 		    var gamestate = JSON.parse(this.responseText);
 
+            // PhaseId doesn't change if the type doesn't, but we need to get it at least once
+		    currentGame.PhaseId = gamestate.PhaseId;
 		    if (gamestate.PhaseType !== currentGame.PhaseType){
-		        currentGame.PhaseId = gamestate.PhaseId;
 		        currentGame.PhaseType = gamestate.PhaseType;
 
 		        showPhase(currentGame.PhaseType);
