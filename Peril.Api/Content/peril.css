@@ -367,11 +367,13 @@
 			font-size:18px;
 			font-weight:700;
 			text-anchor:middle;
+            color: inherit;
 		}
 		
 		text.label{
 			font-size:12px;
 			font-style:italic;
+            color: inherit;
 		}
 	
 	/* Groups */
