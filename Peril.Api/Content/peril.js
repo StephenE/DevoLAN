@@ -123,7 +123,10 @@
 					
 					userToken = JSON.parse(this.responseText);
 					saveCookie("userToken", userToken);
-					
+
+					var data = "";
+					sendAjax("GET", "/api/Account/UserInfo", data, "adv", userResponse, userResponse, true);
+
 					loadScreen("browser");
 					break;
 					
@@ -133,6 +136,10 @@
 					messageBox("Login Failed.", "Please check your details and try again.");
 					break;
 			}
+		}
+
+		function userResponse() {
+		    console.log(this.responseText);
 		}
 		
 	// Register
@@ -382,14 +389,14 @@
 				var cpLength = currentPlayers.length;
 				var curColour = "";
 
-				console.log("Territory owned by: " + world[x].OwnerId);
+				//console.log("Territory owned by: " + world[x].Name);
 
 				for (y = 0; y < cpLength; y++) {
-				    console.log("Checking: " + world[x].OwnerId + " | " + currentPlayers[y].UserId);
+				    //console.log("Checking: " + world[x].OwnerId + " | " + currentPlayers[y].UserId);
 
 					if(world[x].OwnerId === currentPlayers[y].UserId){
 					    curColour = currentPlayers[y].Colour;
-					    console.log("Got it - " + world[x].Name + " belongs to " + currentPlayers[y].Colour);
+					    //console.log("Got it - " + world[x].Name + " belongs to " + currentPlayers[y].Colour);
 			        }
 		        }
 
