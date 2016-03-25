@@ -117,7 +117,7 @@
 		
 		padding: 10px;
 		
-		background-color: rgba(63, 57, 42, 0.6);
+		background-color: rgba(63, 57, 42, 0.3);
 		
 		text-align: left;
 	}
@@ -128,16 +128,16 @@
 	}
 	
 	tr{
-		background-color: rgba(0, 0, 0, 0.5);
+		background-color: rgba(0, 0, 0, 0.2);
 	}
 	
 	tr:nth-of-type(even){
-		background-color: rgba(0, 0, 0, 0.4);
+		background-color: rgba(0, 0, 0, 0.1);
 	}
 	
 	.hoverHighlight:hover{
 		cursor: pointer;
-		background-color: rgba(150, 150, 150, 0.5);
+		background-color: rgba(255, 255, 255, 0.5);
 	}
 	
 /* Paragraph Styles */
@@ -403,8 +403,6 @@
 			display:block;
 			
             margin: -25px 15% 50px 15%;
-			
-			background:#ff0000;
 		}
 		
 	/* Login */

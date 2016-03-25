@@ -2,6 +2,7 @@
 	var userToken = "";
 	var screenTarget = "";
 	var gamePulse = "";
+    var interactionTarget = ";"
 
 	var apiUriBase = "http://devolan.azurewebsites.net/";
 	var maxPlayers = 14;
@@ -12,6 +13,9 @@
 	currentGame.PhaseType = 0;
 
 	var currentPlayers = {};
+
+	var currentPhase = {};
+	currentPhase.reinforcements = 0;
 	
 	var system = {};
 	system.music = 1;
@@ -68,10 +72,10 @@
 			case "board":
 				addClass("body", "bckWater");
 				
-				updateBoard();
-				gamePulse = setInterval(updateBoard, 10000);
+				updateGameState();
+				gamePulse = setInterval(updateGameState, 10000);
 				
-				setTimeout(function () { hideOverlay(); loadAudio("music", "planning"); }, 1500);
+				setTimeout(function () { hideOverlay(true); loadAudio("music", "planning"); }, 1500);
 
 				window.addEventListener("resize", function () { resizeBoard() }, true);
 			    resizeBoard();
@@ -359,7 +363,7 @@
 						curColour = currentPlayers[y].Colour;
 			        }
 		        }
-				
+
 				addClass(target, "player-" + curColour);
 				setTextContent(target + "-counter", world[x].TroopCount);
 
@@ -367,6 +371,8 @@
 				setData(target, "ContinentId", world[x].ContinentId);
 				setData(target, "OwnerId", world[x].OwnerId);
 				setData(target, "TroopCount", world[x].TroopCount);
+
+				addEvent(target, "click", territoryInteraction, false);
 			}
 		}
 		
@@ -381,6 +387,14 @@
 			console.log("Updating player information...");
 			
 			currentPlayers = JSON.parse(this.responseText);
+
+			var x = 0;
+			
+			for (x = 0; x < currentPlayers.length; x++) {
+			    if(currentPlayers[x].Name === userToken.userName){
+                    addClass("hud", "player-" + x);
+		        }
+            }
 		}
 
     // Update Phase Information
@@ -401,6 +415,7 @@
 		        currentGame.PhaseType = gamestate.PhaseType;
 
 		        showPhase(currentGame.PhaseType);
+		        updateBoard();
 		    }
 		}
 
@@ -449,37 +464,92 @@
 		}
 
 // Game Phases
+    // Territory Interaction
+		function territoryInteraction() {
+		    console.log("Resolving interaction with " + this.id + ".");
+
+		    interactionTarget = this.id;
+
+		    switch (currentGame.PhaseType) {
+		        case 1:
+		            console.log("Deploying troop...");
+		            deployReinforcements(currentGame.GameId, getData(this.id, "RegionId"), 1);
+		            break;
+
+		        case 2:
+		            console.log("Resolving attack...");
+		            break;
+
+		        case 7:
+		            console.log("Redeploying troop...");
+		            
+		            break;
+		    }
+		}
+
     // Reinforcements
 		function reinforcementsPhase(gameid){
 		    console.log("Getting reinforcements.");
 
 		    var data = "?sessionId=" + currentGame.GameId;
-		    sendAjax("GET", "api/Nation/Reinforcements", data, "adv", reinforcementsResponse, null, true)
+		    sendAjax("GET", "api/Nation/Reinforcements", data, "adv", reinforcementsResponse, null, true);
 		}
 
 		function reinforcementsResponse(){
+		    currentPhase.reinforcements = +this.responseText;
+		    writeHTML("hudTextInformation", "You have " + this.responseText + " reinforcements to deploy.");
+		}
 
-		    return this.responseText;
+		function deployReinforcements(GameId, RegionId, troops) {
+		    console.log("Deploying troops to " + RegionId + ".");
+            
+		    if (currentPhase.reinforcements > 0) {
+		        var data = "?sessionId=" + currentGame.GameId + "&regionId=" + RegionId + "&numberOfTroops=" + troops;
+		        sendAjax("POST", "api/Region/Deploy", data, "adv", deployResponse, deployResponse, true);
+		    } else {
+		        showOverlay("No more troops to deploy!", "");
+		        setTimeout(hideOverlay, 1500);
+		    }
+		}
+
+		function deployResponse() {
+		    console.log("Resolving troop deployment order.");
+
+		    switch (this.status) {
+		        case 200:
+		            var TroopCount = +getData(interactionTarget, "TroopCount") + 1;
+		            currentPhase.reinforcements -= 1;
+
+		            writeHTML("hudTextInformation", "You have " + currentPhase.reinforcements + " reinforcements to deploy.");
+		            writeHTML(interactionTarget + "-counter", TroopCount);
+                    setData(interactionTarget, "TroopCount", TroopCount)
+		            break;
+
+		        default:
+
+		            break;
+		    }
 		}
 		
-	// Hud
-		function showHud() {
+// Hud
+	function showHud() {
 
-		}
+	}
 
-		function hideHud() {
+	function hideHud() {
 
-		}
+	}
 
-		function endTurn(gameId, phaseId) {
-		    // Technically, only the session host can do this. Anyone else will get an error and be ignored - they should EndPhase, but for DevoLAN 31 that doesn't actual do anything!
-			var data = "?sessionId=" + gameId + "&phaseId=" + phaseId + "&force=true";
-			sendAjax("POST", "/api/Game/AdvanceNextPhase", data, "json", onEndTurnResponse, onEndTurnResponse, true);
-		}
+	function endTurn(gameId, phaseId) {
+		// Technically, only the session host can do this. Anyone else will get an error and be ignored - they should EndPhase, but for DevoLAN 31 that doesn't actual do anything!
+		var data = "?sessionId=" + gameId + "&phaseId=" + phaseId + "&force=true";
+		sendAjax("POST", "/api/Game/AdvanceNextPhase", data, "json", onEndTurnResponse, onEndTurnResponse, true);
+	}
 
-		function onEndTurnResponse() {
-			// No response expected.
-		}
+	function onEndTurnResponse() {
+		// No response expected.
+	}
+
 // Message Box
 	function messageBox(title, message){
 		hideOverlay();
