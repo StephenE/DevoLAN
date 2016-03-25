@@ -28,7 +28,8 @@ namespace Peril.Api.Repository.Azure
             Guid newSessionGuid = Guid.NewGuid();
 
             // Create a new table to store all the data for this session
-            GetTableForSessionData(newSessionGuid, 1);
+            var dataTable = GetTableForSessionData(newSessionGuid, 1);
+            await dataTable.CreateIfNotExistsAsync();
 
             // Create a new table entry
             SessionTableEntry newSession = new SessionTableEntry(userId, newSessionGuid);
