@@ -12,6 +12,7 @@ namespace Peril.Api.Tests.Repository
             Players = new List<DummyNationData>();
             PhaseId = Guid.Empty;
             PhaseType = SessionPhase.NotStarted;
+            Round = 1;
             GenerateNewEtag();
         }
 
@@ -20,6 +21,8 @@ namespace Peril.Api.Tests.Repository
         public Guid GameId { get; set; }
 
         public List<DummyNationData> Players { get;set; }
+
+        public UInt32 Round { get; set; }
 
         public Guid PhaseId { get; set; }
 

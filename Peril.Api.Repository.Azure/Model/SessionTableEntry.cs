@@ -16,20 +16,24 @@ namespace Peril.Api.Repository.Azure.Model
             PhaseId = Guid.Empty;
             RawPhaseType = (Int32)SessionPhase.NotStarted;
             m_ColoursInUse = new List<PlayerColour>();
+            RawRound = 1;
         }
 
         public SessionTableEntry()
         {
             m_ColoursInUse = new List<PlayerColour>();
+            RawRound = 1;
         }
 
         public Guid GameId { get { return Guid.Parse(PartitionKey); } }
         public String OwnerId { get { return RowKey; } }
         public String CurrentEtag { get { return ETag; } }
         public SessionPhase PhaseType { get { return (SessionPhase)RawPhaseType; } }
+        public UInt32 Round { get { return (UInt32)RawRound; } }
 
         public Guid PhaseId { get; set; }
         public Int32 RawPhaseType { get; set; }
+        public Int32 RawRound { get; set; }
         
         public String ColoursInUse
         {

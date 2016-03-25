@@ -180,39 +180,39 @@ namespace Peril.Api.Controllers.Api
                     var nationsTask = NationRepository.GetNations(session.GameId);
                     IEnumerable<ICommandQueueMessage> pendingMessages = await CommandQueue.GetQueuedCommands(session.GameId, session.PhaseId);
                     IEnumerable<IOrderAttackMessage> pendingAttackMessages = pendingMessages.GetQueuedOrderAttacksCommands();
-                    nextPhase = await ProcessCombatOrders(session.GameId, await regions, await nationsTask, pendingAttackMessages);
+                    nextPhase = await ProcessCombatOrders(session.GameId, session.Round, await regions, await nationsTask, pendingAttackMessages);
                     await CommandQueue.RemoveCommands(session.PhaseId);
                     break;
                 }
                 case SessionPhase.BorderClashes:
                 {
-                    var borderClashes = WorldRepository.GetCombat(session.GameId, CombatType.BorderClash);
-                    IEnumerable<CombatResult> results = await ResolveCombat(session.GameId, await borderClashes);
-                    await ApplyBorderClashResults(session.GameId, results);
+                    var borderClashes = WorldRepository.GetCombat(session.GameId, session.Round, CombatType.BorderClash);
+                    IEnumerable<CombatResult> results = await ResolveCombat(session.GameId, session.Round, await borderClashes);
+                    await ApplyBorderClashResults(session.GameId, session.Round, results);
                     nextPhase = SessionPhase.MassInvasions;
                     break;
                 }
                 case SessionPhase.MassInvasions:
                 {
-                    var massInvasions = WorldRepository.GetCombat(session.GameId, CombatType.MassInvasion);
-                    IEnumerable<CombatResult> results = await ResolveCombat(session.GameId, await massInvasions);
-                    await ApplyCombatResults(session.GameId, CombatType.MassInvasion, results);
+                    var massInvasions = WorldRepository.GetCombat(session.GameId, session.Round, CombatType.MassInvasion);
+                    IEnumerable<CombatResult> results = await ResolveCombat(session.GameId, session.Round, await massInvasions);
+                    await ApplyCombatResults(session.GameId, session.Round, CombatType.MassInvasion, results);
                     nextPhase = SessionPhase.Invasions;
                     break;
                 }
                 case SessionPhase.Invasions:
                 {
-                    var invasions = WorldRepository.GetCombat(session.GameId, CombatType.Invasion);
-                    IEnumerable<CombatResult> results = await ResolveCombat(session.GameId, await invasions);
-                    await ApplyCombatResults(session.GameId, CombatType.Invasion, results);
+                    var invasions = WorldRepository.GetCombat(session.GameId, session.Round, CombatType.Invasion);
+                    IEnumerable<CombatResult> results = await ResolveCombat(session.GameId, session.Round, await invasions);
+                    await ApplyCombatResults(session.GameId, session.Round, CombatType.Invasion, results);
                     nextPhase = SessionPhase.SpoilsOfWar;
                     break;
                 }
                 case SessionPhase.SpoilsOfWar:
                 {
-                    var invasions = WorldRepository.GetCombat(session.GameId, CombatType.SpoilsOfWar);
-                    IEnumerable<CombatResult> results = await ResolveCombat(session.GameId, await invasions);
-                    await ApplyCombatResults(session.GameId, CombatType.SpoilsOfWar, results);
+                    var invasions = WorldRepository.GetCombat(session.GameId, session.Round, CombatType.SpoilsOfWar);
+                    IEnumerable<CombatResult> results = await ResolveCombat(session.GameId, session.Round, await invasions);
+                    await ApplyCombatResults(session.GameId, session.Round, CombatType.SpoilsOfWar, results);
                     nextPhase = SessionPhase.Redeployment;
                     break;
                 }
@@ -333,7 +333,7 @@ namespace Peril.Api.Controllers.Api
             }
         }
 
-        private async Task<SessionPhase> ProcessCombatOrders(Guid sessionId, IEnumerable<IRegionData> availableRegions, IEnumerable<INationData> players, IEnumerable<IOrderAttackMessage> messages)
+        private async Task<SessionPhase> ProcessCombatOrders(Guid sessionId, UInt32 round, IEnumerable<IRegionData> availableRegions, IEnumerable<INationData> players, IEnumerable<IOrderAttackMessage> messages)
         {
             SessionPhase nextSessionPhase = SessionPhase.Redeployment;
             Dictionary<Guid, OwnershipChange> regionOwnershipChanges = new Dictionary<Guid, OwnershipChange>();
@@ -461,7 +461,7 @@ namespace Peril.Api.Controllers.Api
             if (resolvedCombat.Count > 0)
             {
                 // Store combat
-                await WorldRepository.AddCombat(sessionId, resolvedCombat);
+                await WorldRepository.AddCombat(sessionId, round, resolvedCombat);
 
                 // Update source regions with new troop levels
                 await RegionRepository.AssignRegionOwnership(sessionId, regionOwnershipChanges);
@@ -470,7 +470,7 @@ namespace Peril.Api.Controllers.Api
             return nextSessionPhase;
         }
 
-        private async Task<IEnumerable<CombatResult>> ResolveCombat(Guid sessionId, IEnumerable<ICombat> pendingCombat)
+        private async Task<IEnumerable<CombatResult>> ResolveCombat(Guid sessionId, UInt32 round, IEnumerable<ICombat> pendingCombat)
         {
             List<CombatResult> combatResults = new List<CombatResult>();
             foreach(ICombat combat in pendingCombat)
@@ -480,13 +480,13 @@ namespace Peril.Api.Controllers.Api
 
             if (combatResults.Count > 0)
             {
-                await WorldRepository.AddCombatResults(sessionId, combatResults);
+                await WorldRepository.AddCombatResults(sessionId, round, combatResults);
             }
 
             return combatResults;
         }
 
-        private async Task ApplyBorderClashResults(Guid sessionId, IEnumerable<CombatResult> combatResults)
+        private async Task ApplyBorderClashResults(Guid sessionId, UInt32 round, IEnumerable<CombatResult> combatResults)
         {
             Dictionary<Guid, IEnumerable<ICombatArmy>> survivingArmies = new Dictionary<Guid, IEnumerable<ICombatArmy>>();
 
@@ -504,10 +504,10 @@ namespace Peril.Api.Controllers.Api
                 }
             }
 
-            await WorldRepository.AddArmyToCombat(sessionId, CombatType.BorderClash, survivingArmies);
+            await WorldRepository.AddArmyToCombat(sessionId, round, CombatType.BorderClash, survivingArmies);
         }
 
-        private async Task ApplyCombatResults(Guid sessionId, CombatType type, IEnumerable<CombatResult> combatResults)
+        private async Task ApplyCombatResults(Guid sessionId, UInt32 round, CombatType type, IEnumerable<CombatResult> combatResults)
         {
             Dictionary<Guid, OwnershipChange> regionOwnershipChanges = new Dictionary<Guid, OwnershipChange>();
             List<Tuple<CombatType, IEnumerable<ICombatArmy>>> spoilsOfWar = new List<Tuple<CombatType, IEnumerable<ICombatArmy>>>();
@@ -553,7 +553,7 @@ namespace Peril.Api.Controllers.Api
 
             if(spoilsOfWar.Count > 0)
             {
-                await WorldRepository.AddCombat(sessionId, spoilsOfWar);
+                await WorldRepository.AddCombat(sessionId, round, spoilsOfWar);
             }
         }
 

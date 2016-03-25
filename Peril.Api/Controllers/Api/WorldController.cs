@@ -41,7 +41,7 @@ namespace Peril.Api.Controllers.Api
             ISession session = await SessionRepository.GetSessionOrThrow(sessionId)
                                                       .IsUserIdJoinedOrThrow(NationRepository, User.Identity.GetUserId());
 
-            IEnumerable<ICombat> combatData = await WorldRepository.GetCombat(session.GameId);
+            IEnumerable<ICombat> combatData = await WorldRepository.GetCombat(session.GameId, session.Round);
             return from combat in combatData
                    select new Combat(combat);
         }

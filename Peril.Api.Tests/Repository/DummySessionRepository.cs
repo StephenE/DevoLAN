@@ -100,6 +100,10 @@ namespace Peril.Api.Tests.Repository
                 if (foundSession.PhaseId == currentPhaseId)
                 {
                     foundSession.SetupSessionPhase(newPhase);
+                    if(newPhase == SessionPhase.Victory)
+                    {
+                        foundSession.Round += 1;
+                    }
                     return Task.FromResult(false);
                 }
                 else

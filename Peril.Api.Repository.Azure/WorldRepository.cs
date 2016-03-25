@@ -19,10 +19,10 @@ namespace Peril.Api.Repository.Azure
             RandomNumberGenerator = new Random();
         }
 
-        public async Task AddArmyToCombat(Guid sessionId, CombatType sourceType, IDictionary<Guid, IEnumerable<ICombatArmy>> armies)
+        public async Task AddArmyToCombat(Guid sessionId, UInt32 round, CombatType sourceType, IDictionary<Guid, IEnumerable<ICombatArmy>> armies)
         {
             // Do a query to grab all combat
-            var allCombat = await GetCombat(sessionId);
+            var allCombat = await GetCombat(sessionId, round);
             var combatByTargetRegionQuery = from combat in allCombat
                                             where combat.ResolutionType != CombatType.BorderClash
                                             from army in combat.InvolvedArmies
@@ -66,7 +66,7 @@ namespace Peril.Api.Repository.Azure
             // Write entry back (fails on write conflict)
             try
             {
-                CloudTable dataTable = GetTableForSessionData(sessionId, 1);
+                CloudTable dataTable = GetTableForSessionData(sessionId, round);
                 await dataTable.ExecuteBatchAsync(batchOperation);
             }
             catch (StorageException exception)
@@ -82,7 +82,7 @@ namespace Peril.Api.Repository.Azure
             }
         }
 
-        public async Task<IEnumerable<Guid>> AddCombat(Guid sessionId, IEnumerable<Tuple<CombatType, IEnumerable<ICombatArmy>>> armies)
+        public async Task<IEnumerable<Guid>> AddCombat(Guid sessionId, UInt32 round, IEnumerable<Tuple<CombatType, IEnumerable<ICombatArmy>>> armies)
         {
             TableBatchOperation batchOperation = new TableBatchOperation();
 
@@ -100,7 +100,7 @@ namespace Peril.Api.Repository.Azure
             // Write entry back (fails on write conflict)
             try
             {
-                CloudTable dataTable = GetTableForSessionData(sessionId, 1);
+                CloudTable dataTable = GetTableForSessionData(sessionId, round);
                 await dataTable.CreateIfNotExistsAsync();
                 await dataTable.ExecuteBatchAsync(batchOperation);
             }
@@ -119,7 +119,7 @@ namespace Peril.Api.Repository.Azure
             return createdCombatIds;
         }
 
-        public async Task AddCombatResults(Guid sessionId, IEnumerable<ICombatResult> results)
+        public async Task AddCombatResults(Guid sessionId, UInt32 round, IEnumerable<ICombatResult> results)
         {
             TableBatchOperation batchOperation = new TableBatchOperation();
 
@@ -133,7 +133,7 @@ namespace Peril.Api.Repository.Azure
             // Write entry back (fails on write conflict)
             try
             {
-                CloudTable dataTable = GetTableForSessionData(sessionId, 1);
+                CloudTable dataTable = GetTableForSessionData(sessionId, round);
                 await dataTable.CreateIfNotExistsAsync();
                 await dataTable.ExecuteBatchAsync(batchOperation);
             }
@@ -150,9 +150,9 @@ namespace Peril.Api.Repository.Azure
             }
         }
 
-        public async Task<IEnumerable<ICombat>> GetCombat(Guid sessionId)
+        public async Task<IEnumerable<ICombat>> GetCombat(Guid sessionId, UInt32 round)
         {
-            CloudTable dataTable = GetTableForSessionData(sessionId, 1);
+            CloudTable dataTable = GetTableForSessionData(sessionId, round);
 
             TableQuery<CombatTableEntry> query = new TableQuery<CombatTableEntry>()
                 .Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, sessionId.ToString()));
@@ -173,9 +173,9 @@ namespace Peril.Api.Repository.Azure
             return results;
         }
 
-        public async Task<IEnumerable<ICombat>> GetCombat(Guid sessionId, CombatType type)
+        public async Task<IEnumerable<ICombat>> GetCombat(Guid sessionId, UInt32 round, CombatType type)
         {
-            CloudTable dataTable = GetTableForSessionData(sessionId, 1);
+            CloudTable dataTable = GetTableForSessionData(sessionId, round);
 
             TableQuery<CombatTableEntry> query = new TableQuery<CombatTableEntry>()
                 .Where(TableQuery.CombineFilters(

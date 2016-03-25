@@ -51,7 +51,7 @@ namespace Peril.Api.Repository.Azure.Tests
             await testTable.ExecuteAsync(insertOperation);
 
             // Act
-            await repository.AddArmyToCombat(SessionId, CombatType.BorderClash, new Dictionary<Guid, IEnumerable<ICombatArmy>>
+            await repository.AddArmyToCombat(SessionId, 1, CombatType.BorderClash, new Dictionary<Guid, IEnumerable<ICombatArmy>>
             {
                 {
                     defendingRegionId,  new List<ICombatArmy>
@@ -93,7 +93,7 @@ namespace Peril.Api.Repository.Azure.Tests
             testTable.CreateIfNotExists();
 
             // Act
-            var combatIds = await repository.AddCombat(SessionId, new List<Tuple<CombatType, IEnumerable<ICombatArmy>>>
+            var combatIds = await repository.AddCombat(SessionId, 1, new List<Tuple<CombatType, IEnumerable<ICombatArmy>>>
             {
                 Tuple.Create<CombatType, IEnumerable<ICombatArmy>>(CombatType.MassInvasion, new List<ICombatArmy>
                 {
@@ -150,7 +150,7 @@ namespace Peril.Api.Repository.Azure.Tests
             testTable.CreateIfNotExists();
 
             // Act
-            await repository.AddCombatResults(SessionId, new List<ICombatResult>
+            await repository.AddCombatResults(SessionId, 1, new List<ICombatResult>
             {
                 tableEntry
             });
@@ -190,7 +190,7 @@ namespace Peril.Api.Repository.Azure.Tests
             await testTable.ExecuteAsync(insertOperation);
 
             // Act
-            var results = await repository.GetCombat(SessionId);
+            var results = await repository.GetCombat(SessionId, 1);
 
             // Assert
             Assert.IsNotNull(results);
@@ -237,7 +237,7 @@ namespace Peril.Api.Repository.Azure.Tests
             await testTable.ExecuteAsync(insertOperation);
 
             // Act
-            var results = await repository.GetCombat(SessionId, CombatType.SpoilsOfWar);
+            var results = await repository.GetCombat(SessionId, 1, CombatType.SpoilsOfWar);
 
             // Assert
             Assert.IsNotNull(results);
