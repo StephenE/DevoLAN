@@ -4,7 +4,7 @@
 	var gamePulse = "";
     var interactionTarget = ";"
 
-	var apiUriBase = "http://devolan.azurewebsites.net/";
+    var apiUriBase = "http://devolan.azurewebsites.net/";
 	var maxPlayers = 14;
 	
 	var currentGame = {};
@@ -16,6 +16,8 @@
 
 	var currentPhase = {};
 	currentPhase.reinforcements = 0;
+
+	var worldLookup = {};
 	
 	var system = {};
 	system.music = 1;
@@ -391,6 +393,9 @@
 				setData(target, "ContinentId", world[x].ContinentId);
 				setData(target, "OwnerId", world[x].OwnerId);
 				setData(target, "TroopCount", world[x].TroopCount);
+				setData(target, "ConnectedRegions", world[x].ConnectedRegions);
+
+				worldLookup[world[x].RegionId] = world[x].Name;
 
 				addEvent(target, "click", territoryInteraction, false);
 			}
@@ -486,7 +491,10 @@
 		            break;
 
 		        case 7:
-		            instruction = "Redeployment Phase: Redeploy your troops.";
+		            instruction = "Redeployment Phase: Not implemented for DevoLAN 31.";
+
+		        case 8:
+		            instruction = "Victory Phase: Speak up now if you've won!";
 		            break;
 		    }
 
@@ -508,6 +516,26 @@
 
 		        case 2:
 		            console.log("Resolving attack...");
+		            var targetRegionSelection = "<select name=\"target\">";
+		            var connectedRegions = getData(this.id, "ConnectedRegions").split(',');
+		            
+		            for (var index = 0, numberOfRegions = connectedRegions.length; index < numberOfRegions; ++index)
+		            {
+		                var connectedRegionId = connectedRegions[index];
+		                targetRegionSelection += "<option value=\"" + connectedRegionId + "\">" + worldLookup[connectedRegionId] + "</option>";
+		            }
+		            targetRegionSelection += "</select>";
+		            var targetRegionTroops = getData(this.id, "TroopCount") - 1;
+		            if (targetRegionTroops > 0) {
+		                var data = targetRegionSelection + "<br /><input type=\"number\" name=\"troops\" min=\"1\" value=\"1\" max=\"" + targetRegionTroops + "\" /><br /><input type=\"submit\" id=\"buttonAttackCommit\" value=\"Attack!\"><input type=\"submit\" id=\"buttonAttackCancel\" value=\"Cancel!\">"
+		                showOverlay("Attack from " + this.id, data);
+		                addEvent("buttonAttackCommit", "click", hideOverlay, false);
+		                addEvent("buttonAttackCancel", "click", hideOverlay, false);
+		            }
+		            else {
+		                showOverlay("Not enough troops", "<img src='Content/images/error.svg' />");
+		                setTimeout(hideOverlay, 1500);
+		            }
 		            break;
 
 		        case 7:
@@ -553,8 +581,12 @@
 		            writeHTML("hudTextInformation", "You have " + currentPhase.reinforcements + " reinforcements to deploy.");
 		            writeHTML(interactionTarget + "-counter", TroopCount);
                     setData(interactionTarget, "TroopCount", TroopCount)
+                    break;
+		        case 406:
+		            currentPhase.reinforcements += 1;
+		            showOverlay("You don't own this region", "<img src='Content/images/error.svg' />");
+		            setTimeout(hideOverlay, 1500);
 		            break;
-
 		        default:
 		            currentPhase.reinforcements += 1;
 		            showOverlay("No more troops to deploy!", "<img src='Content/images/error.svg' />");
@@ -620,7 +652,21 @@
 	}
 
 	function onEndTurnResponse() {
-		// No response expected.
+	    switch (this.status) {
+	        case 200:
+	        case 204:
+	            console.log("Advanced to next phase");
+	            // TODO: Visual Feedback?
+	            break;
+	        case 401:
+	            console.log("Not owner of session");
+	            messageBox("End Turn Failed.", "Only the session owner is allowed to end the turn");
+	            break;
+	        default:
+	            console.log("End turn request failed.");
+	            messageBox("End Turn Failed.", "Not sure why -  Error code" + this.status);
+	            break;
+	    }
 	}
 
 // Message Box
