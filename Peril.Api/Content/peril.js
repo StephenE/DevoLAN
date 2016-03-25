@@ -619,27 +619,33 @@
 		            break;
 		        case 400:
 		            console.log("Attack failed. Troops already committed");
-		            messageBox("Attack failed.", "There were not enough idle troops to attack with");
+		            showOverlay("Order failed: Not enough troops.", "<img src='Content/images/error.svg' />");
+		            setTimeout(hideOverlay, 1500);
 		            break;
 		        case 402:
 		            console.log("Attack failed. Regions not connected");
-		            messageBox("Attack failed.", "Source and target region are not connected");
+		            showOverlay("Order failed: Regions not connected.", "<img src='Content/images/error.svg' />");
+		            setTimeout(hideOverlay, 1500);
 		            break;
 		        case 404:
 		            console.log("Attack failed. Invalid region id");
-		            messageBox("Attack failed.", "Invalid region");
+		            showOverlay("Order failed: Invalid region.", "<img src='Content/images/error.svg' />");
+		            setTimeout(hideOverlay, 1500);
 		            break;
 		        case 406:
 		            console.log("Attack failed. Not owner of source, or owner of target");
-		            messageBox("Attack failed.", "Not owner of source region, or you are the owner of the target region!");
+		            showOverlay("Order failed: You don't own that territory!", "<img src='Content/images/error.svg' />");
+		            setTimeout(hideOverlay, 1500);
 		            break;
 		        case 417:
 		            console.log("Attack failed. Invalid session phase");
-		            messageBox("Attack failed.", "The combat orders phase is over");
+		            showOverlay("Order failed: The orders phase is over.", "<img src='Content/images/error.svg' />");
+		            setTimeout(hideOverlay, 1500);
 		            break;
 		        default:
-		            console.log("Join request failed.");
-		            messageBox("Attack failed.", "Not sure why -  Error code" + this.status);
+		            console.log("Attack failed. Unknown error..");
+		            showOverlay("Order failed: Unknown issue, sorry...", "<img src='Content/images/error.svg' />");
+		            setTimeout(hideOverlay, 1500);
 		            break;
 		    }
         }
@@ -664,7 +670,7 @@
 	        case 200:
 	        case 204:
 	            console.log("Advanced to next phase");
-	            // TODO: Visual Feedback?
+	            updateGameState(currentGame.GameId);
 	            break;
 	        case 401:
 	            console.log("Not owner of session");
