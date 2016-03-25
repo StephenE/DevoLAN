@@ -273,6 +273,7 @@
     <Content Include="Content\bootstrap.min.css" />
     <Content Include="Content\images\bckMap.jpg" />
     <Content Include="Content\images\bckTile.jpg" />
+    <Content Include="Content\images\bckWater.jpg" />
     <Content Include="Content\images\error.svg" />
     <Content Include="Content\images\logoPeril.png" />
     <Content Include="Content\images\logoPerilSmall.png" />
@@ -285,6 +286,7 @@
     <Content Include="Content\images\waiting.svg" />
     <Content Include="Content\media\button.mp3" />
     <Content Include="Content\media\confirm.mp3" />
+    <Content Include="Content\media\planning.mp3" />
     <Content Include="Content\media\title.mp3" />
     <Content Include="Content\parts\board.html" />
     <Content Include="Content\parts\browser.html" />
