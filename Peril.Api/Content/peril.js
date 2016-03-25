@@ -382,7 +382,7 @@
 				var cpLength = currentPlayers.length;
 				var curColour = "";
 
-				console.log("Territory owned by: " + world[x].Name);
+				console.log("Territory owned by: " + world[x].OwnerId);
 
 				for (y = 0; y < cpLength; y++) {
 				    console.log("Checking: " + world[x].OwnerId + " | " + currentPlayers[y].UserId);
