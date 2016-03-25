@@ -417,6 +417,7 @@
 
 		        case 1:
 		            instruction = "Reinforcements Phase: Deploy reinforcements."
+		            reinforcementsPhase(currentGame.GameId);
 		            break;
 
 		        case 2:
@@ -445,6 +446,20 @@
 		    }
 
 		    writeHTML("hudTextInstructions", instruction);
+		}
+
+// Game Phases
+    // Reinforcements
+		function reinforcementsPhase(gameid){
+		    console.log("Getting reinforcements.");
+
+		    var data = "?sessionId=" + currentGame.GameId;
+		    sendAjax("GET", "api/Nation/Reinforcements", data, "adv", reinforcementsResponse, null, true)
+		}
+
+		function reinforcementsResponse(){
+
+		    return this.responseText;
 		}
 		
 	// Hud
@@ -711,8 +726,13 @@
 		    ajaxRequest.open(method, apiUriBase + url + urlData);
 		}
 		
-		ajaxRequest.addEventListener("load", eventLoad);
-		ajaxRequest.addEventListener("error", eventError);
+		if (eventLoad) {
+		    ajaxRequest.addEventListener("load", eventLoad);
+		}
+
+		if (eventError) {
+		    ajaxRequest.addEventListener("error", eventError);
+		}
 			
 		if(auth){
 			ajaxRequest.setRequestHeader("Accept", "text/html");
