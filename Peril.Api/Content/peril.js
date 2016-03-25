@@ -388,7 +388,8 @@
 				    console.log("Checking: " + world[x].OwnerId + " | " + currentPlayers[y].UserId);
 
 					if(world[x].OwnerId === currentPlayers[y].UserId){
-						curColour = currentPlayers[y].Colour;
+					    curColour = currentPlayers[y].Colour;
+					    console.log("Got it - " + world[x].Name + " belongs to " + currentPlayers[y].Colour);
 			        }
 		        }
 
