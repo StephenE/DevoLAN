@@ -1352,7 +1352,7 @@ namespace Peril.Api.Tests.Controllers
             // Assert
             Assert.AreEqual(SessionPhase.Reinforcements, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
             Assert.AreNotEqual(currentSessionPhaseId, primaryUser.SessionRepository.SessionMap[validGuid].PhaseId);
-            Assert.AreEqual(3U, primaryUser.GetNation(validGuid, primaryUser.OwnerId).AvailableReinforcements);
+            Assert.AreEqual(8U, primaryUser.GetNation(validGuid, primaryUser.OwnerId).AvailableReinforcements);
         }
 
         [TestMethod]
@@ -1375,7 +1375,7 @@ namespace Peril.Api.Tests.Controllers
             // Assert
             Assert.AreEqual(SessionPhase.Reinforcements, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
             Assert.AreNotEqual(currentSessionPhaseId, primaryUser.SessionRepository.SessionMap[validGuid].PhaseId);
-            Assert.AreEqual(16U, primaryUser.GetNation(validGuid, primaryUser.OwnerId).AvailableReinforcements);
+            Assert.AreEqual(21U, primaryUser.GetNation(validGuid, primaryUser.OwnerId).AvailableReinforcements);
         }
         #endregion
     }
