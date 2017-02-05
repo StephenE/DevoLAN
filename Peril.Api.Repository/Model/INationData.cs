@@ -12,5 +12,7 @@ namespace Peril.Api.Repository
         UInt32 AvailableReinforcements { get; }
 
         String CurrentEtag { get; }
+
+        Guid CompletedPhase { get; }
     }
 }

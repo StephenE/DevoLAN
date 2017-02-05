@@ -131,113 +131,132 @@ namespace Peril.Api.Controllers.Api
             ISession session = await SessionRepository.GetSessionOrThrow(sessionId)
                                                       .IsPhaseIdOrThrow(phaseId)
                                                       .IsSessionOwnerOrThrow(User.Identity.GetUserId());
+            var nationsTask = NationRepository.GetNations(session.GameId);
 
             // Check all players ready (unless force == true)
-
-            // Run phase specific update logic
-            SessionPhase nextPhase = SessionPhase.NotStarted;
-            switch (session.PhaseType)
+            bool allPlayersReady = true;
+            if (!force)
             {
-                case SessionPhase.NotStarted:
+                IEnumerable<INationData> nations = await nationsTask;
+                foreach (INationData nation in nations)
                 {
-                    var regions = RegionRepository.GetRegions(session.GameId);
-                    var nations = await NationRepository.GetNations(session.GameId);
-                    await DistributeInitialRegions(session.GameId, await regions, nations);
-                    Dictionary<String, UInt32> initialReinforcements = new Dictionary<string, uint>();
-                    foreach(INationData nation in nations)
+                    if (nation.CompletedPhase != session.PhaseId && nation.UserId != session.OwnerId)
                     {
-                        // For the moment, just give all players 20 starting troops
-                        initialReinforcements[nation.UserId] = 20;
+                        allPlayersReady = false;
+                        break;
                     }
-                    await NationRepository.SetAvailableReinforcements(session.GameId, initialReinforcements);
-                    nextPhase = SessionPhase.Reinforcements;
-                    break;
-                }
-                case SessionPhase.Reinforcements:
-                {
-                    var regions = RegionRepository.GetRegions(session.GameId);
-                    var nationsTask = NationRepository.GetNations(session.GameId);
-                    IEnumerable<ICommandQueueMessage> pendingMessages = await CommandQueue.GetQueuedCommands(session.GameId, session.PhaseId);
-                    IEnumerable<IDeployReinforcementsMessage> pendingReinforcementMessages = pendingMessages.GetQueuedDeployReinforcementsCommands();
-
-                    IEnumerable<INationData> nations = await nationsTask;
-                    await ProcessReinforcementMessages(session.GameId, await regions, nations, pendingReinforcementMessages);
-
-                    // Reset all players to 0 reinforcements
-                    Dictionary<String, UInt32> initialReinforcements = new Dictionary<string, uint>();
-                    foreach (INationData nation in nations)
-                    {
-                        initialReinforcements[nation.UserId] = 0;
-                    }
-                    await NationRepository.SetAvailableReinforcements(session.GameId, initialReinforcements);
-                    await CommandQueue.RemoveCommands(session.PhaseId);
-                    nextPhase = SessionPhase.CombatOrders;
-                    break;
-                }
-                case SessionPhase.CombatOrders:
-                {
-                    var regions = RegionRepository.GetRegions(session.GameId);
-                    var nationsTask = NationRepository.GetNations(session.GameId);
-                    IEnumerable<ICommandQueueMessage> pendingMessages = await CommandQueue.GetQueuedCommands(session.GameId, session.PhaseId);
-                    IEnumerable<IOrderAttackMessage> pendingAttackMessages = pendingMessages.GetQueuedOrderAttacksCommands();
-                    nextPhase = await ProcessCombatOrders(session.GameId, session.Round, await regions, await nationsTask, pendingAttackMessages);
-                    await CommandQueue.RemoveCommands(session.PhaseId);
-                    break;
-                }
-                case SessionPhase.BorderClashes:
-                {
-                    var borderClashes = WorldRepository.GetCombat(session.GameId, session.Round, CombatType.BorderClash);
-                    IEnumerable<CombatResult> results = await ResolveCombat(session.GameId, session.Round, await borderClashes);
-                    await ApplyBorderClashResults(session.GameId, session.Round, results);
-                    nextPhase = SessionPhase.MassInvasions;
-                    break;
-                }
-                case SessionPhase.MassInvasions:
-                {
-                    var massInvasions = WorldRepository.GetCombat(session.GameId, session.Round, CombatType.MassInvasion);
-                    IEnumerable<CombatResult> results = await ResolveCombat(session.GameId, session.Round, await massInvasions);
-                    await ApplyCombatResults(session.GameId, session.Round, CombatType.MassInvasion, results);
-                    nextPhase = SessionPhase.Invasions;
-                    break;
-                }
-                case SessionPhase.Invasions:
-                {
-                    var invasions = WorldRepository.GetCombat(session.GameId, session.Round, CombatType.Invasion);
-                    IEnumerable<CombatResult> results = await ResolveCombat(session.GameId, session.Round, await invasions);
-                    await ApplyCombatResults(session.GameId, session.Round, CombatType.Invasion, results);
-                    nextPhase = SessionPhase.SpoilsOfWar;
-                    break;
-                }
-                case SessionPhase.SpoilsOfWar:
-                {
-                    var invasions = WorldRepository.GetCombat(session.GameId, session.Round, CombatType.SpoilsOfWar);
-                    IEnumerable<CombatResult> results = await ResolveCombat(session.GameId, session.Round, await invasions);
-                    await ApplyCombatResults(session.GameId, session.Round, CombatType.SpoilsOfWar, results);
-                    nextPhase = SessionPhase.Redeployment;
-                    break;
-                }
-                case SessionPhase.Redeployment:
-                {
-                    // For DevoLAN 31, we're skipping redeployment!
-                    nextPhase = SessionPhase.Victory;
-                    break;
-                }
-                case SessionPhase.Victory:
-                {
-                    // Award reinforcements
-                    var regions = RegionRepository.GetRegions(session.GameId);
-                    await AwardReinforcements(sessionId, await regions);
-                    nextPhase = SessionPhase.Reinforcements;
-                    break;
-                }
-                default:
-                {
-                    throw new NotImplementedException("Not done yet");
                 }
             }
 
-            // Move to next phase
-            await SessionRepository.SetSessionPhase(sessionId, session.PhaseId, nextPhase);
+            if (force || allPlayersReady)
+            {
+                // Run phase specific update logic
+                SessionPhase nextPhase = SessionPhase.NotStarted;
+                switch (session.PhaseType)
+                {
+                    case SessionPhase.NotStarted:
+                    {
+                        var regions = RegionRepository.GetRegions(session.GameId);
+                        var nations = await nationsTask;
+                        await DistributeInitialRegions(session.GameId, await regions, nations);
+                        Dictionary<String, UInt32> initialReinforcements = new Dictionary<string, uint>();
+                        foreach(INationData nation in nations)
+                        {
+                            // For the moment, just give all players 20 starting troops
+                            initialReinforcements[nation.UserId] = 20;
+                        }
+                        await NationRepository.SetAvailableReinforcements(session.GameId, initialReinforcements);
+                        nextPhase = SessionPhase.Reinforcements;
+                        break;
+                    }
+                    case SessionPhase.Reinforcements:
+                    {
+                        var regions = RegionRepository.GetRegions(session.GameId);
+                        IEnumerable<ICommandQueueMessage> pendingMessages = await CommandQueue.GetQueuedCommands(session.GameId, session.PhaseId);
+                        IEnumerable<IDeployReinforcementsMessage> pendingReinforcementMessages = pendingMessages.GetQueuedDeployReinforcementsCommands();
+
+                        IEnumerable<INationData> nations = await nationsTask;
+                        await ProcessReinforcementMessages(session.GameId, await regions, nations, pendingReinforcementMessages);
+
+                        // Reset all players to 0 reinforcements
+                        Dictionary<String, UInt32> initialReinforcements = new Dictionary<string, uint>();
+                        foreach (INationData nation in nations)
+                        {
+                            initialReinforcements[nation.UserId] = 0;
+                        }
+                        await NationRepository.SetAvailableReinforcements(session.GameId, initialReinforcements);
+                        await CommandQueue.RemoveCommands(session.PhaseId);
+                        nextPhase = SessionPhase.CombatOrders;
+                        break;
+                    }
+                    case SessionPhase.CombatOrders:
+                    {
+                        var regions = RegionRepository.GetRegions(session.GameId);
+                        IEnumerable<ICommandQueueMessage> pendingMessages = await CommandQueue.GetQueuedCommands(session.GameId, session.PhaseId);
+                        IEnumerable<IOrderAttackMessage> pendingAttackMessages = pendingMessages.GetQueuedOrderAttacksCommands();
+                        nextPhase = await ProcessCombatOrders(session.GameId, session.Round, await regions, await nationsTask, pendingAttackMessages);
+                        await CommandQueue.RemoveCommands(session.PhaseId);
+                        break;
+                    }
+                    case SessionPhase.BorderClashes:
+                    {
+                        var borderClashes = WorldRepository.GetCombat(session.GameId, session.Round, CombatType.BorderClash);
+                        IEnumerable<CombatResult> results = await ResolveCombat(session.GameId, session.Round, await borderClashes);
+                        await ApplyBorderClashResults(session.GameId, session.Round, results);
+                        nextPhase = SessionPhase.MassInvasions;
+                        break;
+                    }
+                    case SessionPhase.MassInvasions:
+                    {
+                        var massInvasions = WorldRepository.GetCombat(session.GameId, session.Round, CombatType.MassInvasion);
+                        IEnumerable<CombatResult> results = await ResolveCombat(session.GameId, session.Round, await massInvasions);
+                        await ApplyCombatResults(session.GameId, session.Round, CombatType.MassInvasion, results);
+                        nextPhase = SessionPhase.Invasions;
+                        break;
+                    }
+                    case SessionPhase.Invasions:
+                    {
+                        var invasions = WorldRepository.GetCombat(session.GameId, session.Round, CombatType.Invasion);
+                        IEnumerable<CombatResult> results = await ResolveCombat(session.GameId, session.Round, await invasions);
+                        await ApplyCombatResults(session.GameId, session.Round, CombatType.Invasion, results);
+                        nextPhase = SessionPhase.SpoilsOfWar;
+                        break;
+                    }
+                    case SessionPhase.SpoilsOfWar:
+                    {
+                        var invasions = WorldRepository.GetCombat(session.GameId, session.Round, CombatType.SpoilsOfWar);
+                        IEnumerable<CombatResult> results = await ResolveCombat(session.GameId, session.Round, await invasions);
+                        await ApplyCombatResults(session.GameId, session.Round, CombatType.SpoilsOfWar, results);
+                        nextPhase = SessionPhase.Redeployment;
+                        break;
+                    }
+                    case SessionPhase.Redeployment:
+                    {
+                        // For DevoLAN 31, we're skipping redeployment!
+                        nextPhase = SessionPhase.Victory;
+                        break;
+                    }
+                    case SessionPhase.Victory:
+                    {
+                        // Award reinforcements
+                        var regions = RegionRepository.GetRegions(session.GameId);
+                        await AwardReinforcements(sessionId, await regions);
+                        nextPhase = SessionPhase.Reinforcements;
+                        break;
+                    }
+                    default:
+                    {
+                        throw new NotImplementedException("Not done yet");
+                    }
+                }
+
+                // Move to next phase
+                await SessionRepository.SetSessionPhase(sessionId, session.PhaseId, nextPhase);
+            }
+            else
+            {
+                throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.ExpectationFailed, ReasonPhrase = "Some players are not yet ready and a forced operation was not requested" });
+            }
         }
 
         private async Task DistributeInitialRegions(Guid sessionId, IEnumerable<IRegionData> availableRegions, IEnumerable<INationData> availablePlayers)

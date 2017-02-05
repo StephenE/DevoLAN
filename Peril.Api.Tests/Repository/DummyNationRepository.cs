@@ -110,6 +110,23 @@ namespace Peril.Api.Tests.Repository
             return setupContext;
         }
 
+        static public ControllerMockSetupContext SetupPlayerCompletedPhase(this ControllerMockSetupContext setupContext)
+        {
+            return SetupPlayerCompletedPhase(setupContext, setupContext.ControllerMock.OwnerId, setupContext.DummySession.PhaseId);
+        }
+
+        static public ControllerMockSetupContext SetupPlayerCompletedPhase(this ControllerMockSetupContext setupContext, String userId)
+        {
+            return SetupPlayerCompletedPhase(setupContext, userId, setupContext.DummySession.PhaseId);
+        }
+
+        static public ControllerMockSetupContext SetupPlayerCompletedPhase(this ControllerMockSetupContext setupContext, String userId, Guid phase)
+        {
+            var nationData = setupContext.ControllerMock.GetNation(setupContext.DummySession.GameId, userId);
+            nationData.CompletedPhase = phase;
+            return setupContext;
+        }
+
         static public DummyNationData GetNation(this ControllerMock controllerMock, Guid sessionId, String userId)
         {
             var task = controllerMock.NationRepository.GetNation(sessionId, userId);
