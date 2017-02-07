@@ -11,25 +11,27 @@ namespace Peril.Api.Repository.Azure
 {
     public class NationRepository : INationRepository
     {
-        static public String NationTableName { get { return "SessionPlayers"; } }
-
         public NationRepository(String storageConnectionString)
         {
             StorageAccount = CloudStorageAccount.Parse(storageConnectionString);
             TableClient = StorageAccount.CreateCloudTableClient();
-            SessionPlayersTable = TableClient.GetTableReference(NationTableName);
-            SessionPlayersTable.CreateIfNotExists();
         }
 
         public async Task<INationData> GetNation(Guid sessionId, string userId)
         {
-            var operation = TableOperation.Retrieve<NationTableEntry>(sessionId.ToString(), userId);
-            var result = await SessionPlayersTable.ExecuteAsync(operation);
+            // Get the session data table
+            CloudTable sessionDataTable = SessionRepository.GetTableForSessionData(TableClient, sessionId);
+
+            var operation = TableOperation.Retrieve<NationTableEntry>(sessionId.ToString(), "Nation_" + userId);
+            var result = await sessionDataTable.ExecuteAsync(operation);
             return result.Result as NationTableEntry;
         }
 
         public async Task<IEnumerable<INationData>> GetNations(Guid sessionId)
         {
+            // Get the session data table
+            CloudTable sessionDataTable = SessionRepository.GetTableForSessionData(TableClient, sessionId);
+
             List<INationData> results = new List<INationData>();
             TableQuery<NationTableEntry> query = new TableQuery<NationTableEntry>()
                 .Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, sessionId.ToString()));
@@ -40,7 +42,7 @@ namespace Peril.Api.Repository.Azure
             // Loop until the continuation token comes back as null
             do
             {
-                var queryResults = await SessionPlayersTable.ExecuteQuerySegmentedAsync(query, continuationToken);
+                var queryResults = await sessionDataTable.ExecuteQuerySegmentedAsync(query, continuationToken);
                 continuationToken = queryResults.ContinuationToken;
                 results.AddRange(queryResults.Results);
             }
@@ -51,9 +53,12 @@ namespace Peril.Api.Repository.Azure
 
         public async Task MarkPlayerCompletedPhase(Guid sessionId, string userId, Guid phaseId)
         {
+            // Get the session data table
+            CloudTable sessionDataTable = SessionRepository.GetTableForSessionData(TableClient, sessionId);
+
             // Fetch existing entry
-            var operation = TableOperation.Retrieve<NationTableEntry>(sessionId.ToString(), userId);
-            var result = await SessionPlayersTable.ExecuteAsync(operation);
+            var operation = TableOperation.Retrieve<NationTableEntry>(sessionId.ToString(), "Nation_" + userId);
+            var result = await sessionDataTable.ExecuteAsync(operation);
 
             // Modify entry
             NationTableEntry playerEntry = result.Result as NationTableEntry;
@@ -63,7 +68,7 @@ namespace Peril.Api.Repository.Azure
             try
             {
                 TableOperation insertOperation = TableOperation.Replace(playerEntry);
-                await SessionPlayersTable.ExecuteAsync(insertOperation);
+                await sessionDataTable.ExecuteAsync(insertOperation);
             }
             catch (StorageException exception)
             {
@@ -80,6 +85,9 @@ namespace Peril.Api.Repository.Azure
 
         public async Task SetAvailableReinforcements(Guid sessionId, Dictionary<String, UInt32> reinforcements)
         {
+            // Get the session data table
+            CloudTable sessionDataTable = SessionRepository.GetTableForSessionData(TableClient, sessionId);
+
             // Fetch all nations (quicker than fetching only what we need, one by one)
             var nations = await GetNations(sessionId);
 
@@ -100,7 +108,7 @@ namespace Peril.Api.Repository.Azure
             // Write entry back (fails on write conflict)
             try
             {
-                await SessionPlayersTable.ExecuteBatchAsync(batchOperation);
+                await sessionDataTable.ExecuteBatchAsync(batchOperation);
             }
             catch (StorageException exception)
             {
@@ -117,6 +125,5 @@ namespace Peril.Api.Repository.Azure
 
         private CloudStorageAccount StorageAccount { get; set; }
         private CloudTableClient TableClient { get; set; }
-        public CloudTable SessionPlayersTable { get; set; }
     }
 }

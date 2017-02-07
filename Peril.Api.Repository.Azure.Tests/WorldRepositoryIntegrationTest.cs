@@ -22,7 +22,7 @@ namespace Peril.Api.Repository.Azure.Tests
             StorageAccount = CloudStorageAccount.Parse(DevelopmentStorageAccountConnectionString);
             TableClient = StorageAccount.CreateCloudTableClient();
 
-            CloudTable testTable = SessionRepository.GetTableForSessionData(TableClient, SessionId, 1);
+            CloudTable testTable = SessionRepository.GetTableForSessionData(TableClient, SessionId);
             testTable.DeleteIfExists();
         }
 
@@ -45,7 +45,7 @@ namespace Peril.Api.Repository.Azure.Tests
                 new CombatArmy(defendingRegionId, "DefendingUser", Core.CombatArmyMode.Defending, 4)
             });
 
-            CloudTable testTable = SessionRepository.GetTableForSessionData(TableClient, SessionId, 1);
+            CloudTable testTable = SessionRepository.GetTableForSessionData(TableClient, SessionId);
             testTable.CreateIfNotExists();
             TableOperation insertOperation = TableOperation.InsertOrReplace(tableEntry);
             await testTable.ExecuteAsync(insertOperation);
@@ -63,7 +63,7 @@ namespace Peril.Api.Repository.Azure.Tests
             });
 
             // Assert
-            TableOperation operation = TableOperation.Retrieve<CombatTableEntry>(SessionId.ToString(), combatId.ToString());
+            TableOperation operation = TableOperation.Retrieve<CombatTableEntry>(SessionId.ToString(), "Combat_" + combatId.ToString());
             TableResult result = await testTable.ExecuteAsync(operation);
             Assert.IsNotNull(result.Result);
             Assert.IsInstanceOfType(result.Result, typeof(CombatTableEntry));
@@ -89,7 +89,7 @@ namespace Peril.Api.Repository.Azure.Tests
             Guid attackingRegionId = new Guid("4CD8D6E1-8FFE-48E1-8FE0-B89BCDD0AA96");
             Guid defendingRegionId = new Guid("E0FE9A73-4125-4DA1-A113-25ED927EA7B4");
 
-            CloudTable testTable = SessionRepository.GetTableForSessionData(TableClient, SessionId, 1);
+            CloudTable testTable = SessionRepository.GetTableForSessionData(TableClient, SessionId);
             testTable.CreateIfNotExists();
 
             // Act
@@ -104,7 +104,7 @@ namespace Peril.Api.Repository.Azure.Tests
 
             // Assert
             Guid combatId = combatIds.First();
-            TableOperation operation = TableOperation.Retrieve<CombatTableEntry>(SessionId.ToString(), combatId.ToString());
+            TableOperation operation = TableOperation.Retrieve<CombatTableEntry>(SessionId.ToString(), "Combat_" + combatId.ToString());
             TableResult result = await testTable.ExecuteAsync(operation);
             Assert.IsNotNull(result.Result);
             Assert.IsInstanceOfType(result.Result, typeof(CombatTableEntry));
@@ -146,7 +146,7 @@ namespace Peril.Api.Repository.Azure.Tests
                 )
             });
 
-            CloudTable testTable = SessionRepository.GetTableForSessionData(TableClient, SessionId, 1);
+            CloudTable testTable = SessionRepository.GetTableForSessionData(TableClient, SessionId);
             testTable.CreateIfNotExists();
 
             // Act
@@ -184,7 +184,7 @@ namespace Peril.Api.Repository.Azure.Tests
                 new CombatArmy(defendingRegionId, "DefendingUser", Core.CombatArmyMode.Defending, 4)
             });
 
-            CloudTable testTable = SessionRepository.GetTableForSessionData(TableClient, SessionId, 1);
+            CloudTable testTable = SessionRepository.GetTableForSessionData(TableClient, SessionId);
             testTable.CreateIfNotExists();
             TableOperation insertOperation = TableOperation.InsertOrReplace(tableEntry);
             await testTable.ExecuteAsync(insertOperation);
@@ -229,7 +229,7 @@ namespace Peril.Api.Repository.Azure.Tests
                 new CombatArmy(defendingRegionId, "DefendingUser", Core.CombatArmyMode.Defending, 4)
             });
 
-            CloudTable testTable = SessionRepository.GetTableForSessionData(TableClient, SessionId, 1);
+            CloudTable testTable = SessionRepository.GetTableForSessionData(TableClient, SessionId);
             testTable.CreateIfNotExists();
             TableOperation insertOperation = TableOperation.InsertOrReplace(tableEntry);
             await testTable.ExecuteAsync(insertOperation);
@@ -288,7 +288,7 @@ namespace Peril.Api.Repository.Azure.Tests
                 new CombatArmy(defendingRegionId, "DefendingUser", Core.CombatArmyMode.Defending, 4)
             };
             tableEntry.SetCombatArmy(armies);
-            CloudTable testTable = SessionRepository.GetTableForSessionData(TableClient, SessionId, 1);
+            CloudTable testTable = SessionRepository.GetTableForSessionData(TableClient, SessionId);
             testTable.CreateIfNotExists();
 
             // Act
@@ -296,7 +296,7 @@ namespace Peril.Api.Repository.Azure.Tests
             await testTable.ExecuteAsync(insertOperation);
 
             // Assert
-            TableOperation operation = TableOperation.Retrieve<CombatTableEntry>(SessionId.ToString(), combatId.ToString());
+            TableOperation operation = TableOperation.Retrieve<CombatTableEntry>(SessionId.ToString(), "Combat_" + combatId.ToString());
             TableResult result = await testTable.ExecuteAsync(operation);
             Assert.IsNotNull(result.Result);
             Assert.IsInstanceOfType(result.Result, typeof(CombatTableEntry));

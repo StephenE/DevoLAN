@@ -18,8 +18,6 @@ namespace Peril.Api.Repository.Azure
         {
             StorageAccount = CloudStorageAccount.Parse(storageConnectionString);
             TableClient = StorageAccount.CreateCloudTableClient();
-            RegionTable = TableClient.GetTableReference(TableName);
-            RegionTable.CreateIfNotExists();
         }
 
         public String WorldDefinitionPath
@@ -29,24 +27,33 @@ namespace Peril.Api.Repository.Azure
 
         public async Task CreateRegion(Guid sessionId, Guid regionId, Guid continentId, String name, IEnumerable<Guid> connectedRegions)
         {
+            // Get the session data table
+            CloudTable sessionDataTable = SessionRepository.GetTableForSessionData(TableClient, sessionId);
+
             // Create a new table entry
             RegionTableEntry newRegion = new RegionTableEntry(sessionId, regionId, continentId, name);
             newRegion.SetConnectedRegions(connectedRegions);
 
             // Kick off the insert operation
             TableOperation insertOperation = TableOperation.Insert(newRegion);
-            await RegionTable.ExecuteAsync(insertOperation);
+            await sessionDataTable.ExecuteAsync(insertOperation);
         }
 
         public async Task<IRegionData> GetRegion(Guid sessionId, Guid regionId)
         {
-            TableOperation operation = TableOperation.Retrieve<RegionTableEntry>(sessionId.ToString(), regionId.ToString());
-            TableResult result = await RegionTable.ExecuteAsync(operation);
+            // Get the session data table
+            CloudTable sessionDataTable = SessionRepository.GetTableForSessionData(TableClient, sessionId);
+
+            TableOperation operation = TableOperation.Retrieve<RegionTableEntry>(sessionId.ToString(), "Region_" + regionId.ToString());
+            TableResult result = await sessionDataTable.ExecuteAsync(operation);
             return result.Result as RegionTableEntry;
         }
 
         public async Task<IEnumerable<IRegionData>> GetRegions(Guid sessionId)
         {
+            // Get the session data table
+            CloudTable sessionDataTable = SessionRepository.GetTableForSessionData(TableClient, sessionId);
+
             List<RegionTableEntry> results = new List<RegionTableEntry>();
             TableQuery<RegionTableEntry> query = new TableQuery<RegionTableEntry>()
                 .Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, sessionId.ToString()));
@@ -57,7 +64,7 @@ namespace Peril.Api.Repository.Azure
             // Loop until the continuation token comes back as null
             do
             {
-                var queryResults = await RegionTable.ExecuteQuerySegmentedAsync(query, continuationToken);
+                var queryResults = await sessionDataTable.ExecuteQuerySegmentedAsync(query, continuationToken);
                 continuationToken = queryResults.ContinuationToken;
                 results.AddRange(queryResults.Results);
             }
@@ -68,6 +75,9 @@ namespace Peril.Api.Repository.Azure
 
         public async Task AssignRegionOwnership(Guid sessionId, Dictionary<Guid, OwnershipChange> ownershipChanges)
         {
+            // Get the session data table
+            CloudTable sessionDataTable = SessionRepository.GetTableForSessionData(TableClient, sessionId);
+
             // Fetch all regions (quicker than fetching only what we need, one by one)
             var regions = await GetRegions(sessionId);
 
@@ -90,7 +100,7 @@ namespace Peril.Api.Repository.Azure
             // Write entry back (fails on write conflict)
             try
             {
-                await RegionTable.ExecuteBatchAsync(batchOperation);
+                await sessionDataTable.ExecuteBatchAsync(batchOperation);
             }
             catch (StorageException exception)
             {
@@ -107,6 +117,5 @@ namespace Peril.Api.Repository.Azure
 
         private CloudStorageAccount StorageAccount { get; set; }
         private CloudTableClient TableClient { get; set; }
-        public CloudTable RegionTable { get; set; }
     }
 }

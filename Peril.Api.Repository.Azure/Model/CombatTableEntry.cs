@@ -1,10 +1,9 @@
-﻿using System;
+﻿using Microsoft.WindowsAzure.Storage.Table;
+using Peril.Core;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using Peril.Core;
-using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Peril.Api.Repository.Azure.Model
 {
@@ -13,7 +12,7 @@ namespace Peril.Api.Repository.Azure.Model
         public CombatTableEntry(Guid sessionId, Guid combatId, CombatType type)
         {
             PartitionKey = sessionId.ToString();
-            RowKey = combatId.ToString();
+            RowKey = "Combat_" + combatId.ToString();
             ResolutionTypeRaw = (Int32)type;
             m_CombatArmiesList = new List<ICombatArmy>();
         }
@@ -24,7 +23,7 @@ namespace Peril.Api.Repository.Azure.Model
         }
 
         public Guid SessionId { get { return Guid.Parse(PartitionKey); } }
-        public Guid CombatId { get { return Guid.Parse(RowKey); } }
+        public Guid CombatId { get { return Guid.Parse(RowKey.Substring(7)); } }
         public CombatType ResolutionType { get { return (CombatType)ResolutionTypeRaw; } }
         public IEnumerable<ICombatArmy> InvolvedArmies { get { return m_CombatArmiesList; } }
 

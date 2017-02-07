@@ -22,9 +22,6 @@ namespace Peril.Api.Repository.Azure.Tests
 
             StorageAccount = CloudStorageAccount.DevelopmentStorageAccount;
             TableClient = StorageAccount.CreateCloudTableClient();
-
-            SessionPlayerTable = TableClient.GetTableReference(NationRepository.NationTableName);
-            SessionPlayerTable.DeleteIfExists();
         }
 
         [TestMethod]
@@ -100,13 +97,14 @@ namespace Peril.Api.Repository.Azure.Tests
             String dummyUserId = "DummyUserId";
             await sessionRepository.SetupSession(validGuid, dummyUserId)
                             .SetupSessionPhase(sessionRepository, SessionPhase.Reinforcements);
+            var dataTable = SessionRepository.GetTableForSessionData(TableClient ,validGuid);
 
             // Act
             await repository.MarkPlayerCompletedPhase(validGuid, dummyUserId, validGuid);
 
             // Assert
-            var operation = TableOperation.Retrieve<NationTableEntry>(validGuid.ToString(), dummyUserId);
-            var result = await sessionRepository.SessionPlayersTable.ExecuteAsync(operation);
+            var operation = TableOperation.Retrieve<NationTableEntry>(validGuid.ToString(), "Nation_" + dummyUserId);
+            var result = await dataTable.ExecuteAsync(operation);
             Assert.IsNotNull(result.Result);
             Assert.IsInstanceOfType(result.Result, typeof(NationTableEntry));
             NationTableEntry resultPlayerStronglyTyped = result.Result as NationTableEntry;
@@ -126,18 +124,19 @@ namespace Peril.Api.Repository.Azure.Tests
             String secondDummyUserId = "DummyUserId2";
             await sessionRepository.SetupSession(validGuid, dummyUserId);
             await sessionRepository.SetupAddPlayer(validGuid, secondDummyUserId);
+            var dataTable = SessionRepository.GetTableForSessionData(TableClient, validGuid);
 
             // Act
             await repository.SetAvailableReinforcements(validGuid, new Dictionary<String, UInt32> { { dummyUserId, 10U } });
 
             // Assert
-            var operation = TableOperation.Retrieve<NationTableEntry>(validGuid.ToString(), dummyUserId);
-            var result = await sessionRepository.SessionPlayersTable.ExecuteAsync(operation);
+            var operation = TableOperation.Retrieve<NationTableEntry>(validGuid.ToString(), "Nation_" + dummyUserId);
+            var result = await dataTable.ExecuteAsync(operation);
             NationTableEntry resultPlayerStronglyTyped = result.Result as NationTableEntry;
             Assert.AreEqual(10U, resultPlayerStronglyTyped.AvailableReinforcements);
 
-            operation = TableOperation.Retrieve<NationTableEntry>(validGuid.ToString(), secondDummyUserId);
-            result = await sessionRepository.SessionPlayersTable.ExecuteAsync(operation);
+            operation = TableOperation.Retrieve<NationTableEntry>(validGuid.ToString(), "Nation_" + secondDummyUserId);
+            result = await dataTable.ExecuteAsync(operation);
             resultPlayerStronglyTyped = result.Result as NationTableEntry;
             Assert.AreEqual(0U, resultPlayerStronglyTyped.AvailableReinforcements);
         }
@@ -155,18 +154,19 @@ namespace Peril.Api.Repository.Azure.Tests
             String secondDummyUserId = "DummyUserId2";
             await sessionRepository.SetupSession(validGuid, dummyUserId);
             await sessionRepository.SetupAddPlayer(validGuid, secondDummyUserId);
+            var dataTable = SessionRepository.GetTableForSessionData(TableClient, validGuid);
 
             // Act
             await repository.SetAvailableReinforcements(validGuid, new Dictionary<String, UInt32> { { dummyUserId, 10U }, { secondDummyUserId, 20U } });
 
             // Assert
-            var operation = TableOperation.Retrieve<NationTableEntry>(validGuid.ToString(), dummyUserId);
-            var result = await sessionRepository.SessionPlayersTable.ExecuteAsync(operation);
+            var operation = TableOperation.Retrieve<NationTableEntry>(validGuid.ToString(), "Nation_" + dummyUserId);
+            var result = await dataTable.ExecuteAsync(operation);
             NationTableEntry resultPlayerStronglyTyped = result.Result as NationTableEntry;
             Assert.AreEqual(10U, resultPlayerStronglyTyped.AvailableReinforcements);
 
-            operation = TableOperation.Retrieve<NationTableEntry>(validGuid.ToString(), secondDummyUserId);
-            result = await sessionRepository.SessionPlayersTable.ExecuteAsync(operation);
+            operation = TableOperation.Retrieve<NationTableEntry>(validGuid.ToString(), "Nation_" + secondDummyUserId);
+            result = await dataTable.ExecuteAsync(operation);
             resultPlayerStronglyTyped = result.Result as NationTableEntry;
             Assert.AreEqual(20U, resultPlayerStronglyTyped.AvailableReinforcements);
         }
@@ -178,6 +178,5 @@ namespace Peril.Api.Repository.Azure.Tests
 
         static private CloudStorageAccount StorageAccount { get; set; }
         static private CloudTableClient TableClient { get; set; }
-        static private CloudTable SessionPlayerTable { get; set; }
     }
 }

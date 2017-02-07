@@ -19,8 +19,6 @@ namespace Peril.Api.Repository.Azure
             TableClient = StorageAccount.CreateCloudTableClient();
             SessionTable = TableClient.GetTableReference("Sessions");
             SessionTable.CreateIfNotExists();
-            SessionPlayersTable = TableClient.GetTableReference(NationRepository.NationTableName);
-            SessionPlayersTable.CreateIfNotExists();
         }
 
         public async Task<Guid> CreateSession(String userId, PlayerColour colour)
@@ -28,7 +26,7 @@ namespace Peril.Api.Repository.Azure
             Guid newSessionGuid = Guid.NewGuid();
 
             // Create a new table to store all the data for this session
-            var dataTable = GetTableForSessionData(newSessionGuid, 1);
+            var dataTable = GetTableForSessionData(newSessionGuid);
             await dataTable.CreateIfNotExistsAsync();
 
             // Create a new table entry
@@ -120,12 +118,14 @@ namespace Peril.Api.Repository.Azure
 
         public async Task JoinSession(Guid sessionId, String userId, PlayerColour colour)
         {
+            var dataTable = GetTableForSessionData(sessionId);
+
             // Create a new table entry
             NationTableEntry newSessionPlayerEntry = new NationTableEntry(sessionId, userId) { ColourId = (Int32)colour };
 
             // Kick off the insert operation
             TableOperation insertOperation = TableOperation.Insert(newSessionPlayerEntry);
-            await SessionPlayersTable.ExecuteAsync(insertOperation);
+            await dataTable.ExecuteAsync(insertOperation);
         }
 
         public async Task SetSessionPhase(Guid sessionId, Guid currentPhaseId, SessionPhase newPhase)
@@ -151,7 +151,7 @@ namespace Peril.Api.Repository.Azure
                     if(newPhase == SessionPhase.Victory)
                     {
                         session.RawRound += 1;
-                        var dataTable = GetTableForSessionData(session.GameId, session.Round);
+                        var dataTable = GetTableForSessionData(session.GameId);
                         await dataTable.CreateIfNotExistsAsync();
                     }
 
@@ -177,14 +177,14 @@ namespace Peril.Api.Repository.Azure
             }
         }
 
-        public CloudTable GetTableForSessionData(Guid sessionId, UInt32 roundNumber)
+        public CloudTable GetTableForSessionData(Guid sessionId)
         {
-            return GetTableForSessionData(TableClient, sessionId, roundNumber);
+            return GetTableForSessionData(TableClient, sessionId);
         }
 
-        static public CloudTable GetTableForSessionData(CloudTableClient tableClient, Guid sessionId, UInt32 roundNumber)
+        static public CloudTable GetTableForSessionData(CloudTableClient tableClient, Guid sessionId)
         {
-            String tableName = "Data" + sessionId.ToString().Replace("-", String.Empty) + "Round" + roundNumber;
+            String tableName = "SessionData" + sessionId.ToString().Replace("-", String.Empty);
             CloudTable table = tableClient.GetTableReference(tableName);
             return table;
         }
@@ -192,6 +192,5 @@ namespace Peril.Api.Repository.Azure
         private CloudStorageAccount StorageAccount { get; set; }
         private CloudTableClient TableClient { get; set; }
         public CloudTable SessionTable { get; set; }
-        public CloudTable SessionPlayersTable { get; set; }
     }
 }

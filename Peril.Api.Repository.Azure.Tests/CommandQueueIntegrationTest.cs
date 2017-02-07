@@ -83,7 +83,7 @@ namespace Peril.Api.Repository.Azure.Tests
             Assert.AreEqual(targetRegionGuid, queuedCommand.TargetRegion);
             Assert.AreEqual(5U, queuedCommand.NumberOfTroops);
 
-            var regionOperation = TableOperation.Retrieve<RegionTableEntry>(SessionGuid.ToString(), RegionGuid.ToString());
+            var regionOperation = TableOperation.Retrieve<RegionTableEntry>(SessionGuid.ToString(), "Region_" + RegionGuid.ToString());
             var regionResult = await RegionTable.ExecuteAsync(regionOperation);
             RegionTableEntry regionData = regionResult.Result as RegionTableEntry;
             Assert.IsNotNull(regionData);

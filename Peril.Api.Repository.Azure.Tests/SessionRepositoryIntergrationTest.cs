@@ -45,6 +45,7 @@ namespace Peril.Api.Repository.Azure.Tests
             // Assert
             Assert.IsNotNull(newSessionGuid);
 
+            var dataTable = repository.GetTableForSessionData(newSessionGuid);
             TableOperation operation = TableOperation.Retrieve<SessionTableEntry>(newSessionGuid.ToString(), dummyUserId);
             TableResult result = await SessionTable.ExecuteAsync(operation);
             Assert.IsNotNull(result.Result);
@@ -54,8 +55,8 @@ namespace Peril.Api.Repository.Azure.Tests
             Assert.AreEqual(Guid.Empty, resultStronglyTyped.PhaseId);
             Assert.AreEqual(SessionPhase.NotStarted, resultStronglyTyped.PhaseType);
 
-            operation = TableOperation.Retrieve<NationTableEntry>(newSessionGuid.ToString(), dummyUserId);
-            result = await repository.SessionPlayersTable.ExecuteAsync(operation);
+            operation = TableOperation.Retrieve<NationTableEntry>(newSessionGuid.ToString(), "Nation_" + dummyUserId);
+            result = await dataTable.ExecuteAsync(operation);
             Assert.IsNotNull(result.Result);
             Assert.IsInstanceOfType(result.Result, typeof(NationTableEntry));
             NationTableEntry resultPlayerStronglyTyped = result.Result as NationTableEntry;
@@ -201,8 +202,9 @@ namespace Peril.Api.Repository.Azure.Tests
             await repository.JoinSession(validGuid, dummyUserId, PlayerColour.Black);
 
             // Assert
-            var operation = TableOperation.Retrieve<NationTableEntry>(validGuid.ToString(), dummyUserId);
-            var result = await repository.SessionPlayersTable.ExecuteAsync(operation);
+            var dataTable = repository.GetTableForSessionData(validGuid);
+            var operation = TableOperation.Retrieve<NationTableEntry>(validGuid.ToString(), "Nation_" + dummyUserId);
+            var result = await dataTable.ExecuteAsync(operation);
             Assert.IsNotNull(result.Result);
             Assert.IsInstanceOfType(result.Result, typeof(NationTableEntry));
             NationTableEntry resultPlayerStronglyTyped = result.Result as NationTableEntry;

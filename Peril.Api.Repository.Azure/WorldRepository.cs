@@ -66,7 +66,7 @@ namespace Peril.Api.Repository.Azure
             // Write entry back (fails on write conflict)
             try
             {
-                CloudTable dataTable = GetTableForSessionData(sessionId, round);
+                CloudTable dataTable = SessionRepository.GetTableForSessionData(TableClient, sessionId);
                 await dataTable.ExecuteBatchAsync(batchOperation);
             }
             catch (StorageException exception)
@@ -100,7 +100,7 @@ namespace Peril.Api.Repository.Azure
             // Write entry back (fails on write conflict)
             try
             {
-                CloudTable dataTable = GetTableForSessionData(sessionId, round);
+                CloudTable dataTable = SessionRepository.GetTableForSessionData(TableClient, sessionId);
                 await dataTable.CreateIfNotExistsAsync();
                 await dataTable.ExecuteBatchAsync(batchOperation);
             }
@@ -133,7 +133,7 @@ namespace Peril.Api.Repository.Azure
             // Write entry back (fails on write conflict)
             try
             {
-                CloudTable dataTable = GetTableForSessionData(sessionId, round);
+                CloudTable dataTable = SessionRepository.GetTableForSessionData(TableClient, sessionId);
                 await dataTable.CreateIfNotExistsAsync();
                 await dataTable.ExecuteBatchAsync(batchOperation);
             }
@@ -152,7 +152,7 @@ namespace Peril.Api.Repository.Azure
 
         public async Task<IEnumerable<ICombat>> GetCombat(Guid sessionId, UInt32 round)
         {
-            CloudTable dataTable = GetTableForSessionData(sessionId, round);
+            CloudTable dataTable = SessionRepository.GetTableForSessionData(TableClient, sessionId);
 
             TableQuery<CombatTableEntry> query = new TableQuery<CombatTableEntry>()
                 .Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, sessionId.ToString()));
@@ -175,7 +175,7 @@ namespace Peril.Api.Repository.Azure
 
         public async Task<IEnumerable<ICombat>> GetCombat(Guid sessionId, UInt32 round, CombatType type)
         {
-            CloudTable dataTable = GetTableForSessionData(sessionId, round);
+            CloudTable dataTable = SessionRepository.GetTableForSessionData(TableClient, sessionId);
 
             TableQuery<CombatTableEntry> query = new TableQuery<CombatTableEntry>()
                 .Where(TableQuery.CombineFilters(
@@ -203,11 +203,6 @@ namespace Peril.Api.Repository.Azure
         public IEnumerable<int> GetRandomNumberGenerator(Guid targetRegion, int minimum, int maximum)
         {
             yield return RandomNumberGenerator.Next(minimum, maximum);
-        }
-
-        public CloudTable GetTableForSessionData(Guid sessionId, UInt32 roundNumber)
-        {
-            return SessionRepository.GetTableForSessionData(TableClient, sessionId, roundNumber);
         }
 
         private CloudStorageAccount StorageAccount { get; set; }

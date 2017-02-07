@@ -2,6 +2,7 @@
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
 using Peril.Api.Repository.Azure.Model;
+using Peril.Api.Repository.Azure.Tests.Repository;
 using Peril.Api.Repository.Model;
 using System;
 using System.Collections.Generic;
@@ -21,9 +22,6 @@ namespace Peril.Api.Repository.Azure.Tests
 
             StorageAccount = CloudStorageAccount.DevelopmentStorageAccount;
             TableClient = StorageAccount.CreateCloudTableClient();
-
-            RegionRepository repository = new RegionRepository(DevelopmentStorageAccountConnectionString);
-            repository.RegionTable.DeleteIfExists();
         }
 
         [TestMethod]
@@ -37,13 +35,14 @@ namespace Peril.Api.Repository.Azure.Tests
             Guid dummyRegionId = new Guid("024D1E45-EF34-4AB1-840D-79229CCDE8C3");
             Guid dummyContinentId = new Guid("DE167712-0CE6-455C-83EA-CB2A6936F1BE");
             List<Guid> dummyConnections = new List<Guid> { new Guid("0533203F-13F2-4863-B528-17F53D279E19"), new Guid("4A9779D0-0727-4AD9-AD66-17AE9AF9BE02") };
+            var dataTable = TableClient.SetupSessionDataTable(dummySessionId);
 
             // Act
             await repository.CreateRegion(dummySessionId, dummyRegionId, dummyContinentId, "DummyRegion", dummyConnections);
 
             // Assert
-            TableOperation operation = TableOperation.Retrieve<RegionTableEntry>(dummySessionId.ToString(), dummyRegionId.ToString());
-            TableResult result = await repository.RegionTable.ExecuteAsync(operation);
+            TableOperation operation = TableOperation.Retrieve<RegionTableEntry>(dummySessionId.ToString(), "Region_" + dummyRegionId.ToString());
+            TableResult result = await dataTable.ExecuteAsync(operation);
             Assert.IsNotNull(result.Result);
             Assert.IsInstanceOfType(result.Result, typeof(RegionTableEntry));
             RegionTableEntry resultStronglyTyped = result.Result as RegionTableEntry;
@@ -68,6 +67,7 @@ namespace Peril.Api.Repository.Azure.Tests
             Guid dummyRegionId = new Guid("89B6BDF0-83B7-42F1-B216-7DFFB8D11EA2");
             Guid dummyContinentId = new Guid("DE167712-0CE6-455C-83EA-CB2A6936F1BE");
             List<Guid> dummyConnections = new List<Guid> { new Guid("0533203F-13F2-4863-B528-17F53D279E19"), new Guid("4A9779D0-0727-4AD9-AD66-17AE9AF9BE02") };
+            TableClient.SetupSessionDataTable(dummySessionId);
             await repository.CreateRegion(dummySessionId, dummyRegionId, dummyContinentId, "DummyRegion", dummyConnections);
 
             // Act
@@ -87,6 +87,7 @@ namespace Peril.Api.Repository.Azure.Tests
             RegionRepository repository = new RegionRepository(DevelopmentStorageAccountConnectionString);
             Guid dummySessionId = new Guid("74720766-452A-40AD-8A61-FEF07E8573C9");
             Guid dummyRegionId = new Guid("DE167712-0CE6-455C-83EA-CB2A6936F1BE");
+            TableClient.SetupSessionDataTable(dummySessionId);
 
             // Act
             IRegionData regionData = await repository.GetRegion(dummySessionId, dummyRegionId);
@@ -106,6 +107,7 @@ namespace Peril.Api.Repository.Azure.Tests
             Guid dummyRegionId = new Guid("CBDF6EBE-5F91-4ADF-AC30-D149D8E5F8EB");
             Guid secondDummyRegionId = new Guid("336312D8-F219-4C9B-B3FE-F4B39602E28D");
             Guid dummyContinentId = new Guid("DE167712-0CE6-455C-83EA-CB2A6936F1BE");
+            TableClient.SetupSessionDataTable(dummySessionId);
             await repository.CreateRegion(dummySessionId, dummyRegionId, dummyContinentId, "DummyRegion", new List<Guid>());
             await repository.CreateRegion(dummySessionId, secondDummyRegionId, dummyContinentId, "DummyRegion2", new List<Guid>());
 
@@ -130,6 +132,7 @@ namespace Peril.Api.Repository.Azure.Tests
             Guid dummyRegionId = new Guid("CBDF6EBE-5F91-4ADF-AC30-D149D8E5F8EB");
             Guid secondDummyRegionId = new Guid("336312D8-F219-4C9B-B3FE-F4B39602E28D");
             Guid dummyContinentId = new Guid("DE167712-0CE6-455C-83EA-CB2A6936F1BE");
+            TableClient.SetupSessionDataTable(dummySessionId);
             await repository.CreateRegion(dummySessionId, dummyRegionId, dummyContinentId, "DummyRegion", new List<Guid>());
             await repository.CreateRegion(dummySessionId, secondDummyRegionId, dummyContinentId, "DummyRegion2", new List<Guid>());
 

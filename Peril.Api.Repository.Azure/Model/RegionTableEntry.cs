@@ -11,7 +11,7 @@ namespace Peril.Api.Repository.Azure.Model
         public RegionTableEntry(Guid sessionId, Guid regionId, Guid continentId, String name)
         {
             PartitionKey = sessionId.ToString();
-            RowKey = regionId.ToString();
+            RowKey = "Region_" + regionId.ToString();
             ContinentId = continentId;
             Name = name;
             OwnerId = String.Empty;
@@ -32,7 +32,7 @@ namespace Peril.Api.Repository.Azure.Model
 
         public Guid RegionId
         {
-            get { return Guid.Parse(RowKey); }
+            get { return Guid.Parse(RowKey.Substring(7)); }
         }
 
         public Guid ContinentId { get; set; }

@@ -9,7 +9,7 @@ namespace Peril.Api.Repository.Azure.Model
         public NationTableEntry(Guid sessionId, String userId)
         {
             PartitionKey = sessionId.ToString();
-            RowKey = userId.ToString();
+            RowKey = "Nation_" + userId.ToString();
             CompletedPhase = Guid.Empty;
             ColourId = 0;
             AvailableReinforcementsRaw = 0;
@@ -21,7 +21,7 @@ namespace Peril.Api.Repository.Azure.Model
         }
 
         public Guid SessionId { get { return Guid.Parse(PartitionKey); } }
-        public String UserId { get { return RowKey; } }
+        public String UserId { get { return RowKey.Substring(7); } }
         public String CurrentEtag { get { return ETag; } }
         public uint AvailableReinforcements { get { return (UInt32)AvailableReinforcementsRaw; } }
 

@@ -8,11 +8,23 @@ namespace Peril.Api.Repository.Azure.Tests.Repository
 {
     static class SessionRepositoryExtensions
     {
+        static internal CloudTable SetupSessionDataTable(this CloudTableClient tableClient, Guid sessionId)
+        {
+            var dataTable = SessionRepository.GetTableForSessionData(tableClient, sessionId);
+            dataTable.DeleteIfExists();
+            dataTable.Create();
+            return dataTable;
+        }
+
         static internal async Task<SessionTableEntry> SetupSession(this SessionRepository repository, Guid sessionId, String ownerId)
         {
             SessionTableEntry newSession = new SessionTableEntry(ownerId, sessionId);
             TableOperation insertOperation = TableOperation.InsertOrReplace(newSession);
             await repository.SessionTable.ExecuteAsync(insertOperation);
+
+            var dataTable = repository.GetTableForSessionData(sessionId);
+            dataTable.DeleteIfExists();
+            dataTable.Create();
 
             await repository.SetupAddPlayer(sessionId, ownerId);
 
@@ -21,10 +33,12 @@ namespace Peril.Api.Repository.Azure.Tests.Repository
 
         static internal async Task<NationTableEntry> SetupAddPlayer(this SessionRepository repository, Guid sessionId, String userId)
         {
+            var dataTable = repository.GetTableForSessionData(sessionId);
+
             NationTableEntry newSessionPlayerEntry = new NationTableEntry(sessionId, userId);
 
             TableOperation insertOperation = TableOperation.InsertOrReplace(newSessionPlayerEntry);
-            await repository.SessionPlayersTable.ExecuteAsync(insertOperation);
+            await dataTable.ExecuteAsync(insertOperation);
 
             return newSessionPlayerEntry;
         }
