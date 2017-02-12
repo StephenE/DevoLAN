@@ -151,8 +151,6 @@ namespace Peril.Api.Repository.Azure
                     if(newPhase == SessionPhase.Victory)
                     {
                         session.RawRound += 1;
-                        var dataTable = GetTableForSessionData(session.GameId);
-                        await dataTable.CreateIfNotExistsAsync();
                     }
 
                     // Write entry back (fails on write conflict)

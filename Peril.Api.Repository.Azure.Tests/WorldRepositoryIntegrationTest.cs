@@ -38,7 +38,7 @@ namespace Peril.Api.Repository.Azure.Tests
             Guid attacking2RegionId = new Guid("E0675161-4192-4C33-B8BB-3B6D763725E2");
             Guid attacking3RegionId = new Guid("CA563328-5743-4EC0-AA39-D7978DE44872");
             Guid defendingRegionId = new Guid("6DC3039A-CC79-4CAC-B7CE-37E1B1565A6C");
-            CombatTableEntry tableEntry = new CombatTableEntry(SessionId, combatId, CombatType.MassInvasion);
+            CombatTableEntry tableEntry = new CombatTableEntry(SessionId, 1, combatId, CombatType.MassInvasion);
             tableEntry.SetCombatArmy(new List<ICombatArmy>
             {
                 new CombatArmy(attackingRegionId, "AttackingUser", Core.CombatArmyMode.Attacking, 5),
@@ -47,7 +47,7 @@ namespace Peril.Api.Repository.Azure.Tests
 
             CloudTable testTable = SessionRepository.GetTableForSessionData(TableClient, SessionId);
             testTable.CreateIfNotExists();
-            TableOperation insertOperation = TableOperation.InsertOrReplace(tableEntry);
+            TableOperation insertOperation = TableOperation.Insert(tableEntry);
             await testTable.ExecuteAsync(insertOperation);
 
             // Act
@@ -70,6 +70,7 @@ namespace Peril.Api.Repository.Azure.Tests
             CombatTableEntry resultStronglyTyped = result.Result as CombatTableEntry;
             Assert.AreEqual(SessionId, resultStronglyTyped.SessionId);
             Assert.AreEqual(combatId, resultStronglyTyped.CombatId);
+            Assert.AreEqual(1, resultStronglyTyped.Round);
             Assert.AreEqual(CombatType.MassInvasion, resultStronglyTyped.ResolutionType);
             Assert.AreEqual(4, resultStronglyTyped.InvolvedArmies.Count());
 
@@ -129,7 +130,7 @@ namespace Peril.Api.Repository.Azure.Tests
             Guid combatId = new Guid("4B0286E6-6DBE-4F86-A87C-1CF776F41437");
             Guid attackingRegionId = new Guid("4CD8D6E1-8FFE-48E1-8FE0-B89BCDD0AA96");
             Guid defendingRegionId = new Guid("E0FE9A73-4125-4DA1-A113-25ED927EA7B4");
-            CombatTableEntry combat = new CombatTableEntry(SessionId, combatId, CombatType.Invasion);
+            CombatTableEntry combat = new CombatTableEntry(SessionId, 1, combatId, CombatType.Invasion);
             combat.SetCombatArmy(new List<ICombatArmy>
             {
                 new CombatArmy(attackingRegionId, "AttackingUser", Core.CombatArmyMode.Attacking, 3),
@@ -177,7 +178,7 @@ namespace Peril.Api.Repository.Azure.Tests
             Guid combatId = new Guid("44C850BA-711E-4E5E-9537-E612DA18E15E");
             Guid attackingRegionId = new Guid("5EA3D204-63EA-4683-913E-C5C3609BD893");
             Guid defendingRegionId = new Guid("6DC3039A-CC79-4CAC-B7CE-37E1B1565A6C");
-            CombatTableEntry tableEntry = new CombatTableEntry(SessionId, combatId, CombatType.Invasion);
+            CombatTableEntry tableEntry = new CombatTableEntry(SessionId, 1, combatId, CombatType.Invasion);
             tableEntry.SetCombatArmy(new List<ICombatArmy>
             {
                 new CombatArmy(attackingRegionId, "AttackingUser", Core.CombatArmyMode.Attacking, 5),
@@ -186,7 +187,7 @@ namespace Peril.Api.Repository.Azure.Tests
 
             CloudTable testTable = SessionRepository.GetTableForSessionData(TableClient, SessionId);
             testTable.CreateIfNotExists();
-            TableOperation insertOperation = TableOperation.InsertOrReplace(tableEntry);
+            TableOperation insertOperation = TableOperation.Insert(tableEntry);
             await testTable.ExecuteAsync(insertOperation);
 
             // Act
@@ -216,13 +217,13 @@ namespace Peril.Api.Repository.Azure.Tests
             Guid secondCombatId = new Guid("2F366A82-A99C-4A83-BF0E-FFF8D87D94A6");
             Guid attackingRegionId = new Guid("5EA3D204-63EA-4683-913E-C5C3609BD893");
             Guid defendingRegionId = new Guid("6DC3039A-CC79-4CAC-B7CE-37E1B1565A6C");
-            CombatTableEntry tableEntry = new CombatTableEntry(SessionId, combatId, CombatType.Invasion);
+            CombatTableEntry tableEntry = new CombatTableEntry(SessionId, 1, combatId, CombatType.Invasion);
             tableEntry.SetCombatArmy(new List<ICombatArmy>
             {
                 new CombatArmy(attackingRegionId, "AttackingUser", Core.CombatArmyMode.Attacking, 5),
                 new CombatArmy(defendingRegionId, "DefendingUser", Core.CombatArmyMode.Defending, 4)
             });
-            CombatTableEntry secondTableEntry = new CombatTableEntry(SessionId, secondCombatId, CombatType.SpoilsOfWar);
+            CombatTableEntry secondTableEntry = new CombatTableEntry(SessionId, 1, secondCombatId, CombatType.SpoilsOfWar);
             secondTableEntry.SetCombatArmy(new List<ICombatArmy>
             {
                 new CombatArmy(attackingRegionId, "AttackingUser", Core.CombatArmyMode.Attacking, 5),
@@ -231,9 +232,13 @@ namespace Peril.Api.Repository.Azure.Tests
 
             CloudTable testTable = SessionRepository.GetTableForSessionData(TableClient, SessionId);
             testTable.CreateIfNotExists();
-            TableOperation insertOperation = TableOperation.InsertOrReplace(tableEntry);
+            TableOperation insertOperation = TableOperation.Insert(tableEntry);
             await testTable.ExecuteAsync(insertOperation);
-            insertOperation = TableOperation.InsertOrReplace(secondTableEntry);
+            insertOperation = TableOperation.Insert(secondTableEntry);
+            await testTable.ExecuteAsync(insertOperation);
+
+            CombatTableEntry thirdTableEntry = new CombatTableEntry(SessionId, 2, Guid.NewGuid(), CombatType.SpoilsOfWar);
+            insertOperation = TableOperation.Insert(thirdTableEntry);
             await testTable.ExecuteAsync(insertOperation);
 
             // Act
@@ -241,6 +246,7 @@ namespace Peril.Api.Repository.Azure.Tests
 
             // Assert
             Assert.IsNotNull(results);
+            Assert.AreEqual(1, results.Count());
 
             ICombat result = results.Where(combat => combat.CombatId == combatId).FirstOrDefault();
             Assert.IsNull(result);
@@ -248,6 +254,49 @@ namespace Peril.Api.Repository.Azure.Tests
             result = results.Where(combat => combat.CombatId == secondCombatId).FirstOrDefault();
             Assert.IsNotNull(result);
             Assert.AreEqual(CombatType.SpoilsOfWar, result.ResolutionType);
+        }
+
+        [TestMethod]
+        [TestCategory("Integration")]
+        [TestCategory("WorldRepository")]
+        public async Task IntegrationTestGetCombatWithMultipleRounds()
+        {
+            // Arrange
+            WorldRepository repository = new WorldRepository(DevelopmentStorageAccountConnectionString);
+            Guid combatId = new Guid("3233BE80-37BA-4FBD-B07B-BB18F6E47FEE");
+            Guid attackingRegionId = new Guid("5EA3D204-63EA-4683-913E-C5C3609BD893");
+            Guid defendingRegionId = new Guid("6DC3039A-CC79-4CAC-B7CE-37E1B1565A6C");
+            CombatTableEntry tableEntry = new CombatTableEntry(SessionId, 5, combatId, CombatType.Invasion);
+            tableEntry.SetCombatArmy(new List<ICombatArmy>
+            {
+                new CombatArmy(attackingRegionId, "AttackingUser", Core.CombatArmyMode.Attacking, 5),
+                new CombatArmy(defendingRegionId, "DefendingUser", Core.CombatArmyMode.Defending, 4)
+            });
+
+            CloudTable testTable = SessionRepository.GetTableForSessionData(TableClient, SessionId);
+            testTable.CreateIfNotExists();
+            TableOperation insertOperation = TableOperation.Insert(tableEntry);
+            await testTable.ExecuteAsync(insertOperation);
+
+            CombatTableEntry otherRoundTableEntry = new CombatTableEntry(SessionId, 2, Guid.NewGuid(), CombatType.Invasion);
+            insertOperation = TableOperation.Insert(otherRoundTableEntry);
+            await testTable.ExecuteAsync(insertOperation);
+
+            // Act
+            var results = await repository.GetCombat(SessionId, 5);
+
+            // Assert
+            Assert.IsNotNull(results);
+            Assert.AreEqual(1, results.Count());
+
+            ICombat result = results.Where(combat => combat.CombatId == combatId).FirstOrDefault();
+            Assert.IsNotNull(result);
+            Assert.AreEqual(combatId, result.CombatId);
+            Assert.AreEqual(CombatType.Invasion, result.ResolutionType);
+            Assert.AreEqual(2, result.InvolvedArmies.Count());
+
+            AssertCombat.IsAttacking(attackingRegionId, 5, "AttackingUser", result);
+            AssertCombat.IsDefending(defendingRegionId, 4, "DefendingUser", result);
         }
 
         [TestMethod]
@@ -281,7 +330,7 @@ namespace Peril.Api.Repository.Azure.Tests
             Guid combatId = new Guid("5C161C2F-3982-45B8-8FCE-9D7F609AB012");
             Guid attackingRegionId = new Guid("4CD8D6E1-8FFE-48E1-8FE0-B89BCDD0AA96");
             Guid defendingRegionId = new Guid("E0FE9A73-4125-4DA1-A113-25ED927EA7B4");
-            CombatTableEntry tableEntry = new CombatTableEntry(SessionId, combatId, CombatType.Invasion);
+            CombatTableEntry tableEntry = new CombatTableEntry(SessionId, 1, combatId, CombatType.Invasion);
             List<ICombatArmy> armies = new List<ICombatArmy>
             {
                 new CombatArmy(attackingRegionId, "AttackingUser", Core.CombatArmyMode.Attacking, 5),
@@ -292,7 +341,7 @@ namespace Peril.Api.Repository.Azure.Tests
             testTable.CreateIfNotExists();
 
             // Act
-            TableOperation insertOperation = TableOperation.InsertOrReplace(tableEntry);
+            TableOperation insertOperation = TableOperation.Insert(tableEntry);
             await testTable.ExecuteAsync(insertOperation);
 
             // Assert
@@ -303,6 +352,7 @@ namespace Peril.Api.Repository.Azure.Tests
             CombatTableEntry resultStronglyTyped = result.Result as CombatTableEntry;
             Assert.AreEqual(SessionId, resultStronglyTyped.SessionId);
             Assert.AreEqual(combatId, resultStronglyTyped.CombatId);
+            Assert.AreEqual(1, resultStronglyTyped.Round);
             Assert.AreEqual(CombatType.Invasion, resultStronglyTyped.ResolutionType);
             Assert.AreEqual(2, resultStronglyTyped.InvolvedArmies.Count());
 

@@ -91,7 +91,7 @@ namespace Peril.Api.Repository.Azure
             foreach (var armyEntry in armies)
             {
                 Guid combatId = Guid.NewGuid();
-                CombatTableEntry entry = new CombatTableEntry(sessionId, combatId, armyEntry.Item1);
+                CombatTableEntry entry = new CombatTableEntry(sessionId, round, combatId, armyEntry.Item1);
                 entry.SetCombatArmy(armyEntry.Item2);
                 batchOperation.Insert(entry);
                 createdCombatIds.Add(combatId);
@@ -155,7 +155,12 @@ namespace Peril.Api.Repository.Azure
             CloudTable dataTable = SessionRepository.GetTableForSessionData(TableClient, sessionId);
 
             TableQuery<CombatTableEntry> query = new TableQuery<CombatTableEntry>()
-                .Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, sessionId.ToString()));
+                .Where(
+                TableQuery.CombineFilters(
+                    TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, sessionId.ToString()),
+                    TableOperators.And,
+                    TableQuery.GenerateFilterConditionForInt("Round", QueryComparisons.Equal, (Int32)round)
+                ));
 
             // Initialize the continuation token to null to start from the beginning of the table.
             TableContinuationToken continuationToken = null;
@@ -178,10 +183,15 @@ namespace Peril.Api.Repository.Azure
             CloudTable dataTable = SessionRepository.GetTableForSessionData(TableClient, sessionId);
 
             TableQuery<CombatTableEntry> query = new TableQuery<CombatTableEntry>()
-                .Where(TableQuery.CombineFilters(
-                    TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, sessionId.ToString()),
+                .Where(
+                TableQuery.CombineFilters(
+                    TableQuery.CombineFilters(
+                        TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, sessionId.ToString()),
+                        TableOperators.And,
+                        TableQuery.GenerateFilterConditionForInt("ResolutionTypeRaw", QueryComparisons.Equal, (Int32)type)
+                    ),
                     TableOperators.And,
-                    TableQuery.GenerateFilterConditionForInt("ResolutionTypeRaw", QueryComparisons.Equal, (Int32)type)
+                    TableQuery.GenerateFilterConditionForInt("Round", QueryComparisons.Equal, (Int32)round)
                 ));
 
             // Initialize the continuation token to null to start from the beginning of the table.

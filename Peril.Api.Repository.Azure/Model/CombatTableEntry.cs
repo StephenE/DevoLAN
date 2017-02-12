@@ -9,10 +9,11 @@ namespace Peril.Api.Repository.Azure.Model
 {
     public class CombatTableEntry : TableEntity, ICombat
     {
-        public CombatTableEntry(Guid sessionId, Guid combatId, CombatType type)
+        public CombatTableEntry(Guid sessionId, UInt32 round, Guid combatId, CombatType type)
         {
             PartitionKey = sessionId.ToString();
             RowKey = "Combat_" + combatId.ToString();
+            Round = (Int32)round;
             ResolutionTypeRaw = (Int32)type;
             m_CombatArmiesList = new List<ICombatArmy>();
         }
@@ -24,6 +25,7 @@ namespace Peril.Api.Repository.Azure.Model
 
         public Guid SessionId { get { return Guid.Parse(PartitionKey); } }
         public Guid CombatId { get { return Guid.Parse(RowKey.Substring(7)); } }
+        public Int32 Round { get; set; }
         public CombatType ResolutionType { get { return (CombatType)ResolutionTypeRaw; } }
         public IEnumerable<ICombatArmy> InvolvedArmies { get { return m_CombatArmiesList; } }
 
