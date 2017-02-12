@@ -44,6 +44,8 @@ namespace Peril.Api.Repository.Azure
                 {
                     foreach (CombatTableEntry combat in targetRegionToCombatLookup[targetRegionId])
                     {
+                        combat.IsValid();
+
                         if (sourceType < combat.ResolutionType)
                         {
                             List<ICombatArmy> existingArmies = combat.InvolvedArmies.ToList();
@@ -166,7 +168,7 @@ namespace Peril.Api.Repository.Azure
             TableContinuationToken continuationToken = null;
 
             // Loop until the continuation token comes back as null
-            List<ICombat> results = new List<ICombat>();
+            List<CombatTableEntry> results = new List<CombatTableEntry>();
             do
             {
                 var queryResults = await dataTable.ExecuteQuerySegmentedAsync(query, continuationToken);
@@ -174,6 +176,11 @@ namespace Peril.Api.Repository.Azure
                 results.AddRange(queryResults.Results);
             }
             while (continuationToken != null);
+
+            foreach(CombatTableEntry combat in results)
+            {
+                combat.IsValid();
+            }
 
             return results;
         }
@@ -198,7 +205,7 @@ namespace Peril.Api.Repository.Azure
             TableContinuationToken continuationToken = null;
 
             // Loop until the continuation token comes back as null
-            List<ICombat> results = new List<ICombat>();
+            List<CombatTableEntry> results = new List<CombatTableEntry>();
             do
             {
                 var queryResults = await dataTable.ExecuteQuerySegmentedAsync(query, continuationToken);
@@ -206,6 +213,11 @@ namespace Peril.Api.Repository.Azure
                 results.AddRange(queryResults.Results);
             }
             while (continuationToken != null);
+
+            foreach (CombatTableEntry combat in results)
+            {
+                combat.IsValid();
+            }
 
             return results;
         }

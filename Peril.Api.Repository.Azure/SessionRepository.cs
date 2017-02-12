@@ -37,6 +37,7 @@ namespace Peril.Api.Repository.Azure
             await SessionTable.ExecuteAsync(insertOperation);
 
             // Add the player to the session
+            await ReservePlayerColour(newSessionGuid, newSession.ETag, colour);
             await JoinSession(newSessionGuid, userId, colour);
 
             // Return the new session GUID

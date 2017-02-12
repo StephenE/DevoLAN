@@ -24,7 +24,12 @@ namespace Peril.Api.Repository.Azure
 
             var operation = TableOperation.Retrieve<NationTableEntry>(sessionId.ToString(), "Nation_" + userId);
             var result = await sessionDataTable.ExecuteAsync(operation);
-            return result.Result as NationTableEntry;
+            NationTableEntry typedResult = result.Result as NationTableEntry;
+            if (typedResult != null)
+            {
+                typedResult.IsValid();
+            }
+            return typedResult;
         }
 
         public async Task<IEnumerable<INationData>> GetNations(Guid sessionId)
@@ -32,9 +37,19 @@ namespace Peril.Api.Repository.Azure
             // Get the session data table
             CloudTable sessionDataTable = SessionRepository.GetTableForSessionData(TableClient, sessionId);
 
+            var rowKeyCondition = TableQuery.CombineFilters(
+                TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.GreaterThanOrEqual, "Nation_"),
+                TableOperators.And,
+                TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.LessThan, "Nation`")
+            );
+
             List<INationData> results = new List<INationData>();
             TableQuery<NationTableEntry> query = new TableQuery<NationTableEntry>()
-                .Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, sessionId.ToString()));
+                .Where(TableQuery.CombineFilters(
+                    TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, sessionId.ToString()),
+                    TableOperators.And,
+                    rowKeyCondition
+                ));
 
             // Initialize the continuation token to null to start from the beginning of the table.
             TableContinuationToken continuationToken = null;
@@ -47,6 +62,11 @@ namespace Peril.Api.Repository.Azure
                 results.AddRange(queryResults.Results);
             }
             while (continuationToken != null);
+
+            foreach(NationTableEntry entry in results)
+            {
+                entry.IsValid();
+            }
 
             return results;
         }
@@ -62,6 +82,7 @@ namespace Peril.Api.Repository.Azure
 
             // Modify entry
             NationTableEntry playerEntry = result.Result as NationTableEntry;
+            playerEntry.IsValid();
             playerEntry.CompletedPhase = phaseId;
 
             // Write entry back (fails on write conflict)
@@ -101,6 +122,7 @@ namespace Peril.Api.Repository.Azure
             foreach (var operation in updateOperations)
             {
                 NationTableEntry nationEntry = operation.Nation;
+                nationEntry.IsValid();
                 nationEntry.AvailableReinforcementsRaw = operation.Reinforcements;
                 batchOperation.Replace(nationEntry);
             }

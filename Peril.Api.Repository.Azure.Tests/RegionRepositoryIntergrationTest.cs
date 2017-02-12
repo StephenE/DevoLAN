@@ -30,7 +30,7 @@ namespace Peril.Api.Repository.Azure.Tests
         public async Task IntegrationTestCreateRegion()
         {
             // Arrange
-            RegionRepository repository = new RegionRepository(DevelopmentStorageAccountConnectionString);
+            RegionRepository repository = new RegionRepository(DevelopmentStorageAccountConnectionString, String.Empty);
             Guid dummySessionId = new Guid("74720766-452A-40AD-8A61-FEF07E8573C9");
             Guid dummyRegionId = new Guid("024D1E45-EF34-4AB1-840D-79229CCDE8C3");
             Guid dummyContinentId = new Guid("DE167712-0CE6-455C-83EA-CB2A6936F1BE");
@@ -62,7 +62,7 @@ namespace Peril.Api.Repository.Azure.Tests
         public async Task IntegrationTestGetRegion()
         {
             // Arrange
-            RegionRepository repository = new RegionRepository(DevelopmentStorageAccountConnectionString);
+            RegionRepository repository = new RegionRepository(DevelopmentStorageAccountConnectionString, String.Empty);
             Guid dummySessionId = new Guid("74720766-452A-40AD-8A61-FEF07E8573C9");
             Guid dummyRegionId = new Guid("89B6BDF0-83B7-42F1-B216-7DFFB8D11EA2");
             Guid dummyContinentId = new Guid("DE167712-0CE6-455C-83EA-CB2A6936F1BE");
@@ -84,7 +84,7 @@ namespace Peril.Api.Repository.Azure.Tests
         public async Task IntegrationTestGetRegion_WithInvalidRegionId()
         {
             // Arrange
-            RegionRepository repository = new RegionRepository(DevelopmentStorageAccountConnectionString);
+            RegionRepository repository = new RegionRepository(DevelopmentStorageAccountConnectionString, String.Empty);
             Guid dummySessionId = new Guid("74720766-452A-40AD-8A61-FEF07E8573C9");
             Guid dummyRegionId = new Guid("DE167712-0CE6-455C-83EA-CB2A6936F1BE");
             TableClient.SetupSessionDataTable(dummySessionId);
@@ -102,7 +102,7 @@ namespace Peril.Api.Repository.Azure.Tests
         public async Task IntegrationTestGetRegions()
         {
             // Arrange
-            RegionRepository repository = new RegionRepository(DevelopmentStorageAccountConnectionString);
+            RegionRepository repository = new RegionRepository(DevelopmentStorageAccountConnectionString, String.Empty);
             Guid dummySessionId = new Guid("74720766-452A-40AD-8A61-FEF07E8573C9");
             Guid dummyRegionId = new Guid("CBDF6EBE-5F91-4ADF-AC30-D149D8E5F8EB");
             Guid secondDummyRegionId = new Guid("336312D8-F219-4C9B-B3FE-F4B39602E28D");
@@ -127,7 +127,7 @@ namespace Peril.Api.Repository.Azure.Tests
         public async Task IntegrationTestAssignRegionOwnership()
         {
             // Arrange
-            RegionRepository repository = new RegionRepository(DevelopmentStorageAccountConnectionString);
+            RegionRepository repository = new RegionRepository(DevelopmentStorageAccountConnectionString, String.Empty);
             Guid dummySessionId = new Guid("7C76A14F-DA7F-4AEC-9AF4-DDC77C6122CD");
             Guid dummyRegionId = new Guid("CBDF6EBE-5F91-4ADF-AC30-D149D8E5F8EB");
             Guid secondDummyRegionId = new Guid("336312D8-F219-4C9B-B3FE-F4B39602E28D");

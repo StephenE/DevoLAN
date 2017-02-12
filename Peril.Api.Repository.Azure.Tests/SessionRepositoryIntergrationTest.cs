@@ -54,6 +54,7 @@ namespace Peril.Api.Repository.Azure.Tests
             Assert.AreEqual(dummyUserId, resultStronglyTyped.OwnerId);
             Assert.AreEqual(Guid.Empty, resultStronglyTyped.PhaseId);
             Assert.AreEqual(SessionPhase.NotStarted, resultStronglyTyped.PhaseType);
+            Assert.IsTrue(resultStronglyTyped.IsColourUsed(PlayerColour.Black));
 
             operation = TableOperation.Retrieve<NationTableEntry>(newSessionGuid.ToString(), "Nation_" + dummyUserId);
             result = await dataTable.ExecuteAsync(operation);

@@ -2,6 +2,7 @@
 using Peril.Core;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
@@ -20,6 +21,15 @@ namespace Peril.Api.Repository.Azure.Model
         public CombatResultTableEntry()
         {
             m_CombatRoundResults = new List<ICombatRoundResult>();
+        }
+
+        [Conditional("DEBUG")]
+        public void IsValid()
+        {
+            if (!RowKey.StartsWith("Result_"))
+            {
+                throw new InvalidOperationException(String.Format("RowKey {0} doesn't start with 'Result_'", RowKey));
+            }
         }
 
         public Guid SessionId { get { return Guid.Parse(PartitionKey); } }

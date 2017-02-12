@@ -1,6 +1,7 @@
 ﻿using Microsoft.WindowsAzure.Storage.Table;
 using Peril.Core;
 using System;
+using System.Diagnostics;
 
 namespace Peril.Api.Repository.Azure.Model
 {
@@ -18,6 +19,15 @@ namespace Peril.Api.Repository.Azure.Model
         public NationTableEntry()
         {
 
+        }
+
+        [Conditional("DEBUG")]
+        public void IsValid()
+        {
+            if(!RowKey.StartsWith("Nation_"))
+            {
+                throw new InvalidOperationException(String.Format("RowKey {0} doesn't start with 'Nation_'", RowKey));
+            }
         }
 
         public Guid SessionId { get { return Guid.Parse(PartitionKey); } }

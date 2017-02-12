@@ -88,6 +88,28 @@ namespace Peril.Api.Repository.Azure.Tests
         [TestMethod]
         [TestCategory("Integration")]
         [TestCategory("NationRepository")]
+        public async Task IntegrationTestGetNationsWithPopulatedTable()
+        {
+            // Arrange
+            NationRepository repository = new NationRepository(DevelopmentStorageAccountConnectionString);
+            SessionRepository sessionRepository = new SessionRepository(DevelopmentStorageAccountConnectionString);
+            Guid validGuid = new Guid("3CC9F4E8-BDB9-49F4-B128-268F0E5E9C20");
+            String dummyUserId = "DummyUserId";
+            await sessionRepository.SetupSession(validGuid, dummyUserId);
+            await sessionRepository.SetupAddRegion(validGuid, Guid.NewGuid(), Guid.NewGuid(), "DummyRegion");
+
+            // Act
+            IEnumerable<INationData> sessionPlayers = await repository.GetNations(validGuid);
+
+            // Assert
+            Assert.IsNotNull(sessionPlayers);
+            Assert.AreEqual(1, sessionPlayers.Count());
+            Assert.AreEqual(dummyUserId, sessionPlayers.First().UserId);
+        }
+
+        [TestMethod]
+        [TestCategory("Integration")]
+        [TestCategory("NationRepository")]
         public async Task IntegrationTestMarkPlayerCompletedPhase()
         {
             // Arrange

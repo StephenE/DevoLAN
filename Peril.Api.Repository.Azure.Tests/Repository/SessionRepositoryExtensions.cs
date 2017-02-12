@@ -43,6 +43,18 @@ namespace Peril.Api.Repository.Azure.Tests.Repository
             return newSessionPlayerEntry;
         }
 
+        static internal async Task<RegionTableEntry> SetupAddRegion(this SessionRepository repository, Guid sessionId, Guid regionId, Guid continentId, String regionName)
+        {
+            var dataTable = repository.GetTableForSessionData(sessionId);
+
+            RegionTableEntry newRegionEntry = new RegionTableEntry(sessionId, regionId, continentId, regionName);
+
+            TableOperation insertOperation = TableOperation.InsertOrReplace(newRegionEntry);
+            await dataTable.ExecuteAsync(insertOperation);
+
+            return newRegionEntry;
+        }
+
         static internal async Task<SessionTableEntry> SetupSessionPhase(this Task<SessionTableEntry> sessionTableEntryTask, SessionRepository repository, SessionPhase round)
         {
             var sessionTableEntry = await sessionTableEntryTask;

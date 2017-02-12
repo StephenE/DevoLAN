@@ -1,6 +1,7 @@
 ﻿using Microsoft.WindowsAzure.Storage.Table;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
@@ -23,6 +24,15 @@ namespace Peril.Api.Repository.Azure.Model
         public RegionTableEntry()
         {
             m_ConnectedRegionList = new List<Guid>();
+        }
+
+        [Conditional("DEBUG")]
+        public void IsValid()
+        {
+            if (!RowKey.StartsWith("Region_"))
+            {
+                throw new InvalidOperationException(String.Format("RowKey {0} doesn't start with 'Region_'", RowKey));
+            }
         }
 
         public Guid SessionId

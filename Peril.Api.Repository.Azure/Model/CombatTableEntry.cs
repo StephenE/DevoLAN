@@ -2,6 +2,7 @@
 using Peril.Core;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
@@ -21,6 +22,15 @@ namespace Peril.Api.Repository.Azure.Model
         public CombatTableEntry()
         {
             m_CombatArmiesList = new List<ICombatArmy>();
+        }
+
+        [Conditional("DEBUG")]
+        public void IsValid()
+        {
+            if (!RowKey.StartsWith("Combat_"))
+            {
+                throw new InvalidOperationException(String.Format("RowKey {0} doesn't start with 'Combat_'", RowKey));
+            }
         }
 
         public Guid SessionId { get { return Guid.Parse(PartitionKey); } }

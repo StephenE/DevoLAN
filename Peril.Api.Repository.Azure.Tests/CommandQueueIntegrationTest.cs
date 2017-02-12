@@ -24,9 +24,6 @@ namespace Peril.Api.Repository.Azure.Tests
 
             CommandTable = CommandQueue.GetCommandQueueTableForSessionPhase(TableClient, SessionPhaseGuid);
             CommandTable.CreateIfNotExists();
-
-            RegionTable = TableClient.GetTableReference(RegionRepository.TableName);
-            RegionTable.CreateIfNotExists();
         }
 
         [TestMethod]
@@ -62,9 +59,6 @@ namespace Peril.Api.Repository.Azure.Tests
             // Arrange
             CommandQueue repository = new CommandQueue(DevelopmentStorageAccountConnectionString);
             Guid targetRegionGuid = new Guid("8449A25B-363D-4F01-B3D9-7EF8C5D42047");
-            RegionTableEntry newRegion = new RegionTableEntry(SessionGuid, RegionGuid, RegionGuid, "Name");
-            TableOperation insertOperation = TableOperation.InsertOrReplace(newRegion);
-            await RegionTable.ExecuteAsync(insertOperation);
 
             // Act
             Guid operationGuid = await repository.OrderAttack(SessionGuid, SessionPhaseGuid, RegionGuid, "DummyEtag", targetRegionGuid, 5U);
@@ -82,12 +76,6 @@ namespace Peril.Api.Repository.Azure.Tests
             Assert.AreEqual("DummyEtag", queuedCommand.SourceRegionEtag);
             Assert.AreEqual(targetRegionGuid, queuedCommand.TargetRegion);
             Assert.AreEqual(5U, queuedCommand.NumberOfTroops);
-
-            var regionOperation = TableOperation.Retrieve<RegionTableEntry>(SessionGuid.ToString(), "Region_" + RegionGuid.ToString());
-            var regionResult = await RegionTable.ExecuteAsync(regionOperation);
-            RegionTableEntry regionData = regionResult.Result as RegionTableEntry;
-            Assert.IsNotNull(regionData);
-            // Assert.AreEqual(5U, regionData.TroopsCommittedToPhase);
         }
 
         [TestMethod]
@@ -178,7 +166,6 @@ namespace Peril.Api.Repository.Azure.Tests
 
         static private CloudStorageAccount StorageAccount { get; set; }
         static private CloudTableClient TableClient { get; set; }
-        static private CloudTable RegionTable { get; set; }
         static private CloudTable CommandTable { get; set; }
     }
 }

@@ -6,6 +6,7 @@ namespace Peril.Api.Tests.Controllers
 {
     class ControllerMock
     {
+
         public ControllerMock()
             : this(DummyUserRepository.PrimaryUserId)
         {
