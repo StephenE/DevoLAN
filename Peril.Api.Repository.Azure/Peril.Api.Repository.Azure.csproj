@@ -69,6 +69,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BatchOperationHandle.cs" />
     <Compile Include="CommandQueue.cs" />
     <Compile Include="Model\CombatArmy.cs" />
     <Compile Include="Model\CombatArmyRoundResult.cs" />

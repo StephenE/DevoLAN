@@ -152,7 +152,10 @@ namespace Peril.Api.Repository.Azure.Tests
             var queuedAttacks = await repository.GetQueuedCommands(sessionId, sessionId);
 
             // Act
-            await repository.RemoveCommands(sessionId, new List<ICommandQueueMessage> { queuedAttacks.Where(attack => attack.OperationId == attackId).First() });
+            using (BatchOperationHandle handle = new BatchOperationHandle(randomCommandTable))
+            {
+                repository.RemoveCommands(handle, sessionId, new List<ICommandQueueMessage> { queuedAttacks.Where(attack => attack.OperationId == attackId).First() });
+            }
 
             // Assert
             var operation = TableOperation.Retrieve<CommandQueueTableEntry>(sessionId.ToString(), "Command_" + attackId.ToString());

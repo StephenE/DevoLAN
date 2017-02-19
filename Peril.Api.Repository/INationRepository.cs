@@ -1,5 +1,4 @@
-﻿using Peril.Core;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -11,7 +10,7 @@ namespace Peril.Api.Repository
 
         Task<IEnumerable<INationData>> GetNations(Guid sessionId);
 
-        Task SetAvailableReinforcements(Guid sessionId, Dictionary<String, UInt32> reinforcements);
+        void SetAvailableReinforcements(IBatchOperationHandle batchOperation,  Guid sessionId, Dictionary<String, UInt32> reinforcements);
 
         Task MarkPlayerCompletedPhase(Guid sessionId, String userId, Guid phaseId);
     }

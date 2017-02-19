@@ -104,45 +104,40 @@ namespace Peril.Api.Repository.Azure
             }
         }
 
-        public async Task SetAvailableReinforcements(Guid sessionId, Dictionary<String, UInt32> reinforcements)
+        public void SetAvailableReinforcements(IBatchOperationHandle batchOperationHandleInterface, Guid sessionId, Dictionary<String, UInt32> reinforcements)
         {
+            BatchOperationHandle batchOperationHandle = batchOperationHandleInterface as BatchOperationHandle;
+
             // Get the session data table
             CloudTable sessionDataTable = SessionRepository.GetTableForSessionData(TableClient, sessionId);
 
-            // Fetch all nations (quicker than fetching only what we need, one by one)
-            var nations = await GetNations(sessionId);
-
-            // Get NationTableEntry for every player that needs updating
-            var updateOperations = from playerEntry in reinforcements
-                                   join nation in nations.Cast<NationTableEntry>() on playerEntry.Key equals nation.UserId
-                                   select new { Nation = nation, Reinforcements = (Int32)playerEntry.Value };
-
-            // Modify entries as required
-            TableBatchOperation batchOperation = new TableBatchOperation();
-            foreach (var operation in updateOperations)
+            // Kick off fetching the nations, and queue a continuation to add the update operations once we have the nations.
+            var pendingOperation = GetNations(sessionId)
+                                   .ContinueWith(nationsTask =>
             {
-                NationTableEntry nationEntry = operation.Nation;
-                nationEntry.IsValid();
-                nationEntry.AvailableReinforcementsRaw = operation.Reinforcements;
-                batchOperation.Replace(nationEntry);
-            }
+                var nations = nationsTask.Result;
+                // Get NationTableEntry for every player that needs updating
+                var updateOperations = from playerEntry in reinforcements
+                                       join nation in nations.Cast<NationTableEntry>() on playerEntry.Key equals nation.UserId
+                                       select new { Nation = nation, Reinforcements = (Int32)playerEntry.Value };
 
-            // Write entry back (fails on write conflict)
-            try
-            {
-                await sessionDataTable.ExecuteBatchAsync(batchOperation);
-            }
-            catch (StorageException exception)
-            {
-                if (exception.RequestInformation.HttpStatusCode == (int)HttpStatusCode.PreconditionFailed)
+                // Modify entries as required
+                TableBatchOperation batchOperation = batchOperationHandle.BatchOperation;
+                lock (batchOperationHandle)
                 {
-                    throw new ConcurrencyException();
+                    foreach (var operation in updateOperations)
+                    {
+                        NationTableEntry nationEntry = operation.Nation;
+                        nationEntry.IsValid();
+                        nationEntry.AvailableReinforcementsRaw = operation.Reinforcements;
+                        batchOperation.Replace(nationEntry);
+                    }
                 }
-                else
-                {
-                    throw exception;
-                }
-            }
+            });
+
+            // We need to do an async operation before we can add the changes to the batch handle
+            // Reserve enough space for the worst case situation (one row for every entry in 'reinforcements') 
+            batchOperationHandle.AddPrerequisite(pendingOperation, reinforcements.Count);
         }
 
         private CloudStorageAccount StorageAccount { get; set; }

@@ -67,9 +67,10 @@ namespace Peril.Api.Tests.Repository
             }
         }
 
-        public Task SetAvailableReinforcements(Guid sessionId, Dictionary<String, UInt32> reinforcements)
+        public void SetAvailableReinforcements(IBatchOperationHandle batchOperationHandle, Guid sessionId, Dictionary<String, UInt32> reinforcements)
         {
             DummySession foundSession = SessionRepository.SessionMap[sessionId];
+            DummyBatchOperationHandle batchOperation = batchOperationHandle as DummyBatchOperationHandle;
             if (foundSession != null)
             {
                 foreach (var playerEntry in reinforcements)
@@ -77,7 +78,10 @@ namespace Peril.Api.Tests.Repository
                     DummyNationData foundPlayer = foundSession.Players.Find(player => player.UserId == playerEntry.Key);
                     if (foundPlayer != null)
                     {
-                        foundPlayer.AvailableReinforcements = playerEntry.Value;
+                        batchOperation.QueuedOperations.Add(() =>
+                        {
+                            foundPlayer.AvailableReinforcements = playerEntry.Value;
+                        });
                     }
                     else
                     {
@@ -89,8 +93,6 @@ namespace Peril.Api.Tests.Repository
             {
                 throw new InvalidOperationException("Called JoinSession with a non-existent GUID");
             }
-
-            return Task.FromResult(false);
         }
 
         private DummySessionRepository SessionRepository;
@@ -105,8 +107,10 @@ namespace Peril.Api.Tests.Repository
 
         static public ControllerMockSetupContext SetupAvailableReinforcements(this ControllerMockSetupContext setupContext, String userId, UInt32 availableReinforcements)
         {
-            var task = setupContext.ControllerMock.NationRepository.SetAvailableReinforcements(setupContext.DummySession.GameId, new Dictionary<String, UInt32>() { { userId, availableReinforcements } });
-            task.Wait();
+            using (DummyBatchOperationHandle batchOperation = new DummyBatchOperationHandle())
+            {
+                setupContext.ControllerMock.NationRepository.SetAvailableReinforcements(batchOperation, setupContext.DummySession.GameId, new Dictionary<String, UInt32>() { { userId, availableReinforcements } });
+            }
             return setupContext;
         }
 

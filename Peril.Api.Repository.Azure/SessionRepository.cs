@@ -21,6 +21,12 @@ namespace Peril.Api.Repository.Azure
             SessionTable.CreateIfNotExists();
         }
 
+        public IBatchOperationHandle StartBatchOperation(Guid sessionId)
+        {
+            var dataTable = GetTableForSessionData(sessionId);
+            return new BatchOperationHandle(dataTable);
+        }
+
         public async Task<Guid> CreateSession(String userId, PlayerColour colour)
         {
             Guid newSessionGuid = Guid.NewGuid();

@@ -43,6 +43,11 @@ namespace Peril.Api.Tests.Repository
             }
         }
 
+        public IBatchOperationHandle StartBatchOperation(Guid sessionId)
+        {
+            return new DummyBatchOperationHandle();
+        }
+
         public async Task<bool> ReservePlayerColour(Guid sessionId, String sessionEtag, PlayerColour colour)
         {
             await StorageDelaySimulationTask;

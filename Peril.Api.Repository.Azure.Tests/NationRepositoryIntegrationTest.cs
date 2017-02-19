@@ -149,7 +149,10 @@ namespace Peril.Api.Repository.Azure.Tests
             var dataTable = SessionRepository.GetTableForSessionData(TableClient, validGuid);
 
             // Act
-            await repository.SetAvailableReinforcements(validGuid, new Dictionary<String, UInt32> { { dummyUserId, 10U } });
+            using (IBatchOperationHandle batchOperation = new BatchOperationHandle(sessionRepository.GetTableForSessionData(validGuid)))
+            {
+                repository.SetAvailableReinforcements(batchOperation, validGuid, new Dictionary<String, UInt32> { { dummyUserId, 10U } });
+            }
 
             // Assert
             var operation = TableOperation.Retrieve<NationTableEntry>(validGuid.ToString(), "Nation_" + dummyUserId);
@@ -179,7 +182,10 @@ namespace Peril.Api.Repository.Azure.Tests
             var dataTable = SessionRepository.GetTableForSessionData(TableClient, validGuid);
 
             // Act
-            await repository.SetAvailableReinforcements(validGuid, new Dictionary<String, UInt32> { { dummyUserId, 10U }, { secondDummyUserId, 20U } });
+            using (IBatchOperationHandle batchOperation = new BatchOperationHandle(sessionRepository.GetTableForSessionData(validGuid)))
+            {
+                repository.SetAvailableReinforcements(batchOperation, validGuid, new Dictionary<String, UInt32> { { dummyUserId, 10U }, { secondDummyUserId, 20U } });
+            }
 
             // Assert
             var operation = TableOperation.Retrieve<NationTableEntry>(validGuid.ToString(), "Nation_" + dummyUserId);

@@ -4,7 +4,6 @@ using Peril.Api.Repository.Azure.Model;
 using Peril.Api.Repository.Model;
 using System;
 using System.Collections.Generic;
-using System.Net;
 using System.Threading.Tasks;
 
 namespace Peril.Api.Repository.Azure
@@ -95,35 +94,18 @@ namespace Peril.Api.Repository.Azure
             return results;
         }
 
-        public async Task RemoveCommands(Guid sessionId, IEnumerable<ICommandQueueMessage> commands)
+        public void RemoveCommands(IBatchOperationHandle batchOperationHandle, Guid sessionId, IEnumerable<ICommandQueueMessage> commands)
         {
             CloudTable commandQueueTable = GetCommandQueueTableForSession(sessionId);
 
-            TableBatchOperation batchOperation = new TableBatchOperation();
-            foreach (var command in commands)
+            lock (batchOperationHandle)
             {
-                CommandQueueTableEntry commandQueueEntry = command as CommandQueueTableEntry;
-                commandQueueEntry.IsValid();
-                batchOperation.Delete(commandQueueEntry);
-            }
-
-            if (batchOperation.Count > 0)
-            {
-                // Write entry back (fails on write conflict)
-                try
+                TableBatchOperation batchOperation = (batchOperationHandle as BatchOperationHandle).BatchOperation;
+                foreach (var command in commands)
                 {
-                    await commandQueueTable.ExecuteBatchAsync(batchOperation);
-                }
-                catch (StorageException exception)
-                {
-                    if (exception.RequestInformation.HttpStatusCode == (int)HttpStatusCode.PreconditionFailed)
-                    {
-                        throw new ConcurrencyException();
-                    }
-                    else
-                    {
-                        throw exception;
-                    }
+                    CommandQueueTableEntry commandQueueEntry = command as CommandQueueTableEntry;
+                    commandQueueEntry.IsValid();
+                    batchOperation.Delete(commandQueueEntry);
                 }
             }
         }

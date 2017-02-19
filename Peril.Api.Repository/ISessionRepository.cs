@@ -14,6 +14,8 @@ namespace Peril.Api.Repository
 
         Task<ISessionData> GetSession(Guid sessionId);
 
+        IBatchOperationHandle StartBatchOperation(Guid sessionId);
+
         Task<bool> ReservePlayerColour(Guid sessionId, String sessionEtag, PlayerColour colour);
 
         Task JoinSession(Guid sessionId, String userId, PlayerColour colour);
