@@ -283,8 +283,6 @@ namespace Peril.Api.Repository.Azure.Tests
             SessionTableEntry resultStronglyTyped = result.Result as SessionTableEntry;
             Assert.AreNotEqual(sessionDetails.PhaseId, resultStronglyTyped.PhaseId);
             Assert.AreEqual(SessionPhase.Reinforcements, resultStronglyTyped.PhaseType);
-            CloudTable commandQueueTable = CommandQueue.GetCommandQueueTableForSessionPhase(TableClient, resultStronglyTyped.PhaseId);
-            Assert.AreEqual(true, await commandQueueTable.ExistsAsync());
         }
 
         static private String DevelopmentStorageAccountConnectionString

@@ -1,11 +1,11 @@
 ﻿using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
+using Peril.Api.Repository.Azure.Model;
 using Peril.Api.Repository.Model;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Threading.Tasks;
-using Peril.Api.Repository.Azure.Model;
-using Peril.Core;
 
 namespace Peril.Api.Repository.Azure
 {
@@ -22,7 +22,7 @@ namespace Peril.Api.Repository.Azure
 
         public async Task<Guid> DeployReinforcements(Guid sessionId, Guid phaseId, Guid targetRegion, String targetRegionEtag, UInt32 numberOfTroops)
         {
-            CloudTable commandQueueTable = GetCommandQueueTableForSessionPhase(phaseId);
+            CloudTable commandQueueTable = GetCommandQueueTableForSession(sessionId);
 
             // Create a new table entry
             CommandQueueTableEntry newCommand = CommandQueueTableEntry.CreateReinforceMessage(sessionId, phaseId, targetRegion, targetRegionEtag, numberOfTroops);
@@ -36,7 +36,7 @@ namespace Peril.Api.Repository.Azure
 
         public async Task<Guid> OrderAttack(Guid sessionId, Guid phaseId, Guid sourceRegion, String sourceRegionEtag, Guid targetRegion, UInt32 numberOfTroops)
         {
-            CloudTable commandQueueTable = GetCommandQueueTableForSessionPhase(phaseId);
+            CloudTable commandQueueTable = GetCommandQueueTableForSession(sessionId);
 
             // Create a new table entry
             CommandQueueTableEntry newCommand = CommandQueueTableEntry.CreateAttackMessage(sessionId, phaseId, sourceRegion, sourceRegionEtag, targetRegion, numberOfTroops);
@@ -50,7 +50,7 @@ namespace Peril.Api.Repository.Azure
 
         public async Task<Guid> Redeploy(Guid sessionId, Guid phaseId, String nationEtag, Guid sourceRegion, Guid targetRegion, UInt32 numberOfTroops)
         {
-            CloudTable commandQueueTable = GetCommandQueueTableForSessionPhase(phaseId);
+            CloudTable commandQueueTable = GetCommandQueueTableForSession(sessionId);
 
             // Create a new table entry
             CommandQueueTableEntry newCommand = CommandQueueTableEntry.CreateRedeployMessage(sessionId, phaseId, String.Empty, sourceRegion, targetRegion, numberOfTroops);
@@ -64,11 +64,21 @@ namespace Peril.Api.Repository.Azure
 
         public async Task<IEnumerable<ICommandQueueMessage>> GetQueuedCommands(Guid sessionId, Guid sessionPhaseId)
         {
-            CloudTable commandQueueTable = GetCommandQueueTableForSessionPhase(sessionPhaseId);
+            CloudTable commandQueueTable = GetCommandQueueTableForSession(sessionId);
+
+            var rowKeyCondition = TableQuery.CombineFilters(
+                TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.GreaterThanOrEqual, "Command_"),
+                TableOperators.And,
+                TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.LessThan, "Command`")
+            );
 
             List<CommandQueueTableEntry> results = new List<CommandQueueTableEntry>();
             TableQuery<CommandQueueTableEntry> query = new TableQuery<CommandQueueTableEntry>()
-                .Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, sessionId.ToString()));
+                .Where(TableQuery.CombineFilters(
+                    TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, sessionId.ToString()),
+                    TableOperators.And,
+                    rowKeyCondition
+                ));
 
             // Initialize the continuation token to null to start from the beginning of the table.
             TableContinuationToken continuationToken = null;
@@ -85,35 +95,48 @@ namespace Peril.Api.Repository.Azure
             return results;
         }
 
-        public async Task RemoveCommands(Guid sessionPhaseId)
+        public async Task RemoveCommands(Guid sessionId, IEnumerable<ICommandQueueMessage> commands)
         {
-            CloudTable commandQueueTable = GetCommandQueueTableForSessionPhase(sessionPhaseId);
-            await commandQueueTable.DeleteAsync();
-        }
+            CloudTable commandQueueTable = GetCommandQueueTableForSession(sessionId);
 
-        public CloudTable GetCommandQueueTableForSessionPhase(Guid sessionPhaseId)
-        {
-            return GetCommandQueueTableForSessionPhase(TableClient, sessionPhaseId);
-        }
-
-        static public CloudTable GetCommandQueueTableForSessionPhase(CloudTableClient tableClient, Guid sessionPhaseId)
-        {
-            String commandQueueTableName = String.Format(CommandQueueTableNameSyntax, sessionPhaseId.ToString().Replace("-", String.Empty));
-            CloudTable commandQueueTable = tableClient.GetTableReference(commandQueueTableName);
-            return commandQueueTable;
-        }
-
-        static public bool IsCommandQueueRequiredForPhase(SessionPhase phase)
-        {
-            switch(phase)
+            TableBatchOperation batchOperation = new TableBatchOperation();
+            foreach (var command in commands)
             {
-                case SessionPhase.Reinforcements:
-                case SessionPhase.CombatOrders:
-                case SessionPhase.Redeployment:
-                    return true;
-                default:
-                    return false;
+                CommandQueueTableEntry commandQueueEntry = command as CommandQueueTableEntry;
+                commandQueueEntry.IsValid();
+                batchOperation.Delete(commandQueueEntry);
             }
+
+            if (batchOperation.Count > 0)
+            {
+                // Write entry back (fails on write conflict)
+                try
+                {
+                    await commandQueueTable.ExecuteBatchAsync(batchOperation);
+                }
+                catch (StorageException exception)
+                {
+                    if (exception.RequestInformation.HttpStatusCode == (int)HttpStatusCode.PreconditionFailed)
+                    {
+                        throw new ConcurrencyException();
+                    }
+                    else
+                    {
+                        throw exception;
+                    }
+                }
+            }
+        }
+
+        public CloudTable GetCommandQueueTableForSession(Guid sessionId)
+        {
+            return GetCommandQueueTableForSession(TableClient, sessionId);
+        }
+
+        static public CloudTable GetCommandQueueTableForSession(CloudTableClient tableClient, Guid sessionId)
+        {
+            CloudTable commandQueueTable = SessionRepository.GetTableForSessionData(tableClient, sessionId);
+            return commandQueueTable;
         }
 
         private CloudStorageAccount StorageAccount { get; set; }

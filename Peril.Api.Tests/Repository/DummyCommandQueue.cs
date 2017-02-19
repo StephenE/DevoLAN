@@ -72,11 +72,14 @@ namespace Peril.Api.Tests.Repository
                                                                       select message);
         }
 
-        public Task RemoveCommands(Guid sessionPhaseId)
+        public Task RemoveCommands(Guid sessionPhaseId, IEnumerable<ICommandQueueMessage> messages)
         {
-            DummyDeployReinforcementsQueue.RemoveAll(message => message.PhaseId == sessionPhaseId);
-            DummyOrderAttackQueue.RemoveAll(message => message.PhaseId == sessionPhaseId);
-            DummyRedeployQueue.RemoveAll(message => message.PhaseId == sessionPhaseId);
+            foreach (var message in messages)
+            {
+                DummyDeployReinforcementsQueue.RemoveAll(queuedMessage => message.OperationId == queuedMessage.OperationId);
+                DummyOrderAttackQueue.RemoveAll(queuedMessage => message.OperationId == queuedMessage.OperationId);
+                DummyRedeployQueue.RemoveAll(queuedMessage => message.OperationId == queuedMessage.OperationId);
+            }
             return Task.FromResult(false);
         }
 

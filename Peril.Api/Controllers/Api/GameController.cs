@@ -185,7 +185,7 @@ namespace Peril.Api.Controllers.Api
                             initialReinforcements[nation.UserId] = 0;
                         }
                         await NationRepository.SetAvailableReinforcements(session.GameId, initialReinforcements);
-                        await CommandQueue.RemoveCommands(session.PhaseId);
+                        await CommandQueue.RemoveCommands(session.GameId, pendingMessages);
                         nextPhase = SessionPhase.CombatOrders;
                         break;
                     }
@@ -195,7 +195,7 @@ namespace Peril.Api.Controllers.Api
                         IEnumerable<ICommandQueueMessage> pendingMessages = await CommandQueue.GetQueuedCommands(session.GameId, session.PhaseId);
                         IEnumerable<IOrderAttackMessage> pendingAttackMessages = pendingMessages.GetQueuedOrderAttacksCommands();
                         nextPhase = await ProcessCombatOrders(session.GameId, session.Round, await regions, await nationsTask, pendingAttackMessages);
-                        await CommandQueue.RemoveCommands(session.PhaseId);
+                        await CommandQueue.RemoveCommands(session.GameId, pendingMessages);
                         break;
                     }
                     case SessionPhase.BorderClashes:

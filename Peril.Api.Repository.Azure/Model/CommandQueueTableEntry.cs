@@ -1,10 +1,7 @@
 ﻿using Microsoft.WindowsAzure.Storage.Table;
 using Peril.Api.Repository.Model;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace Peril.Api.Repository.Azure.Model
 {
@@ -50,7 +47,7 @@ namespace Peril.Api.Repository.Azure.Model
         private CommandQueueTableEntry(Guid sessionId, Guid messageId)
         {
             PartitionKey = sessionId.ToString();
-            RowKey = messageId.ToString();
+            RowKey = "Command_" + messageId.ToString();
         }
 
         public CommandQueueTableEntry()
@@ -58,8 +55,17 @@ namespace Peril.Api.Repository.Azure.Model
 
         }
 
+        [Conditional("DEBUG")]
+        public void IsValid()
+        {
+            if (!RowKey.StartsWith("Command_"))
+            {
+                throw new InvalidOperationException(String.Format("RowKey {0} doesn't start with 'Command_'", RowKey));
+            }
+        }
+
         public Guid SessionId { get { return Guid.Parse(PartitionKey); } }
-        public Guid OperationId { get { return Guid.Parse(RowKey); } }
+        public Guid OperationId { get { return Guid.Parse(RowKey.Substring(8)); } }
         public CommandQueueMessageType MessageType { get { return (CommandQueueMessageType)RawMessageType; } }
         public UInt32 NumberOfTroops { get { return (UInt32)RawNumberOfTroops; } }
 

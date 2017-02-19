@@ -22,7 +22,7 @@ namespace Peril.Api.Repository.Azure.Tests
             StorageAccount = CloudStorageAccount.DevelopmentStorageAccount;
             TableClient = StorageAccount.CreateCloudTableClient();
 
-            CommandTable = CommandQueue.GetCommandQueueTableForSessionPhase(TableClient, SessionPhaseGuid);
+            CommandTable = CommandQueue.GetCommandQueueTableForSession(TableClient, SessionGuid);
             CommandTable.CreateIfNotExists();
         }
 
@@ -38,7 +38,7 @@ namespace Peril.Api.Repository.Azure.Tests
             Guid operationGuid = await repository.DeployReinforcements(SessionGuid, SessionPhaseGuid, RegionGuid, "DummyEtag", 10U);
 
             // Assert
-            var operation = TableOperation.Retrieve<CommandQueueTableEntry>(SessionGuid.ToString(), operationGuid.ToString());
+            var operation = TableOperation.Retrieve<CommandQueueTableEntry>(SessionGuid.ToString(), "Command_" + operationGuid.ToString());
             var result = await CommandTable.ExecuteAsync(operation);
             CommandQueueTableEntry queuedCommand = result.Result as CommandQueueTableEntry;
             Assert.IsNotNull(queuedCommand);
@@ -64,7 +64,7 @@ namespace Peril.Api.Repository.Azure.Tests
             Guid operationGuid = await repository.OrderAttack(SessionGuid, SessionPhaseGuid, RegionGuid, "DummyEtag", targetRegionGuid, 5U);
 
             // Assert
-            var operation = TableOperation.Retrieve<CommandQueueTableEntry>(SessionGuid.ToString(), operationGuid.ToString());
+            var operation = TableOperation.Retrieve<CommandQueueTableEntry>(SessionGuid.ToString(), "Command_" + operationGuid.ToString());
             var result = await CommandTable.ExecuteAsync(operation);
             CommandQueueTableEntry queuedCommand = result.Result as CommandQueueTableEntry;
             Assert.IsNotNull(queuedCommand);
@@ -91,7 +91,7 @@ namespace Peril.Api.Repository.Azure.Tests
             Guid operationGuid = await repository.Redeploy(SessionGuid, SessionPhaseGuid, String.Empty, RegionGuid, targetRegionGuid, 5U);
 
             // Assert
-            var operation = TableOperation.Retrieve<CommandQueueTableEntry>(SessionGuid.ToString(), operationGuid.ToString());
+            var operation = TableOperation.Retrieve<CommandQueueTableEntry>(SessionGuid.ToString(), "Command_" + operationGuid.ToString());
             var result = await CommandTable.ExecuteAsync(operation);
             CommandQueueTableEntry queuedCommand = result.Result as CommandQueueTableEntry;
             Assert.IsNotNull(queuedCommand);
@@ -144,15 +144,23 @@ namespace Peril.Api.Repository.Azure.Tests
         {
             // Arrange
             CommandQueue repository = new CommandQueue(DevelopmentStorageAccountConnectionString);
-            Guid sessionPhaseId = Guid.NewGuid();
-            CloudTable randomCommandTable = CommandQueue.GetCommandQueueTableForSessionPhase(TableClient, sessionPhaseId);
+            Guid sessionId = Guid.NewGuid();
+            CloudTable randomCommandTable = CommandQueue.GetCommandQueueTableForSession(TableClient, sessionId);
             randomCommandTable.CreateIfNotExists();
+            Guid attackId = await repository.OrderAttack(sessionId, sessionId, sessionId, String.Empty, sessionId, 0);
+            Guid attackSecondId = await repository.OrderAttack(sessionId, sessionId, sessionId, String.Empty, sessionId, 0);
+            var queuedAttacks = await repository.GetQueuedCommands(sessionId, sessionId);
 
             // Act
-            await repository.RemoveCommands(sessionPhaseId);
+            await repository.RemoveCommands(sessionId, new List<ICommandQueueMessage> { queuedAttacks.Where(attack => attack.OperationId == attackId).First() });
 
             // Assert
-            Assert.IsFalse(randomCommandTable.Exists());
+            var operation = TableOperation.Retrieve<CommandQueueTableEntry>(sessionId.ToString(), "Command_" + attackId.ToString());
+            var result = await randomCommandTable.ExecuteAsync(operation);
+            Assert.IsNull(result.Result);
+            operation = TableOperation.Retrieve<CommandQueueTableEntry>(sessionId.ToString(), "Command_" + attackSecondId.ToString());
+            result = await randomCommandTable.ExecuteAsync(operation);
+            Assert.IsNotNull(result.Result);
         }
 
         static private String DevelopmentStorageAccountConnectionString

@@ -74,7 +74,9 @@ namespace Peril.Api.Controllers.Api
             }
             else
             {
-                return await CommandQueue.OrderAttack(session.GameId, session.PhaseId, sourceRegion.RegionId, sourceRegion.CurrentEtag, targetRegion.RegionId, numberOfTroops);
+                Guid orderGuid = await CommandQueue.OrderAttack(session.GameId, session.PhaseId, sourceRegion.RegionId, sourceRegion.CurrentEtag, targetRegion.RegionId, numberOfTroops);
+
+                return orderGuid;
             }
         }
 

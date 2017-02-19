@@ -141,13 +141,6 @@ namespace Peril.Api.Repository.Azure
                     session.PhaseId = Guid.NewGuid();
                     session.RawPhaseType = (Int32)newPhase;
 
-                    // Create a new command queue for this session phase
-                    if(CommandQueue.IsCommandQueueRequiredForPhase(newPhase))
-                    {
-                        CloudTable commandQueueTable = CommandQueue.GetCommandQueueTableForSessionPhase(TableClient, session.PhaseId);
-                        await commandQueueTable.CreateIfNotExistsAsync();
-                    }
-
                     // Increase the round number (if required)
                     if(newPhase == SessionPhase.Victory)
                     {

@@ -98,7 +98,6 @@ namespace Peril.Api.Tests
 
                 // Issue random attack orders for primary user
                 bool didAttack = await Controllers.IntegrationTest.RandomlyAttack(primaryUser.GameController, primaryUser.WorldController, primaryUser.RegionController, sessionDetails.GameId, primaryUser.OwnerId);
-                Assert.AreEqual(true, didAttack);
 
                 // Move into resolution phase (with primary user)
                 sessionDetails = await primaryUser.GameController.GetSession(sessionDetails.GameId);
