@@ -12,6 +12,7 @@
     currentGame.GameId = "";
     currentGame.PhaseId = "";
     currentGame.PhaseType = null;
+    currentGame.OwnerId = "";
 
     var currentPlayers = {};
 
