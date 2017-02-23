@@ -17,6 +17,6 @@ namespace Peril.Api.Repository
 
         Task<IEnumerable<IRegionData>> GetRegions(Guid sessionId);
 
-        Task AssignRegionOwnership(Guid sessionId, Dictionary<Guid, OwnershipChange> ownershipChanges);
+        void AssignRegionOwnership(IBatchOperationHandle batchOperationHandle, Guid sessionId, Dictionary<Guid, OwnershipChange> ownershipChanges);
     }
 }

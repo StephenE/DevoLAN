@@ -94,24 +94,27 @@ namespace Peril.Api.Repository.Azure.Tests
             testTable.CreateIfNotExists();
 
             // Act
-            var combatIds = await repository.AddCombat(SessionId, 1, new List<Tuple<CombatType, IEnumerable<ICombatArmy>>>
+            using (IBatchOperationHandle batchOperation = new BatchOperationHandle(testTable))
             {
-                Tuple.Create<CombatType, IEnumerable<ICombatArmy>>(CombatType.MassInvasion, new List<ICombatArmy>
+                repository.AddCombat(batchOperation, SessionId, 2, new List<Tuple<CombatType, IEnumerable<ICombatArmy>>>
                 {
-                    new CombatArmy(attackingRegionId, "AttackingUser", Core.CombatArmyMode.Attacking, 5),
-                    new CombatArmy(defendingRegionId, "DefendingUser", Core.CombatArmyMode.Defending, 4)
-                })
-            });
+                    Tuple.Create<CombatType, IEnumerable<ICombatArmy>>(CombatType.MassInvasion, new List<ICombatArmy>
+                    {
+                        new CombatArmy(attackingRegionId, "AttackingUser", Core.CombatArmyMode.Attacking, 5),
+                        new CombatArmy(defendingRegionId, "DefendingUser", Core.CombatArmyMode.Defending, 4)
+                    })
+                });
+            }
 
             // Assert
-            Guid combatId = combatIds.First();
-            TableOperation operation = TableOperation.Retrieve<CombatTableEntry>(SessionId.ToString(), "Combat_" + combatId.ToString());
-            TableResult result = await testTable.ExecuteAsync(operation);
-            Assert.IsNotNull(result.Result);
-            Assert.IsInstanceOfType(result.Result, typeof(CombatTableEntry));
-            CombatTableEntry resultStronglyTyped = result.Result as CombatTableEntry;
+            IEnumerable<ICombat> combatList = await repository.GetCombat(SessionId, 2);
+            Assert.IsNotNull(combatList);
+            Assert.AreEqual(1, combatList.Count());
+            ICombat combat = combatList.First();
+            Assert.IsInstanceOfType(combat, typeof(CombatTableEntry));
+            CombatTableEntry resultStronglyTyped = combat as CombatTableEntry;
             Assert.AreEqual(SessionId, resultStronglyTyped.SessionId);
-            Assert.AreEqual(combatId, resultStronglyTyped.CombatId);
+            Assert.IsNotNull(resultStronglyTyped.CombatId);
             Assert.AreEqual(CombatType.MassInvasion, resultStronglyTyped.ResolutionType);
             Assert.AreEqual(2, resultStronglyTyped.InvolvedArmies.Count());
 

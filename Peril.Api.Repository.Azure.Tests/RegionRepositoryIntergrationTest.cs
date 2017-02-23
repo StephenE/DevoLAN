@@ -137,23 +137,26 @@ namespace Peril.Api.Repository.Azure.Tests
             await repository.CreateRegion(dummySessionId, secondDummyRegionId, dummyContinentId, "DummyRegion2", new List<Guid>());
 
             // Act
-            await repository.AssignRegionOwnership(dummySessionId, new Dictionary<Guid, OwnershipChange>
+            using (IBatchOperationHandle batchOperation = new BatchOperationHandle(SessionRepository.GetTableForSessionData(TableClient, dummySessionId)))
             {
-                { dummyRegionId, new OwnershipChange("DummyUser", 10) },
-                { secondDummyRegionId, new OwnershipChange("DummyUser2", 20) }
-            });
+                repository.AssignRegionOwnership(batchOperation, dummySessionId, new Dictionary<Guid, OwnershipChange>
+                {
+                    { dummyRegionId, new OwnershipChange("DummyUser", 10) },
+                    { secondDummyRegionId, new OwnershipChange("DummyUser2", 20) }
+                });
+            }
 
             // Assert
             IEnumerable<IRegionData> regionData = await repository.GetRegions(dummySessionId);
-            Assert.IsNotNull(regionData);
-            Assert.AreEqual(2, regionData.Count());
-            Assert.AreEqual("DummyUser", regionData.Where(region => region.RegionId == dummyRegionId).First().OwnerId);
-            Assert.AreEqual(10U, regionData.Where(region => region.RegionId == dummyRegionId).First().TroopCount);
-            Assert.AreEqual(0U, regionData.Where(region => region.RegionId == dummyRegionId).First().TroopsCommittedToPhase);
-            Assert.AreEqual("DummyUser2", regionData.Where(region => region.RegionId == secondDummyRegionId).First().OwnerId);
-            Assert.AreEqual(20U, regionData.Where(region => region.RegionId == secondDummyRegionId).First().TroopCount);
-            Assert.AreEqual(0U, regionData.Where(region => region.RegionId == secondDummyRegionId).First().TroopsCommittedToPhase);
-        }
+                Assert.IsNotNull(regionData);
+                Assert.AreEqual(2, regionData.Count());
+                Assert.AreEqual("DummyUser", regionData.Where(region => region.RegionId == dummyRegionId).First().OwnerId);
+                Assert.AreEqual(10U, regionData.Where(region => region.RegionId == dummyRegionId).First().TroopCount);
+                Assert.AreEqual(0U, regionData.Where(region => region.RegionId == dummyRegionId).First().TroopsCommittedToPhase);
+                Assert.AreEqual("DummyUser2", regionData.Where(region => region.RegionId == secondDummyRegionId).First().OwnerId);
+                Assert.AreEqual(20U, regionData.Where(region => region.RegionId == secondDummyRegionId).First().TroopCount);
+                Assert.AreEqual(0U, regionData.Where(region => region.RegionId == secondDummyRegionId).First().TroopsCommittedToPhase);
+            }
 
         static private String DevelopmentStorageAccountConnectionString
         {

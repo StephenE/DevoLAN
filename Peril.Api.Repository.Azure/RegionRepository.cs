@@ -90,47 +90,36 @@ namespace Peril.Api.Repository.Azure
             return results;
         }
 
-        public async Task AssignRegionOwnership(Guid sessionId, Dictionary<Guid, OwnershipChange> ownershipChanges)
+        public void AssignRegionOwnership(IBatchOperationHandle batchOperationHandleInterface, Guid sessionId, Dictionary<Guid, OwnershipChange> ownershipChanges)
         {
+            BatchOperationHandle batchOperationHandle = batchOperationHandleInterface as BatchOperationHandle;
+
             // Get the session data table
             CloudTable sessionDataTable = SessionRepository.GetTableForSessionData(TableClient, sessionId);
 
             // Fetch all regions (quicker than fetching only what we need, one by one)
-            var regions = await GetRegions(sessionId);
-
-            // Get NationTableEntry for every player that needs updating
-            var updateOperations = from ownershipChange in ownershipChanges
-                                   join region in regions.Cast<RegionTableEntry>() on ownershipChange.Key equals region.RegionId
-                                   select new { Region = region, NewOwner = ownershipChange.Value.UserId, NewTroopCount = (Int32)ownershipChange.Value.TroopCount };
-
-            // Modify entries as required
-            TableBatchOperation batchOperation = new TableBatchOperation();
-            foreach (var operation in updateOperations)
-            {
-                RegionTableEntry regionEntry = operation.Region;
-                regionEntry.IsValid();
-                regionEntry.OwnerId = operation.NewOwner;
-                regionEntry.StoredTroopCount = operation.NewTroopCount;
-                regionEntry.StoredTroopsCommittedToPhase = 0;
-                batchOperation.Replace(regionEntry);
-            }
-
-            // Write entry back (fails on write conflict)
-            try
-            {
-                await sessionDataTable.ExecuteBatchAsync(batchOperation);
-            }
-            catch (StorageException exception)
-            {
-                if (exception.RequestInformation.HttpStatusCode == (int)HttpStatusCode.PreconditionFailed)
+            var updateRegionOwnershipTask = GetRegions(sessionId)
+                .ContinueWith(regionTask =>
                 {
-                    throw new ConcurrencyException();
-                }
-                else
-                {
-                    throw exception;
-                }
-            }
+                    // Get NationTableEntry for every player that needs updating
+                    var regions = regionTask.Result;
+                    var updateOperations = from ownershipChange in ownershipChanges
+                                           join region in regions.Cast<RegionTableEntry>() on ownershipChange.Key equals region.RegionId
+                                           select new { Region = region, NewOwner = ownershipChange.Value.UserId, NewTroopCount = (Int32)ownershipChange.Value.TroopCount };
+
+                    // Modify entries as required
+                    foreach (var operation in updateOperations)
+                    {
+                        RegionTableEntry regionEntry = operation.Region;
+                        regionEntry.IsValid();
+                        regionEntry.OwnerId = operation.NewOwner;
+                        regionEntry.StoredTroopCount = operation.NewTroopCount;
+                        regionEntry.StoredTroopsCommittedToPhase = 0;
+                        batchOperationHandle.BatchOperation.Replace(regionEntry);
+                    }
+                });
+
+            batchOperationHandle.AddPrerequisite(updateRegionOwnershipTask, ownershipChanges.Count);
         }
 
         private CloudStorageAccount StorageAccount { get; set; }

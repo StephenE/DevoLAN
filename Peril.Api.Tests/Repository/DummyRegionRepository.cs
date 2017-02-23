@@ -51,18 +51,22 @@ namespace Peril.Api.Tests.Repository
             return Task.FromResult(query);
         }
 
-        public Task AssignRegionOwnership(Guid sessionId, Dictionary<Guid, OwnershipChange> ownershipChanges)
+        public void AssignRegionOwnership(IBatchOperationHandle batchOperationHandleInterface, Guid sessionId, Dictionary<Guid, OwnershipChange> ownershipChanges)
         {
-            foreach(var change in ownershipChanges)
+            DummyBatchOperationHandle batchOperationHandle = batchOperationHandleInterface as DummyBatchOperationHandle;
+            foreach (var change in ownershipChanges)
             {
                 if (RegionData.ContainsKey(change.Key))
                 {
                     DummyRegionData regionData = RegionData[change.Key];
                     if(regionData.SessionId == sessionId)
                     {
-                        regionData.OwnerId = change.Value.UserId;
-                        regionData.TroopCount = change.Value.TroopCount;
-                        regionData.GenerateNewEtag();
+                        batchOperationHandle.QueuedOperations.Add(() =>
+                        {
+                            regionData.OwnerId = change.Value.UserId;
+                            regionData.TroopCount = change.Value.TroopCount;
+                            regionData.GenerateNewEtag();
+                        });
                     }
                     else
                     {
@@ -74,8 +78,6 @@ namespace Peril.Api.Tests.Repository
                     throw new InvalidOperationException("Invalid region id specified");
                 }
             }
-
-            return Task.FromResult(false);
         }
 
         #region - Test Setup Helpers -

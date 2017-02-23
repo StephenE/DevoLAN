@@ -84,9 +84,9 @@ namespace Peril.Api.Repository.Azure
             }
         }
 
-        public async Task<IEnumerable<Guid>> AddCombat(Guid sessionId, UInt32 round, IEnumerable<Tuple<CombatType, IEnumerable<ICombatArmy>>> armies)
+        public void AddCombat(IBatchOperationHandle batchOperationHandleInterface, Guid sessionId, UInt32 round, IEnumerable<Tuple<CombatType, IEnumerable<ICombatArmy>>> armies)
         {
-            TableBatchOperation batchOperation = new TableBatchOperation();
+            BatchOperationHandle batchOperationHandle = batchOperationHandleInterface as BatchOperationHandle;
 
             // Insert armies
             List<Guid> createdCombatIds = new List<Guid>();
@@ -95,30 +95,9 @@ namespace Peril.Api.Repository.Azure
                 Guid combatId = Guid.NewGuid();
                 CombatTableEntry entry = new CombatTableEntry(sessionId, round, combatId, armyEntry.Item1);
                 entry.SetCombatArmy(armyEntry.Item2);
-                batchOperation.Insert(entry);
+                batchOperationHandle.BatchOperation.Insert(entry);
                 createdCombatIds.Add(combatId);
             }
-
-            // Write entry back (fails on write conflict)
-            try
-            {
-                CloudTable dataTable = SessionRepository.GetTableForSessionData(TableClient, sessionId);
-                await dataTable.CreateIfNotExistsAsync();
-                await dataTable.ExecuteBatchAsync(batchOperation);
-            }
-            catch (StorageException exception)
-            {
-                if (exception.RequestInformation.HttpStatusCode == (int)HttpStatusCode.PreconditionFailed)
-                {
-                    throw new ConcurrencyException();
-                }
-                else
-                {
-                    throw new Exception(exception.RequestInformation.ExtendedErrorInformation.ErrorMessage, exception);
-                }
-            }
-
-            return createdCombatIds;
         }
 
         public async Task AddCombatResults(Guid sessionId, UInt32 round, IEnumerable<ICombatResult> results)

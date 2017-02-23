@@ -150,17 +150,19 @@ namespace Peril.Api.Controllers.Api
 
             if (force || allPlayersReady)
             {
+                SessionPhase nextPhase = SessionPhase.NotStarted;
+                bool shouldSetPhaseAtEnd = true;
+
                 using (IBatchOperationHandle batchOperation = SessionRepository.StartBatchOperation(session.GameId))
                 {
                     // Run phase specific update logic
-                    SessionPhase nextPhase = SessionPhase.NotStarted;
                     switch (session.PhaseType)
                     {
                         case SessionPhase.NotStarted:
                         {
                             var regions = RegionRepository.GetRegions(session.GameId);
                             var nations = await nationsTask;
-                            await DistributeInitialRegions(session.GameId, await regions, nations);
+                            DistributeInitialRegions(batchOperation, session.GameId, await regions, nations);
                             Dictionary<String, UInt32> initialReinforcements = new Dictionary<string, uint>();
                             foreach(INationData nation in nations)
                             {
@@ -178,7 +180,7 @@ namespace Peril.Api.Controllers.Api
                             IEnumerable<IDeployReinforcementsMessage> pendingReinforcementMessages = pendingMessages.GetQueuedDeployReinforcementsCommands();
 
                             IEnumerable<INationData> nations = await nationsTask;
-                            await ProcessReinforcementMessages(session.GameId, await regions, nations, pendingReinforcementMessages);
+                            ProcessReinforcementMessages(batchOperation, session.GameId, await regions, nations, pendingReinforcementMessages);
 
                             // Reset all players to 0 reinforcements
                             Dictionary<String, UInt32> initialReinforcements = new Dictionary<string, uint>();
@@ -197,7 +199,7 @@ namespace Peril.Api.Controllers.Api
                             var regions = RegionRepository.GetRegions(session.GameId);
                             IEnumerable<ICommandQueueMessage> pendingMessages = await CommandQueue.GetQueuedCommands(session.GameId, session.PhaseId);
                             IEnumerable<IOrderAttackMessage> pendingAttackMessages = pendingMessages.GetQueuedOrderAttacksCommands();
-                            nextPhase = await ProcessCombatOrders(session.GameId, session.Round, await regions, await nationsTask, pendingAttackMessages);
+                            nextPhase = ProcessCombatOrders(batchOperation, session.GameId, session.Round, await regions, await nationsTask, pendingAttackMessages);
                             CommandQueue.RemoveCommands(batchOperation, session.GameId, pendingMessages);
                             break;
                         }
@@ -213,7 +215,7 @@ namespace Peril.Api.Controllers.Api
                         {
                             var massInvasions = WorldRepository.GetCombat(session.GameId, session.Round, CombatType.MassInvasion);
                             IEnumerable<CombatResult> results = await ResolveCombat(session.GameId, session.Round, await massInvasions);
-                            await ApplyCombatResults(session.GameId, session.Round, CombatType.MassInvasion, results);
+                            ApplyCombatResults(batchOperation, session.GameId, session.Round, CombatType.MassInvasion, results);
                             nextPhase = SessionPhase.Invasions;
                             break;
                         }
@@ -221,7 +223,7 @@ namespace Peril.Api.Controllers.Api
                         {
                             var invasions = WorldRepository.GetCombat(session.GameId, session.Round, CombatType.Invasion);
                             IEnumerable<CombatResult> results = await ResolveCombat(session.GameId, session.Round, await invasions);
-                            await ApplyCombatResults(session.GameId, session.Round, CombatType.Invasion, results);
+                            ApplyCombatResults(batchOperation, session.GameId, session.Round, CombatType.Invasion, results);
                             nextPhase = SessionPhase.SpoilsOfWar;
                             break;
                         }
@@ -229,7 +231,7 @@ namespace Peril.Api.Controllers.Api
                         {
                             var invasions = WorldRepository.GetCombat(session.GameId, session.Round, CombatType.SpoilsOfWar);
                             IEnumerable<CombatResult> results = await ResolveCombat(session.GameId, session.Round, await invasions);
-                            await ApplyCombatResults(session.GameId, session.Round, CombatType.SpoilsOfWar, results);
+                            ApplyCombatResults(batchOperation, session.GameId, session.Round, CombatType.SpoilsOfWar, results);
                             nextPhase = SessionPhase.Redeployment;
                             break;
                         }
@@ -253,8 +255,12 @@ namespace Peril.Api.Controllers.Api
                         }
                     }
 
-                    // Move to next phase. Must commit the batch prior to kicking off the operation to set the session phase
+                    // Must commit the batch prior to kicking off the operation to set the session phase
                     await batchOperation.CommitBatch();
+                }
+
+                if(shouldSetPhaseAtEnd)
+                {
                     await SessionRepository.SetSessionPhase(sessionId, session.PhaseId, nextPhase);
                 }
             }
@@ -264,7 +270,7 @@ namespace Peril.Api.Controllers.Api
             }
         }
 
-        private async Task DistributeInitialRegions(Guid sessionId, IEnumerable<IRegionData> availableRegions, IEnumerable<INationData> availablePlayers)
+        private void DistributeInitialRegions(IBatchOperationHandle batchOperation, Guid sessionId, IEnumerable<IRegionData> availableRegions, IEnumerable<INationData> availablePlayers)
         {
             Dictionary<Guid, OwnershipChange> assignedRegions = new Dictionary<Guid, OwnershipChange>();
 
@@ -312,10 +318,10 @@ namespace Peril.Api.Controllers.Api
                 }
             }
 
-            await RegionRepository.AssignRegionOwnership(sessionId, assignedRegions);
+            RegionRepository.AssignRegionOwnership(batchOperation, sessionId, assignedRegions);
         }
 
-        private async Task ProcessReinforcementMessages(Guid sessionId, IEnumerable<IRegionData> availableRegions, IEnumerable<INationData> players, IEnumerable<IDeployReinforcementsMessage> messages)
+        private void ProcessReinforcementMessages(IBatchOperationHandle batchOperation, Guid sessionId, IEnumerable<IRegionData> availableRegions, IEnumerable<INationData> players, IEnumerable<IDeployReinforcementsMessage> messages)
         {
             Dictionary<Guid, OwnershipChange> assignedRegions = new Dictionary<Guid, OwnershipChange>();
             Dictionary<String, UInt32> playerLookup = players.ToDictionary(nationData => nationData.UserId, nationData => nationData.AvailableReinforcements);
@@ -353,11 +359,11 @@ namespace Peril.Api.Controllers.Api
 
             if (assignedRegions.Count > 0)
             {
-                await RegionRepository.AssignRegionOwnership(sessionId, assignedRegions);
+                RegionRepository.AssignRegionOwnership(batchOperation, sessionId, assignedRegions);
             }
         }
 
-        private async Task<SessionPhase> ProcessCombatOrders(Guid sessionId, UInt32 round, IEnumerable<IRegionData> availableRegions, IEnumerable<INationData> players, IEnumerable<IOrderAttackMessage> messages)
+        private SessionPhase ProcessCombatOrders(IBatchOperationHandle batchOperation, Guid sessionId, UInt32 round, IEnumerable<IRegionData> availableRegions, IEnumerable<INationData> players, IEnumerable<IOrderAttackMessage> messages)
         {
             SessionPhase nextSessionPhase = SessionPhase.Redeployment;
             Dictionary<Guid, OwnershipChange> regionOwnershipChanges = new Dictionary<Guid, OwnershipChange>();
@@ -374,7 +380,7 @@ namespace Peril.Api.Controllers.Api
                                              select source;
             var attacksBySourceRegion = attacksBySourceRegionQuery.ToDictionary(entry => entry.Key, entry => entry.ToList());
 
-            // Group duplicate source regions
+            // Group duplicate source regions & work out how many troops are left in the region's that we're attacking from
             foreach(var sourceRegionMessages in attacksBySourceRegion)
             {
                 // Ignore any invalid messages that don't come from a region that actually exists
@@ -485,10 +491,10 @@ namespace Peril.Api.Controllers.Api
             if (resolvedCombat.Count > 0)
             {
                 // Store combat
-                await WorldRepository.AddCombat(sessionId, round, resolvedCombat);
+                WorldRepository.AddCombat(batchOperation, sessionId, round, resolvedCombat);
 
                 // Update source regions with new troop levels
-                await RegionRepository.AssignRegionOwnership(sessionId, regionOwnershipChanges);
+                RegionRepository.AssignRegionOwnership(batchOperation, sessionId, regionOwnershipChanges);
             }
 
             return nextSessionPhase;
@@ -531,7 +537,7 @@ namespace Peril.Api.Controllers.Api
             await WorldRepository.AddArmyToCombat(sessionId, round, CombatType.BorderClash, survivingArmies);
         }
 
-        private async Task ApplyCombatResults(Guid sessionId, UInt32 round, CombatType type, IEnumerable<CombatResult> combatResults)
+        private void ApplyCombatResults(IBatchOperationHandle batchOperationHandle, Guid sessionId, UInt32 round, CombatType type, IEnumerable<CombatResult> combatResults)
         {
             Dictionary<Guid, OwnershipChange> regionOwnershipChanges = new Dictionary<Guid, OwnershipChange>();
             List<Tuple<CombatType, IEnumerable<ICombatArmy>>> spoilsOfWar = new List<Tuple<CombatType, IEnumerable<ICombatArmy>>>();
@@ -572,12 +578,12 @@ namespace Peril.Api.Controllers.Api
 
             if (regionOwnershipChanges.Count > 0)
             {
-                await RegionRepository.AssignRegionOwnership(sessionId, regionOwnershipChanges);
+                RegionRepository.AssignRegionOwnership(batchOperationHandle, sessionId, regionOwnershipChanges);
             }
 
             if(spoilsOfWar.Count > 0)
             {
-                await WorldRepository.AddCombat(sessionId, round, spoilsOfWar);
+                WorldRepository.AddCombat(batchOperationHandle, sessionId, round, spoilsOfWar);
             }
         }
 

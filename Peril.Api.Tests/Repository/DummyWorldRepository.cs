@@ -49,7 +49,7 @@ namespace Peril.Api.Tests.Repository
             throw new InvalidOperationException();
         }
 
-        public Task<IEnumerable<Guid>> AddCombat(Guid sessionId, UInt32 round, IEnumerable<Tuple<CombatType, IEnumerable<ICombatArmy>>> armies)
+        public void AddCombat(IBatchOperationHandle batchOperationHandleInterface, Guid sessionId, UInt32 round, IEnumerable<Tuple<CombatType, IEnumerable<ICombatArmy>>> armies)
         {
             List<Guid> createdCombatIds = new List<Guid>();
             foreach(var combatData in armies)
@@ -63,28 +63,30 @@ namespace Peril.Api.Tests.Repository
                     combat.SetupAddArmy(army.OriginRegionId, army.OwnerUserId, army.ArmyMode, army.NumberOfTroops);
                 }
 
-                // Add to lookup
-                AddToCombatLookup(combat);
-
-                // Add to typed storage
-                switch (combat.ResolutionType)
+                DummyBatchOperationHandle batchOperationHandle = batchOperationHandleInterface as DummyBatchOperationHandle;
+                batchOperationHandle.QueuedOperations.Add(() =>
                 {
-                    case CombatType.BorderClash:
-                        BorderClashes[combatId] = combat;
-                        break;
-                    case CombatType.MassInvasion:
-                        MassInvasions[combatId] = combat;
-                        break;
-                    case CombatType.Invasion:
-                        Invasions[combatId] = combat;
-                        break;
-                    case CombatType.SpoilsOfWar:
-                        SpoilsOfWar[combatId] = combat;
-                        break;
-                }
-            }
+                    // Add to lookup
+                    AddToCombatLookup(combat);
 
-            return Task.FromResult<IEnumerable<Guid>>(createdCombatIds);
+                    // Add to typed storage
+                    switch (combat.ResolutionType)
+                    {
+                        case CombatType.BorderClash:
+                            BorderClashes[combatId] = combat;
+                            break;
+                        case CombatType.MassInvasion:
+                            MassInvasions[combatId] = combat;
+                            break;
+                        case CombatType.Invasion:
+                            Invasions[combatId] = combat;
+                            break;
+                        case CombatType.SpoilsOfWar:
+                            SpoilsOfWar[combatId] = combat;
+                            break;
+                    }
+                });
+            }
         }
 
         public Task AddArmyToCombat(Guid sessionId, UInt32 round, CombatType sourceType, IDictionary<Guid, IEnumerable<ICombatArmy>> armies)

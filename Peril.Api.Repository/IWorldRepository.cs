@@ -11,7 +11,7 @@ namespace Peril.Api.Repository
 
         Task<IEnumerable<ICombat>> GetCombat(Guid sessionId, UInt32 round, CombatType type);
 
-        Task<IEnumerable<Guid>> AddCombat(Guid sessionId, UInt32 round, IEnumerable<Tuple<CombatType, IEnumerable<ICombatArmy>>> armies);
+        void AddCombat(IBatchOperationHandle batchOperationHandle, Guid sessionId, UInt32 round, IEnumerable<Tuple<CombatType, IEnumerable<ICombatArmy>>> armies);
 
         Task AddArmyToCombat(Guid sessionId, UInt32 round, CombatType sourceType, IDictionary<Guid, IEnumerable<ICombatArmy>> armies);
 

@@ -1,5 +1,8 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Peril.Api.Controllers.Api;
+using Peril.Api.Repository;
+using Peril.Api.Repository.Azure;
+using Peril.Api.Repository.Azure.Model;
 using Peril.Api.Tests.Repository;
 using Peril.Core;
 using System;
@@ -130,12 +133,26 @@ namespace Peril.Api.Tests.Controllers
             Assert.AreNotEqual(0U, numberOfAvailableTroops);
 
             // Distribute troops over available regions
-            while(numberOfAvailableTroops > 0 && ownedRegions.Count() > 0)
+            Dictionary<Guid, UInt32> regionsToReinforce = new Dictionary<Guid, UInt32>();
+            while (numberOfAvailableTroops > 0 && ownedRegions.Count() > 0)
             {
                 int index = rand.Next(0, ownedRegions.Count());
                 Guid targetRegion = ownedRegions.ElementAt(index);
-                await regions.PostDeployTroops(sessionId, targetRegion, 1);
+                if (regionsToReinforce.ContainsKey(targetRegion))
+                {
+                    regionsToReinforce[targetRegion] += 1;
+                }
+                else
+                {
+                    regionsToReinforce.Add(targetRegion, 1);
+                }
                 numberOfAvailableTroops -= 1;
+            }
+
+            // Perform the deployment
+            foreach(var pair in regionsToReinforce)
+            {
+                await regions.PostDeployTroops(sessionId, pair.Key, pair.Value);
             }
 
             // End deployment
@@ -144,10 +161,10 @@ namespace Peril.Api.Tests.Controllers
 
         private async Task RandomlyAttack(ControllerMock user, Guid sessionId)
         {
-            await RandomlyAttack(user.GameController, user.WorldController, user.RegionController, sessionId, user.OwnerId);
+            await RandomlyAttack(user.GameController, user.WorldController, user.RegionController, sessionId, user.OwnerId, UInt32.MaxValue);
         }
 
-        internal static async Task<bool> RandomlyAttack(GameController game, WorldController world, RegionController regions, Guid sessionId, String ownerId)
+        internal static async Task<bool> RandomlyAttack(GameController game, WorldController world, RegionController regions, Guid sessionId, String ownerId, UInt32 troopCount)
         {
             ISession session = await game.GetSession(sessionId);
 
@@ -155,7 +172,7 @@ namespace Peril.Api.Tests.Controllers
             IEnumerable<Guid> ownedRegions = await GetCurrentlyOwnedRegions(world, sessionId, ownerId);
             bool hasAttacked = false;
 
-            foreach(Guid ownedRegionId in ownedRegions)
+            foreach (Guid ownedRegionId in ownedRegions)
             {
                 IRegion details = await regions.GetDetails(sessionId, ownedRegionId);
                 if (details.TroopCount > 1)
@@ -163,18 +180,85 @@ namespace Peril.Api.Tests.Controllers
                     foreach (Guid adjacentRegionId in details.ConnectedRegions)
                     {
                         IRegion targetDetails = await regions.GetDetails(sessionId, adjacentRegionId);
-                        if(targetDetails.OwnerId != ownerId)
+                        if (targetDetails.OwnerId != ownerId)
                         {
-                            await regions.PostAttack(sessionId, ownedRegionId, details.TroopCount - 1, adjacentRegionId);
+                            UInt32 troopsToAttackWith = Math.Min(details.TroopCount - 1, troopCount);
+                            await regions.PostAttack(sessionId, ownedRegionId, troopsToAttackWith, adjacentRegionId);
                             hasAttacked = true;
                             break;
                         }
                     }
                 }
 
-                if(hasAttacked)
+                if (hasAttacked)
                 {
                     break;
+                }
+            }
+
+            // End attack phase
+            await game.PostEndPhase(session.GameId, session.PhaseId);
+
+            return hasAttacked;
+        }
+
+        internal static async Task<bool> BulkRandomlyAttack(GameController game, WorldController world, RegionRepository regionRepository, SessionRepository sessionRepository, Guid sessionId, String ownerId, UInt32 troopCount, UInt32 numberOfAttacks)
+        {
+            ISession session = await game.GetSession(sessionId);
+
+            // Get owned regions
+            List<CommandQueueTableEntry> attacksToQueue = new List<CommandQueueTableEntry>();
+            IEnumerable<Guid> ownedRegions = await GetCurrentlyOwnedRegions(world, sessionId, ownerId);
+            IEnumerable<IRegionData> worldRegionList = await regionRepository.GetRegions(sessionId);
+            Dictionary<Guid, IRegionData> worldRegionLookup = worldRegionList.ToDictionary(region => region.RegionId);
+            bool hasAttacked = false;
+
+            // Create attack table entries
+            foreach (Guid ownedRegionId in ownedRegions)
+            {
+                IRegionData details = worldRegionLookup[ownedRegionId];
+                if (details.TroopCount > 1 && numberOfAttacks > 0)
+                {
+                    foreach (Guid adjacentRegionId in details.ConnectedRegions)
+                    {
+                        IRegionData targetDetails = worldRegionLookup[adjacentRegionId];
+                        if (targetDetails.OwnerId != ownerId)
+                        {
+                            UInt32 troopsInRegionToAttackWith = details.TroopCount - 1;
+                            UInt32 troopsToAttackWith = Math.Min(details.TroopCount - 1, troopCount);
+                            while(troopsInRegionToAttackWith > 0 && numberOfAttacks > 0)
+                            {
+                                attacksToQueue.Add(CommandQueueTableEntry.CreateAttackMessage(session.GameId, session.PhaseId, details.RegionId, details.CurrentEtag, targetDetails.RegionId, troopsToAttackWith));
+                                troopsInRegionToAttackWith -= troopsToAttackWith;
+                                numberOfAttacks -= 1;
+                                hasAttacked = true;
+                            }
+                        }
+
+                        if (numberOfAttacks == 0)
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                if(numberOfAttacks == 0)
+                {
+                    break;
+                }
+            }
+
+            // Batch insert operations
+            using (BatchOperationHandle batchOperation = new BatchOperationHandle(sessionRepository.GetTableForSessionData(sessionId)))
+            {
+                for (int counter = 0; counter < attacksToQueue.Count; ++counter)
+                {
+                    batchOperation.BatchOperation.Insert(attacksToQueue[counter]);
+
+                    if(batchOperation.RemainingCapacity == 0)
+                    {
+                        await batchOperation.CommitBatch();
+                    }
                 }
             }
 

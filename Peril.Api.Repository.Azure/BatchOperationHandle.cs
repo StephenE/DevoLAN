@@ -73,6 +73,6 @@ namespace Peril.Api.Repository.Azure
         private CloudTable TargetTable { get; set; }
         private List<Task> PrerequisiteOperation { get; set; }
         private Int32 ReservedBatchCapacity { get; set; }
-        internal TableBatchOperation BatchOperation { get; private set; }
+        public TableBatchOperation BatchOperation { get; private set; }
     }
 }
