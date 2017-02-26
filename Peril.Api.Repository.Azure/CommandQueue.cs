@@ -33,18 +33,18 @@ namespace Peril.Api.Repository.Azure
             return newCommand.OperationId;
         }
 
-        public async Task<Guid> OrderAttack(Guid sessionId, Guid phaseId, Guid sourceRegion, String sourceRegionEtag, Guid targetRegion, UInt32 numberOfTroops)
+        public Task<Guid> OrderAttack(IBatchOperationHandle batchOperationHandleInterface, Guid sessionId, Guid phaseId, Guid sourceRegion, String sourceRegionEtag, Guid targetRegion, UInt32 numberOfTroops)
         {
+            BatchOperationHandle batchOperationHandle = batchOperationHandleInterface as BatchOperationHandle;
             CloudTable commandQueueTable = GetCommandQueueTableForSession(sessionId);
 
             // Create a new table entry
             CommandQueueTableEntry newCommand = CommandQueueTableEntry.CreateAttackMessage(sessionId, phaseId, sourceRegion, sourceRegionEtag, targetRegion, numberOfTroops);
 
             // Kick off the insert operation
-            TableOperation insertOperation = TableOperation.Insert(newCommand);
-            await commandQueueTable.ExecuteAsync(insertOperation);
+            batchOperationHandle.BatchOperation.Insert(newCommand);
 
-            return newCommand.OperationId;
+            return Task.FromResult(newCommand.OperationId);
         }
 
         public async Task<Guid> Redeploy(Guid sessionId, Guid phaseId, String nationEtag, Guid sourceRegion, Guid targetRegion, UInt32 numberOfTroops)

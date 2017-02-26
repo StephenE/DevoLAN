@@ -31,17 +31,21 @@ namespace Peril.Api.Tests.Repository
             return Task.FromResult(operationId);
         }
 
-        public Task<Guid> OrderAttack(Guid sessionId, Guid phaseId, Guid sourceRegion, String sourceRegionEtag, Guid targetRegion, UInt32 numberOfTroops)
+        public Task<Guid> OrderAttack(IBatchOperationHandle batchOperationHandle, Guid sessionId, Guid phaseId, Guid sourceRegion, String sourceRegionEtag, Guid targetRegion, UInt32 numberOfTroops)
         {
+            DummyBatchOperationHandle batchOperation = batchOperationHandle as DummyBatchOperationHandle;
             Guid operationId = Guid.NewGuid();
-            DummyOrderAttackQueue.Add(new DummyOrderAttack
+            batchOperation.QueuedOperations.Add(() =>
             {
-                OperationId = operationId,
-                PhaseId = phaseId,
-                SourceRegion = sourceRegion,
-                SourceRegionEtag = sourceRegionEtag,
-                TargetRegion = targetRegion,
-                NumberOfTroops = numberOfTroops
+                DummyOrderAttackQueue.Add(new DummyOrderAttack
+                {
+                    OperationId = operationId,
+                    PhaseId = phaseId,
+                    SourceRegion = sourceRegion,
+                    SourceRegionEtag = sourceRegionEtag,
+                    TargetRegion = targetRegion,
+                    NumberOfTroops = numberOfTroops
+                });
             });
             return Task.FromResult(operationId);
         }

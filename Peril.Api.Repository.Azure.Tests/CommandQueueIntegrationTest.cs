@@ -61,7 +61,11 @@ namespace Peril.Api.Repository.Azure.Tests
             Guid targetRegionGuid = new Guid("8449A25B-363D-4F01-B3D9-7EF8C5D42047");
 
             // Act
-            Guid operationGuid = await repository.OrderAttack(SessionGuid, SessionPhaseGuid, RegionGuid, "DummyEtag", targetRegionGuid, 5U);
+            Guid operationGuid;
+            using (IBatchOperationHandle batchOperation = new BatchOperationHandle(CommandTable))
+            {
+                operationGuid = await repository.OrderAttack(batchOperation, SessionGuid, SessionPhaseGuid, RegionGuid, "DummyEtag", targetRegionGuid, 5U);
+            }
 
             // Assert
             var operation = TableOperation.Retrieve<CommandQueueTableEntry>(SessionGuid.ToString(), "Command_" + operationGuid.ToString());
@@ -147,8 +151,13 @@ namespace Peril.Api.Repository.Azure.Tests
             Guid sessionId = Guid.NewGuid();
             CloudTable randomCommandTable = CommandQueue.GetCommandQueueTableForSession(TableClient, sessionId);
             randomCommandTable.CreateIfNotExists();
-            Guid attackId = await repository.OrderAttack(sessionId, sessionId, sessionId, String.Empty, sessionId, 0);
-            Guid attackSecondId = await repository.OrderAttack(sessionId, sessionId, sessionId, String.Empty, sessionId, 0);
+            Guid attackId;
+            Guid attackSecondId;
+            using (IBatchOperationHandle batchOperation = new BatchOperationHandle(randomCommandTable))
+            {
+                attackId = await repository.OrderAttack(batchOperation, sessionId, sessionId, sessionId, String.Empty, sessionId, 0);
+                attackSecondId = await repository.OrderAttack(batchOperation, sessionId, sessionId, sessionId, String.Empty, sessionId, 0);
+            }
             var queuedAttacks = await repository.GetQueuedCommands(sessionId, sessionId);
 
             // Act

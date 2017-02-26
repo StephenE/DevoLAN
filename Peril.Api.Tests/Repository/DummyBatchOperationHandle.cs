@@ -1,6 +1,5 @@
 ﻿using Peril.Api.Repository;
 using System.Collections.Generic;
-using System;
 using System.Threading.Tasks;
 
 namespace Peril.Api.Tests.Repository
@@ -33,6 +32,7 @@ namespace Peril.Api.Tests.Repository
             {
                 operation();
             }
+            QueuedOperations.Clear();
 
             return Task.FromResult(0);
         }
