@@ -1,8 +1,11 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Microsoft.WindowsAzure.Storage;
+using Peril.Api.Repository;
+using Peril.Api.Repository.Azure;
 using Peril.Api.Repository.Azure.Tests;
 using Peril.Api.Tests.Repository;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -125,6 +128,52 @@ namespace Peril.Api.Tests
                     Assert.AreNotEqual(10, roundCounter);
                 }
             }
+        }
+
+        [TestMethod]
+        [Timeout(30000)]
+        [TestCategory("Integration")]
+        [DeploymentItem(@"Data\ValidWorldDefinition.xml", "WorldData")]
+        public async Task IntegrationTestThousandAttacks()
+        {
+            var primaryUser = new ControllerAzure(DevelopmentStorageAccountConnectionString, @"WorldData\ValidWorldDefinition.xml");
+            var secondaryUser = new ControllerAzure(DevelopmentStorageAccountConnectionString, @"WorldData\ValidWorldDefinition.xml", DummyUserRepository.RegisteredUserIds[1]);
+
+            // Start new session
+            var sessionDetails = await primaryUser.GameController.PostStartNewSession(Core.PlayerColour.Black);
+            await secondaryUser.GameController.PostJoinSession(sessionDetails.GameId, Core.PlayerColour.Green);
+
+            // Assert all players in session
+            var playersInSession = await primaryUser.GameController.GetPlayers(sessionDetails.GameId);
+            Assert.AreEqual(2, playersInSession.Count());
+
+            // Start game (with primary user)
+            sessionDetails = await primaryUser.GameController.GetSession(sessionDetails.GameId);
+            await primaryUser.GameController.PostAdvanceNextPhase(sessionDetails.GameId, sessionDetails.PhaseId, true);
+
+            // Ensure primary user has enough troops for the test
+            using (IBatchOperationHandle batchOperation = new BatchOperationHandle(primaryUser.AzureSessionRepository.GetTableForSessionData(sessionDetails.GameId)))
+            {
+                primaryUser.AzureNationRepository.SetAvailableReinforcements(batchOperation, sessionDetails.GameId, new Dictionary<String, UInt32> { { primaryUser.OwnerId, 2000 } });
+            }
+
+            // Deploy initial troops for primary user
+            await Controllers.IntegrationTest.RandomlyDeployReinforcements(primaryUser.GameController, primaryUser.NationController, primaryUser.WorldController, primaryUser.RegionController, sessionDetails.GameId, primaryUser.OwnerId);
+
+            // Move into combat phase (with primary user)
+            sessionDetails = await primaryUser.GameController.GetSession(sessionDetails.GameId);
+            await primaryUser.GameController.PostAdvanceNextPhase(sessionDetails.GameId, sessionDetails.PhaseId, true);
+
+            // Attempt to issue 1000 random attack orders for primary user
+            UInt32 numberOfAttacks = await Controllers.IntegrationTest.BulkRandomlyAttack(primaryUser.GameController, primaryUser.WorldController, primaryUser.AzureRegionRepository, primaryUser.AzureSessionRepository, sessionDetails.GameId, primaryUser.OwnerId, 1, 1000);
+            Assert.AreNotEqual(0, numberOfAttacks);
+
+            // Move into resolution phase (with primary user)
+            sessionDetails = await primaryUser.GameController.GetSession(sessionDetails.GameId);
+            await primaryUser.GameController.PostAdvanceNextPhase(sessionDetails.GameId, sessionDetails.PhaseId, true);
+
+            // Resolve combat
+            await Controllers.IntegrationTest.ResolveAllCombat(primaryUser.GameController, sessionDetails.GameId);
         }
 
         private static String DevelopmentStorageAccountConnectionString

@@ -19,9 +19,9 @@ namespace Peril.Api.Repository.Azure.Model
             };
         }
 
-        static public CommandQueueTableEntry CreateAttackMessage(Guid sessionId, Guid phaseId, Guid sourceRegion, String sourceRegionEtag, Guid targetRegion, UInt32 numberOfTroops)
+        static public CommandQueueTableEntry CreateAttackMessage(Guid operationId, Guid sessionId, Guid phaseId, Guid sourceRegion, String sourceRegionEtag, Guid targetRegion, UInt32 numberOfTroops)
         {
-            return new CommandQueueTableEntry(sessionId, Guid.NewGuid())
+            return new CommandQueueTableEntry(sessionId, operationId, sourceRegion, targetRegion)
             {
                 RawMessageType = (Int32)CommandQueueMessageType.Attack,
                 PhaseId = phaseId,
@@ -44,10 +44,18 @@ namespace Peril.Api.Repository.Azure.Model
             };
         }
 
-        private CommandQueueTableEntry(Guid sessionId, Guid messageId)
+        private CommandQueueTableEntry(Guid sessionId, Guid operationId)
         {
             PartitionKey = sessionId.ToString();
-            RowKey = "Command_" + messageId.ToString();
+            RowKey = "Command_" + operationId.ToString();
+            OperationId = operationId;
+        }
+
+        private CommandQueueTableEntry(Guid sessionId, Guid operationId, Guid sourceRegion, Guid targetRegion)
+        {
+            PartitionKey = sessionId.ToString();
+            RowKey = "Command_" + sourceRegion.ToString() + "_" + targetRegion.ToString();
+            OperationId = operationId;
         }
 
         public CommandQueueTableEntry()
@@ -65,10 +73,10 @@ namespace Peril.Api.Repository.Azure.Model
         }
 
         public Guid SessionId { get { return Guid.Parse(PartitionKey); } }
-        public Guid OperationId { get { return Guid.Parse(RowKey.Substring(8)); } }
         public CommandQueueMessageType MessageType { get { return (CommandQueueMessageType)RawMessageType; } }
         public UInt32 NumberOfTroops { get { return (UInt32)RawNumberOfTroops; } }
 
+        public Guid OperationId { get; set; }
         public Guid PhaseId { get; set; }
         public Guid TargetRegion { get; set; }
         public String TargetRegionEtag { get; set; }

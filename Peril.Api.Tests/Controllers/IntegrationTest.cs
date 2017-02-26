@@ -202,7 +202,7 @@ namespace Peril.Api.Tests.Controllers
             return hasAttacked;
         }
 
-        internal static async Task<bool> BulkRandomlyAttack(GameController game, WorldController world, RegionRepository regionRepository, SessionRepository sessionRepository, Guid sessionId, String ownerId, UInt32 troopCount, UInt32 numberOfAttacks)
+        internal static async Task<UInt32> BulkRandomlyAttack(GameController game, WorldController world, RegionRepository regionRepository, SessionRepository sessionRepository, Guid sessionId, String ownerId, UInt32 troopCount, UInt32 numberOfAttacks)
         {
             ISession session = await game.GetSession(sessionId);
 
@@ -211,7 +211,7 @@ namespace Peril.Api.Tests.Controllers
             IEnumerable<Guid> ownedRegions = await GetCurrentlyOwnedRegions(world, sessionId, ownerId);
             IEnumerable<IRegionData> worldRegionList = await regionRepository.GetRegions(sessionId);
             Dictionary<Guid, IRegionData> worldRegionLookup = worldRegionList.ToDictionary(region => region.RegionId);
-            bool hasAttacked = false;
+            UInt32 numberOfRequestedAttacks = numberOfAttacks;
 
             // Create attack table entries
             foreach (Guid ownedRegionId in ownedRegions)
@@ -222,20 +222,17 @@ namespace Peril.Api.Tests.Controllers
                     foreach (Guid adjacentRegionId in details.ConnectedRegions)
                     {
                         IRegionData targetDetails = worldRegionLookup[adjacentRegionId];
+                        UInt32 troopsInRegionToAttackWith = details.TroopCount - 1;
                         if (targetDetails.OwnerId != ownerId)
                         {
-                            UInt32 troopsInRegionToAttackWith = details.TroopCount - 1;
                             UInt32 troopsToAttackWith = Math.Min(details.TroopCount - 1, troopCount);
-                            while(troopsInRegionToAttackWith > 0 && numberOfAttacks > 0)
-                            {
-                                attacksToQueue.Add(CommandQueueTableEntry.CreateAttackMessage(session.GameId, session.PhaseId, details.RegionId, details.CurrentEtag, targetDetails.RegionId, troopsToAttackWith));
-                                troopsInRegionToAttackWith -= troopsToAttackWith;
-                                numberOfAttacks -= 1;
-                                hasAttacked = true;
-                            }
+
+                            attacksToQueue.Add(CommandQueueTableEntry.CreateAttackMessage(Guid.NewGuid(), session.GameId, session.PhaseId, details.RegionId, details.CurrentEtag, targetDetails.RegionId, troopsToAttackWith));
+                            troopsInRegionToAttackWith -= troopsToAttackWith;
+                            numberOfAttacks -= 1;
                         }
 
-                        if (numberOfAttacks == 0)
+                        if (numberOfAttacks == 0 || troopsInRegionToAttackWith == 0)
                         {
                             break;
                         }
@@ -265,7 +262,7 @@ namespace Peril.Api.Tests.Controllers
             // End attack phase
             await game.PostEndPhase(session.GameId, session.PhaseId);
 
-            return hasAttacked;
+            return numberOfRequestedAttacks - numberOfAttacks;
         }
 
         private async Task ResolveAllCombat(ControllerMock user, Guid sessionId)

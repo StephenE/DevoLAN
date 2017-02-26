@@ -37,14 +37,36 @@ namespace Peril.Api.Repository.Azure
         {
             BatchOperationHandle batchOperationHandle = batchOperationHandleInterface as BatchOperationHandle;
             CloudTable commandQueueTable = GetCommandQueueTableForSession(sessionId);
+            Guid operationId = Guid.NewGuid();
 
-            // Create a new table entry
-            CommandQueueTableEntry newCommand = CommandQueueTableEntry.CreateAttackMessage(sessionId, phaseId, sourceRegion, sourceRegionEtag, targetRegion, numberOfTroops);
+            TableOperation operation = TableOperation.Retrieve<CommandQueueTableEntry>(sessionId.ToString(), "Command_" + sourceRegion.ToString() + "_" + targetRegion.ToString());
+            var orderAttackTask = commandQueueTable.ExecuteAsync(operation)
+                .ContinueWith(getExistingTask =>
+                {
+                    TableResult getExistingResult = getExistingTask.Result;
+                    if (getExistingResult.Result != null)
+                    {
+                        // Update existing entry
+                        CommandQueueTableEntry existingCommand = getExistingResult.Result as CommandQueueTableEntry;
+                        existingCommand.OperationId = operationId;
+                        existingCommand.RawNumberOfTroops += (int)numberOfTroops;
 
-            // Kick off the insert operation
-            batchOperationHandle.BatchOperation.Insert(newCommand);
+                        // Kick off update operation
+                        batchOperationHandle.BatchOperation.Replace(existingCommand);
+                    }
+                    else
+                    {
+                        // Create a new table entry
+                        CommandQueueTableEntry newCommand = CommandQueueTableEntry.CreateAttackMessage(operationId, sessionId, phaseId, sourceRegion, sourceRegionEtag, targetRegion, numberOfTroops);
 
-            return Task.FromResult(newCommand.OperationId);
+                        // Kick off the insert operation
+                        batchOperationHandle.BatchOperation.Insert(newCommand);
+                    }
+                });
+
+            batchOperationHandle.AddPrerequisite(orderAttackTask, 1);
+
+            return Task.FromResult(operationId);
         }
 
         public async Task<Guid> Redeploy(Guid sessionId, Guid phaseId, String nationEtag, Guid sourceRegion, Guid targetRegion, UInt32 numberOfTroops)

@@ -23,6 +23,7 @@ namespace Peril.Api.Repository.Azure.Tests
             TableClient = StorageAccount.CreateCloudTableClient();
 
             CommandTable = CommandQueue.GetCommandQueueTableForSession(TableClient, SessionGuid);
+            CommandTable.DeleteIfExists();
             CommandTable.CreateIfNotExists();
         }
 
@@ -68,7 +69,7 @@ namespace Peril.Api.Repository.Azure.Tests
             }
 
             // Assert
-            var operation = TableOperation.Retrieve<CommandQueueTableEntry>(SessionGuid.ToString(), "Command_" + operationGuid.ToString());
+            var operation = TableOperation.Retrieve<CommandQueueTableEntry>(SessionGuid.ToString(), "Command_" + RegionGuid.ToString() + "_" + targetRegionGuid.ToString());
             var result = await CommandTable.ExecuteAsync(operation);
             CommandQueueTableEntry queuedCommand = result.Result as CommandQueueTableEntry;
             Assert.IsNotNull(queuedCommand);
@@ -80,6 +81,41 @@ namespace Peril.Api.Repository.Azure.Tests
             Assert.AreEqual("DummyEtag", queuedCommand.SourceRegionEtag);
             Assert.AreEqual(targetRegionGuid, queuedCommand.TargetRegion);
             Assert.AreEqual(5U, queuedCommand.NumberOfTroops);
+        }
+
+        [TestMethod]
+        [TestCategory("Integration")]
+        [TestCategory("CommandQueue")]
+        public async Task IntegrationTestOrderAttack_MergeWithExisting()
+        {
+            // Arrange
+            CommandQueue repository = new CommandQueue(DevelopmentStorageAccountConnectionString);
+            Guid targetRegionGuid = new Guid("7E3BCD95-EB8B-4401-A987-F613A3428676");
+            Guid initialOperationId = Guid.NewGuid();
+            CommandQueueTableEntry newCommand = CommandQueueTableEntry.CreateAttackMessage(initialOperationId, SessionGuid, SessionPhaseGuid, RegionGuid, "DummyEtag", targetRegionGuid, 5U);
+            CommandTable.Execute(TableOperation.Insert(newCommand));
+
+            // Act
+            Guid operationGuid;
+            using (IBatchOperationHandle batchOperation = new BatchOperationHandle(CommandTable))
+            {
+                operationGuid = await repository.OrderAttack(batchOperation, SessionGuid, SessionPhaseGuid, RegionGuid, "DummyEtag", targetRegionGuid, 4U);
+            }
+
+            // Assert
+            var operation = TableOperation.Retrieve<CommandQueueTableEntry>(SessionGuid.ToString(), "Command_" + RegionGuid.ToString() + "_" + targetRegionGuid.ToString());
+            var result = await CommandTable.ExecuteAsync(operation);
+            CommandQueueTableEntry queuedCommand = result.Result as CommandQueueTableEntry;
+            Assert.IsNotNull(queuedCommand);
+            Assert.AreEqual(operationGuid, queuedCommand.OperationId);
+            Assert.AreNotEqual(operationGuid, initialOperationId);
+            Assert.AreEqual(SessionGuid, queuedCommand.SessionId);
+            Assert.AreEqual(SessionPhaseGuid, queuedCommand.PhaseId);
+            Assert.AreEqual(CommandQueueMessageType.Attack, queuedCommand.MessageType);
+            Assert.AreEqual(RegionGuid, queuedCommand.SourceRegion);
+            Assert.AreEqual("DummyEtag", queuedCommand.SourceRegionEtag);
+            Assert.AreEqual(targetRegionGuid, queuedCommand.TargetRegion);
+            Assert.AreEqual(9U, queuedCommand.NumberOfTroops);
         }
 
         [TestMethod]
@@ -153,10 +189,11 @@ namespace Peril.Api.Repository.Azure.Tests
             randomCommandTable.CreateIfNotExists();
             Guid attackId;
             Guid attackSecondId;
+            Guid secondRegionId = Guid.NewGuid();
             using (IBatchOperationHandle batchOperation = new BatchOperationHandle(randomCommandTable))
             {
                 attackId = await repository.OrderAttack(batchOperation, sessionId, sessionId, sessionId, String.Empty, sessionId, 0);
-                attackSecondId = await repository.OrderAttack(batchOperation, sessionId, sessionId, sessionId, String.Empty, sessionId, 0);
+                attackSecondId = await repository.OrderAttack(batchOperation, sessionId, sessionId, sessionId, String.Empty, secondRegionId, 0);
             }
             var queuedAttacks = await repository.GetQueuedCommands(sessionId, sessionId);
 
@@ -167,12 +204,12 @@ namespace Peril.Api.Repository.Azure.Tests
             }
 
             // Assert
-            var operation = TableOperation.Retrieve<CommandQueueTableEntry>(sessionId.ToString(), "Command_" + attackId.ToString());
-            var result = await randomCommandTable.ExecuteAsync(operation);
-            Assert.IsNull(result.Result);
-            operation = TableOperation.Retrieve<CommandQueueTableEntry>(sessionId.ToString(), "Command_" + attackSecondId.ToString());
-            result = await randomCommandTable.ExecuteAsync(operation);
-            Assert.IsNotNull(result.Result);
+            var tableQuery = from entity in randomCommandTable.CreateQuery<CommandQueueTableEntry>()
+                             select entity;
+            var tableData = tableQuery.ToList();
+            Assert.AreEqual(1, tableData.Count);
+            CommandQueueTableEntry result = tableData.First();
+            Assert.AreEqual(attackSecondId, result.OperationId);
         }
 
         static private String DevelopmentStorageAccountConnectionString
