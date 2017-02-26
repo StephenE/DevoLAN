@@ -48,7 +48,7 @@ namespace Peril.Api.Tests
             await primaryUser.GameController.PostAdvanceNextPhase(sessionDetails.GameId, sessionDetails.PhaseId, true);
 
             // Issue random attack orders for primary user
-            bool didAttack = await Controllers.IntegrationTest.RandomlyAttack(primaryUser.GameController, primaryUser.WorldController, primaryUser.RegionController, sessionDetails.GameId, primaryUser.OwnerId);
+            bool didAttack = await Controllers.IntegrationTest.RandomlyAttack(primaryUser.GameController, primaryUser.WorldController, primaryUser.RegionController, sessionDetails.GameId, primaryUser.OwnerId, UInt32.MaxValue);
             Assert.AreEqual(true, didAttack);
 
             // Move into resolution phase (with primary user)
@@ -97,7 +97,7 @@ namespace Peril.Api.Tests
                 await primaryUser.GameController.PostAdvanceNextPhase(sessionDetails.GameId, sessionDetails.PhaseId, true);
 
                 // Issue random attack orders for primary user
-                bool didAttack = await Controllers.IntegrationTest.RandomlyAttack(primaryUser.GameController, primaryUser.WorldController, primaryUser.RegionController, sessionDetails.GameId, primaryUser.OwnerId);
+                bool didAttack = await Controllers.IntegrationTest.RandomlyAttack(primaryUser.GameController, primaryUser.WorldController, primaryUser.RegionController, sessionDetails.GameId, primaryUser.OwnerId, UInt32.MaxValue);
 
                 // Move into resolution phase (with primary user)
                 sessionDetails = await primaryUser.GameController.GetSession(sessionDetails.GameId);
