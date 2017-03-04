@@ -129,7 +129,6 @@
     <Connected Name="Japan" Other="Mongolia" />
     <Connected Name="Japan" Other="Kamchatka" />
     <Connected Name="Kamchatka" Other="Yakutsk" />
-    <Connected Name="Kamchatka" Other="Irkutsk" />
     <Connected Name="Kamchatka" Other="Mongolia" />
     <Connected Name="Madagascar" Other="South Africa" />
     <Connected Name="Middle East" Other="South Europe" />

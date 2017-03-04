@@ -1402,7 +1402,7 @@ namespace Peril.Api.Tests.Controllers
         public async Task TestAdvanceNextPhase_WithVictory_WithFullWorldData()
         {
             // Arrange
-            Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
+            Guid validGuid = new Guid("F155241D-D663-46AE-9787-10428B1DE607");
             ControllerMock primaryUser = new ControllerMock();
             primaryUser.SetupDummySession(validGuid)
                        .SetupDummyWorldFromFile(@"WorldData\FullWorldDefinition.xml")
@@ -1415,7 +1415,7 @@ namespace Peril.Api.Tests.Controllers
             // Assert
             Assert.AreEqual(SessionPhase.Reinforcements, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
             Assert.AreNotEqual(currentSessionPhaseId, primaryUser.SessionRepository.SessionMap[validGuid].PhaseId);
-            Assert.AreEqual(21U, primaryUser.GetNation(validGuid, primaryUser.OwnerId).AvailableReinforcements);
+            Assert.AreEqual(46U, primaryUser.GetNation(validGuid, primaryUser.OwnerId).AvailableReinforcements);
         }
         #endregion
     }

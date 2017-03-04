@@ -63,7 +63,11 @@ namespace Peril.Api.Controllers.Api
                 }
                 await Task.WhenAll(regionCreationOperations);
             }
-            catch(Exception)
+            catch (HttpResponseException exception)
+            {
+                throw exception;
+            }
+            catch (Exception)
             {
                 throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.InternalServerError, ReasonPhrase = "An exception occured while creating the regions" });
             }
@@ -200,7 +204,6 @@ namespace Peril.Api.Controllers.Api
                             IEnumerable<ICommandQueueMessage> pendingMessages = await CommandQueue.GetQueuedCommands(session.GameId, session.PhaseId);
                             IEnumerable<IOrderAttackMessage> pendingAttackMessages = pendingMessages.GetQueuedOrderAttacksCommands();
                             nextPhase = ProcessCombatOrders(batchOperation, session.GameId, session.Round, await regions, await nationsTask, pendingAttackMessages);
-                            CommandQueue.RemoveCommands(batchOperation, session.GameId, pendingMessages);
                             break;
                         }
                         case SessionPhase.BorderClashes:
@@ -380,7 +383,7 @@ namespace Peril.Api.Controllers.Api
                                              select source;
             var attacksBySourceRegion = attacksBySourceRegionQuery.ToDictionary(entry => entry.Key, entry => entry.ToList());
 
-            // Group duplicate source regions & work out how many troops are left in the region's that we're attacking from
+            // Build up a list of all the outgoing armies
             foreach(var sourceRegionMessages in attacksBySourceRegion)
             {
                 // Ignore any invalid messages that don't come from a region that actually exists
@@ -389,23 +392,22 @@ namespace Peril.Api.Controllers.Api
                     var regionData = sourceRegions[sourceRegionMessages.Key];
                     foreach(IOrderAttackMessage attackMessage in sourceRegionMessages.Value)
                     {
-                        // Ignore any messages that don't match the Etag
-                        if(attackMessage.SourceRegionEtag == regionData.CurrentEtag)
+                        if(!regionData.OutgoingArmies.ContainsKey(attackMessage.TargetRegion))
                         {
-                            // Ignore any messages that would reduce the number of available troops below 1
-                            if(regionData.TroopCount > attackMessage.NumberOfTroops)
-                            {
-                                if(!regionData.OutgoingArmies.ContainsKey(attackMessage.TargetRegion))
-                                {
-                                    regionData.OutgoingArmies[attackMessage.TargetRegion] = 0;
-                                }
-                                regionData.OutgoingArmies[attackMessage.TargetRegion] += attackMessage.NumberOfTroops;
-                                regionData.TroopCount -= attackMessage.NumberOfTroops;
-                            }
+                            regionData.OutgoingArmies[attackMessage.TargetRegion] = new List<IOrderAttackMessage>();
                         }
+                        regionData.OutgoingArmies[attackMessage.TargetRegion].Add(attackMessage);
+                    }
+                }
+                else
+                {
+                    if (batchOperation.RemainingCapacity <= sourceRegionMessages.Value.Count)
+                    {
+                        return SessionPhase.CombatOrders;
                     }
 
-                    regionOwnershipChanges.Add(regionData.RegionId, new OwnershipChange(regionData.OwnerId, regionData.TroopCount));
+                    // Remove all attack commands for the invalid region
+                    CommandQueue.RemoveCommands(batchOperation, sessionId, sourceRegionMessages.Value);
                 }
             }
 
@@ -422,28 +424,75 @@ namespace Peril.Api.Controllers.Api
                 foreach(var targetRegionId in targetRegions)
                 {
                     // Skip this army if the troop count is 0 (means we've already created a border clash)
-                    if (sourceRegionData.OutgoingArmies[targetRegionId] > 0 && sourceRegions.ContainsKey(targetRegionId))
+                    if (sourceRegionData.OutgoingArmies[targetRegionId].Count > 0 && sourceRegions.ContainsKey(targetRegionId))
                     {
                         var targetRegionData = sourceRegions[targetRegionId];
                         if (targetRegionData.OutgoingArmies.ContainsKey(sourceRegionId))
                         {
-                            // Border clash!
+                            // Ensure we have enough batch capacity remaining to process this combat.
+                            // 2 to modify the remaining troop count, 1 to create the combat, plus enough to delete all the involved messsages
+                            int batchCapacityRequired = regionOwnershipChanges.Count + 2 + resolvedCombat.Count + 1 + sourceRegionData.OutgoingArmies[targetRegionId].Count + targetRegionData.OutgoingArmies[sourceRegionId].Count;
+                            if(batchCapacityRequired > batchOperation.RemainingCapacity)
+                            {
+                                // Store combat
+                                WorldRepository.AddCombat(batchOperation, sessionId, round, resolvedCombat);
+
+                                // Update source regions with new troop levels
+                                RegionRepository.AssignRegionOwnership(batchOperation, sessionId, regionOwnershipChanges);
+
+                                // Return that the combat orders phase needs another pass to complete
+                                return SessionPhase.CombatOrders;
+                            }
+
+                            // Work out troops involved by merging attacks
+                            var troopsFromSourceRegionQuery = from outgoingArmy in sourceRegionData.OutgoingArmies[targetRegionId]
+                                                                select outgoingArmy.NumberOfTroops;
+                            UInt32 troopsFromSourceRegion = Math.Min((UInt32)troopsFromSourceRegionQuery.Sum(entry => entry), sourceRegionData.TroopCount - 1);
+                            var troopsFromTargetRegionQuery = from outgoingArmy in targetRegionData.OutgoingArmies[sourceRegionId]
+                                                              select outgoingArmy.NumberOfTroops;
+                            UInt32 troopsFromTargetRegion = Math.Min((UInt32)troopsFromTargetRegionQuery.Sum(entry => entry), targetRegionData.TroopCount - 1);
+
+                            // Create Border clash
                             IEnumerable<ICombatArmy> involvedArmies = new List<CombatArmy>
                             {
-                                new CombatArmy(targetRegionId, targetRegionData.OwnerId, CombatArmyMode.Attacking, targetRegionData.OutgoingArmies[sourceRegionId]),
-                                new CombatArmy(sourceRegionId, sourceRegionData.OwnerId, CombatArmyMode.Attacking, sourceRegionData.OutgoingArmies[targetRegionId])
+                                new CombatArmy(targetRegionId, targetRegionData.OwnerId, CombatArmyMode.Attacking, troopsFromTargetRegion),
+                                new CombatArmy(sourceRegionId, sourceRegionData.OwnerId, CombatArmyMode.Attacking, troopsFromSourceRegion)
                             };
                             resolvedCombat.Add(Tuple.Create(CombatType.BorderClash, involvedArmies));
 
-                            // Clear the number of attacking troops, so we know that we've processed this already
-                            targetRegionData.OutgoingArmies[sourceRegionId] = 0;
-                            sourceRegionData.OutgoingArmies[targetRegionId] = 0;
+                            // Queue up removal of all involved messages
+                            CommandQueue.RemoveCommands(batchOperation, sessionId, targetRegionData.OutgoingArmies[sourceRegionId]);
+                            targetRegionData.OutgoingArmies[sourceRegionId].Clear();
+                            CommandQueue.RemoveCommands(batchOperation, sessionId, sourceRegionData.OutgoingArmies[targetRegionId]);
+                            sourceRegionData.OutgoingArmies[targetRegionId].Clear();
+
+                            // Modify involved regions to reduce their remaining troop count
+                            if (regionOwnershipChanges.ContainsKey(sourceRegionData.RegionId))
+                            {
+                                regionOwnershipChanges[sourceRegionData.RegionId].TroopCount -= troopsFromSourceRegion;
+                            }
+                            else
+                            {
+                                regionOwnershipChanges.Add(sourceRegionData.RegionId, new OwnershipChange(sourceRegionData.OwnerId, sourceRegionData.TroopCount - troopsFromSourceRegion));
+                            }
+                            sourceRegionData.TroopCount -= troopsFromSourceRegion;
+
+                            if (regionOwnershipChanges.ContainsKey(targetRegionData.RegionId))
+                            {
+                                regionOwnershipChanges[targetRegionData.RegionId].TroopCount -= troopsFromTargetRegion;
+                            }
+                            else
+                            {
+                                regionOwnershipChanges.Add(targetRegionData.RegionId, new OwnershipChange(targetRegionData.OwnerId, targetRegionData.TroopCount - troopsFromTargetRegion));
+                            }
+                            targetRegionData.TroopCount -= troopsFromTargetRegion;
 
                             // There will be at least one border clash to resolve
                             nextSessionPhase = SessionPhase.BorderClashes;
                         }
                     }
 
+                    // How will this work on subsequent passes? Do we need to fetch all the already queued attacks first?
                     if(!regionAttackers.ContainsKey(targetRegionId))
                     {
                         regionAttackers[targetRegionId] = new List<Guid>();
@@ -455,6 +504,27 @@ namespace Peril.Api.Controllers.Api
             // Detect invasions & mass invasions. We can only detect "mass" invasions correctly by grouping the attacks by their target rather than source
             foreach (var targetRegionPair in regionAttackers)
             {
+                var combatOrdersInvolvedQuery = from atackingRegionId in targetRegionPair.Value
+                                           let attackingRegionData = sourceRegions[atackingRegionId]
+                                           from outgoingArmy in attackingRegionData.OutgoingArmies[targetRegionPair.Key]
+                                           select outgoingArmy;
+                var combatOrdersInvolved = combatOrdersInvolvedQuery.ToList();
+
+                // Ensure we have enough batch capacity remaining to process this combat.
+                // 1 to create the combat and 1 per attacker involved (to modify their region) and enough to delete all the involved messages
+                int batchCapacityRequired = regionOwnershipChanges.Count + targetRegionPair.Value.Count + resolvedCombat.Count + 1 + combatOrdersInvolved.Count();
+                if (batchCapacityRequired > batchOperation.RemainingCapacity)
+                {
+                    // Store combat
+                    WorldRepository.AddCombat(batchOperation, sessionId, round, resolvedCombat);
+
+                    // Update source regions with new troop levels
+                    RegionRepository.AssignRegionOwnership(batchOperation, sessionId, regionOwnershipChanges);
+
+                    // Return that the combat orders phase needs another pass to complete
+                    return SessionPhase.CombatOrders;
+                }
+
                 CombatType combatType = CombatType.Invasion;
                 if(targetRegionPair.Value.Count > 1)
                 {
@@ -467,19 +537,39 @@ namespace Peril.Api.Controllers.Api
                 foreach (Guid sourceRegionId in targetRegionPair.Value)
                 {
                     var sourceRegionData = sourceRegions[sourceRegionId];
-                    UInt32 attackingArmySize = sourceRegionData.OutgoingArmies[targetRegionPair.Key];
+                    var troopsFromSourceRegionQuery = from outgoingArmy in sourceRegionData.OutgoingArmies[targetRegionPair.Key]
+                                                      select outgoingArmy.NumberOfTroops;
+                    UInt32 attackingArmySize = Math.Min((UInt32)troopsFromSourceRegionQuery.Sum(entry => entry), sourceRegionData.TroopCount - 1);
                     if (attackingArmySize > 0)
                     {
                         involvedArmies.Add(new CombatArmy(sourceRegionId, sourceRegionData.OwnerId, CombatArmyMode.Attacking, attackingArmySize));
+
+                        // Modify attacking region to reduce their remaining troop count
+                        if (regionOwnershipChanges.ContainsKey(sourceRegionData.RegionId))
+                        {
+                            regionOwnershipChanges[sourceRegionData.RegionId].TroopCount -= attackingArmySize;
+                        }
+                        else
+                        {
+                            regionOwnershipChanges.Add(sourceRegionData.RegionId, new OwnershipChange(sourceRegionData.OwnerId, sourceRegionData.TroopCount - attackingArmySize));
+                        }
+                        sourceRegionData.TroopCount -= attackingArmySize;
                     }
+                    sourceRegionData.OutgoingArmies[targetRegionPair.Key].Clear();
                 }
 
                 // Add a combat even if all attackers are involved in border clashes (we'll skip it later)
                 // Add the defending army
                 var defendingRegionData = sourceRegions[targetRegionPair.Key];
-                involvedArmies.Add(new CombatArmy(targetRegionPair.Key, defendingRegionData.OwnerId, CombatArmyMode.Defending, defendingRegionData.TroopCount));
+                var troopsRemainingInDefendingRegionQuery = from outgoingArmyByTargetRegion in defendingRegionData.OutgoingArmies
+                                                            from outgoingArmy in outgoingArmyByTargetRegion.Value
+                                                            select outgoingArmy.NumberOfTroops;
+                UInt32 troopsLeavingDefendingRegion = Math.Min((UInt32)troopsRemainingInDefendingRegionQuery.Sum(entry => entry), defendingRegionData.TroopCount - 1);
+                involvedArmies.Add(new CombatArmy(targetRegionPair.Key, defendingRegionData.OwnerId, CombatArmyMode.Defending, defendingRegionData.TroopCount - troopsLeavingDefendingRegion));
 
                 resolvedCombat.Add(Tuple.Create(combatType, involvedArmies.AsEnumerable()));
+
+                CommandQueue.RemoveCommands(batchOperation, sessionId, combatOrdersInvolved);
 
                 // Update the next session phase if required
                 if(nextSessionPhase == SessionPhase.Redeployment || nextSessionPhase == SessionPhase.Invasions)

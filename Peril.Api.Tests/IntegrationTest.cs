@@ -131,13 +131,13 @@ namespace Peril.Api.Tests
         }
 
         [TestMethod]
-        [Timeout(30000)]
+        //[Timeout(30000)]
         [TestCategory("Integration")]
-        [DeploymentItem(@"Data\ValidWorldDefinition.xml", "WorldData")]
-        public async Task IntegrationTestThousandAttacks()
+        [DeploymentItem(@"Data\FullWorldDefinition.xml", "WorldData")]
+        public async Task IntegrationTestStressTestAttacks()
         {
-            var primaryUser = new ControllerAzure(DevelopmentStorageAccountConnectionString, @"WorldData\ValidWorldDefinition.xml");
-            var secondaryUser = new ControllerAzure(DevelopmentStorageAccountConnectionString, @"WorldData\ValidWorldDefinition.xml", DummyUserRepository.RegisteredUserIds[1]);
+            var primaryUser = new ControllerAzure(DevelopmentStorageAccountConnectionString, @"WorldData\FullWorldDefinition.xml");
+            var secondaryUser = new ControllerAzure(DevelopmentStorageAccountConnectionString, @"WorldData\FullWorldDefinition.xml", DummyUserRepository.RegisteredUserIds[1]);
 
             // Start new session
             var sessionDetails = await primaryUser.GameController.PostStartNewSession(Core.PlayerColour.Black);

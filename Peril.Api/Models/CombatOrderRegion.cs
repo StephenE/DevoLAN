@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Peril.Api.Repository.Model;
+using System;
 using System.Collections.Generic;
 
 namespace Peril.Api.Models
@@ -7,13 +8,13 @@ namespace Peril.Api.Models
     {
         public CombatOrderRegion()
         {
-            OutgoingArmies = new Dictionary<Guid, UInt32>();
+            OutgoingArmies = new Dictionary<Guid, List<IOrderAttackMessage>>();
         }
 
         public Guid RegionId { get; set; }
         public UInt32 TroopCount { get; set; }
         public String CurrentEtag { get; set; }
         public String OwnerId { get; set; }
-        public Dictionary<Guid, UInt32> OutgoingArmies { get; set; }
+        public Dictionary<Guid, List<IOrderAttackMessage>> OutgoingArmies { get; set; }
 }
 }

@@ -129,6 +129,15 @@ namespace Peril.Api.Models
 
             foreach (var connection in connections)
             {
+                if(regionConnectionsLookup[connection.Region].Contains(connection.OtherRegionId))
+                {
+                    throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.InternalServerError, ReasonPhrase = String.Format("Region connection contained duplication connection between {0} and {1}", connection.Region, connection.OtherRegion) });
+                }
+                if (regionConnectionsLookup[connection.OtherRegion].Contains(connection.RegionId))
+                {
+                    throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.InternalServerError, ReasonPhrase = String.Format("Region connection contained duplication value{0} and {1}", connection.Region, connection.OtherRegion) });
+                }
+
                 regionConnectionsLookup[connection.Region].Add(connection.OtherRegionId);
                 regionConnectionsLookup[connection.OtherRegion].Add(connection.RegionId);
             }

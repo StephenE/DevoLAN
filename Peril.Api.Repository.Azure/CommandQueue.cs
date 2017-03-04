@@ -116,18 +116,28 @@ namespace Peril.Api.Repository.Azure
             return results;
         }
 
-        public void RemoveCommands(IBatchOperationHandle batchOperationHandle, Guid sessionId, IEnumerable<ICommandQueueMessage> commands)
+        public void RemoveCommand(IBatchOperationHandle batchOperationHandle, Guid sessionId, ICommandQueueMessage command)
         {
             CloudTable commandQueueTable = GetCommandQueueTableForSession(sessionId);
 
             lock (batchOperationHandle)
             {
                 TableBatchOperation batchOperation = (batchOperationHandle as BatchOperationHandle).BatchOperation;
+                CommandQueueTableEntry commandQueueEntry = command as CommandQueueTableEntry;
+                commandQueueEntry.IsValid();
+                batchOperation.Delete(commandQueueEntry);
+            }
+        }
+
+        public void RemoveCommands(IBatchOperationHandle batchOperationHandle, Guid sessionId, IEnumerable<ICommandQueueMessage> commands)
+        {
+            CloudTable commandQueueTable = GetCommandQueueTableForSession(sessionId);
+
+            lock (batchOperationHandle)
+            {
                 foreach (var command in commands)
                 {
-                    CommandQueueTableEntry commandQueueEntry = command as CommandQueueTableEntry;
-                    commandQueueEntry.IsValid();
-                    batchOperation.Delete(commandQueueEntry);
+                    RemoveCommand(batchOperationHandle, sessionId, command);
                 }
             }
         }
