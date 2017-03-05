@@ -5,7 +5,7 @@
     var interactionTarget = ";"
     var firstRun = true;
 
-    var apiUriBase = "http://devolan.azurewebsites.net/";
+    var apiUriBase = window.location.protocol + "//" + window.location.host + "/";
     var maxPlayers = 14;
     
     var currentGame = {};
@@ -383,19 +383,21 @@
                 var cpLength = currentPlayers.length;
                 var curColour = "";
 
-                console.log("Territory owned by: " + world[x].Name);
+                console.log("Next territory to check for owner: " + world[x].Name);
 
-                for (y = 0; y < cpLength; y++) {
-                    console.log("Checking: " + world[x].OwnerId + " | " + currentPlayers[y].UserId);
-
-                    if(world[x].OwnerId === currentPlayers[y].UserId){
+                for (y = 0; y < cpLength; y++)
+                {
+                    if (world[x].OwnerId === currentPlayers[y].UserId)
+                    {
                         curColour = currentPlayers[y].Colour;
+                        break;
                     }
                 }
 
-                addClass(target, "player-" + curColour);
+                replaceClass(target, "player-" + curColour);
                 setTextContent(target + "-counter", world[x].TroopCount);
 
+                setData(target, "FriendlyName", world[x].Name);
                 setData(target, "OwnerId", world[x].OwnerId);
                 setData(target, "RegionId", world[x].RegionId);
                 setData(target, "ContinentId", world[x].ContinentId);
@@ -537,8 +539,9 @@
                     targetRegionSelection += "</select>";
                     var targetRegionTroops = getData(this.id, "TroopCount") - 1;
                     if (targetRegionTroops > 0) {
+                        var friendlyName = getData(this.id, "FriendlyName")
                         var data = targetRegionSelection + "<br /><input type=\"number\" id='attackTroops' min=\"1\" value=\"1\" max=\"" + targetRegionTroops + "\" /><br /><input type=\"submit\" id=\"buttonAttackCommit\" value=\"Attack!\"><input type=\"submit\" id=\"buttonAttackCancel\" value=\"Cancel!\">"
-                        showOverlay("Attack from " + this.id, data);
+                        showOverlay("Attack from " + friendlyName, data);
 
                         console.log("Starting attack");
 
@@ -667,8 +670,8 @@
 
     function endTurn(gameId, phaseId) {
         // Technically, only the session host can do this. Anyone else will get an error and be ignored - they should EndPhase, but for DevoLAN 31 that doesn't actual do anything!
-        if (currentGame.OwnerId === "") {
-            var data = "?sessionId=" + gameId + "&phaseId=" + phaseId + "&force=true";
+        if (currentGame.OwnerId === userToken.id) {
+            var data = "?sessionId=" + gameId + "&phaseId=" + phaseId + "&force=false";
             sendAjax("POST", "/api/Game/AdvanceNextPhase", data, "json", onEndTurnResponse, onEndTurnResponse, true);
         }
         else {
@@ -688,9 +691,13 @@
                 console.log("Not owner of session");
                 messageBox("End Turn Failed.", "Only the session owner is allowed to end the turn");
                 break;
+            case 417:
+                console.log("Not all players are ready");
+                messageBox("End Turn Failed.", "Waiting for other players to be ready...");
+                break;
             default:
                 console.log("End turn request failed.");
-                messageBox("End Turn Failed.", "Not sure why -  Error code" + this.status);
+                messageBox("End Turn Failed.", "Not sure why -  Error code " + this.status);
                 break;
         }
     }
@@ -976,67 +983,91 @@
 
 // DOM Requests
     // Classes
-        function addClass(target, clss){
+        function addClass(target, clss)
+        {
             getID(target).classList.add(clss)
         }
-        
-        function removeClass(target, clss){
-            //console.log("Removing " + clss + " from " + target + ".");
-            
-            if(checkClass(target, clss)){
+
+        function replaceClass(target, clss)
+        {
+            var targetElement = getID(target);
+            for (var i = targetElement.classList.length - 1; i >= 0; i--)
+            {
+                targetElement.classList.remove(targetElement.classList.item(i));
+            }
+            targetElement.classList.add(clss)
+        }
+
+        function removeClass(target, clss)
+        {
+            if (checkClass(target, clss))
+            {
                 getID(target).classList.remove(clss);
             }
         }
         
-        function toggleClass(target, clss){
+        function toggleClass(target, clss)
+        {
             getID(target).classList.toggle(clss);
-            }
-            
-        function checkClass(target, clss){
+        }
+
+        function checkClass(target, clss)
+        {
             return getID(target).classList.contains(clss);
         }
         
     // Data
-        function getData(target, data){
+        function getData(target, data)
+        {
             return getID(target).getAttribute("data-" + data);
         }
         
-        function setData(target, data, value){
+        function setData(target, data, value)
+        {
             getID(target).setAttribute("data-" + data, value);
         }
         
     // Get Element by ID
-        function getID(target){
+        function getID(target)
+        {
             return document.getElementById(target);
         }
 
     // Styles
-        function writeStyle(t, v){
+        function writeStyle(t, v)
+        {
             document.getElementById(t).setAttribute("style", v);
                 
             return;
         }
         
     // Event Listeners
-        function addEvent(target, evnt, func, c){
+        function addEvent(target, evnt, func, c)
+        {
             getID(target).addEventListener(evnt, func, c);
         }
         
     // innerHTML
-        function writeHTML(target, value, append){
-            if(append === true){
+        function writeHTML(target, value, append)
+        {
+            if (append === true)
+            {
                 document.getElementById(target).innerHTML += value;
-            } else {
+            }
+            else
+            {
                 document.getElementById(target).innerHTML = value;
             }
         }
 
     // Text Content
-        function setTextContent(target, text) {
+        function setTextContent(target, text)
+        {
             getID(target).textContent = text;
         }
     
     // Values
-        function getValue(target){
+        function getValue(target)
+        {
             return getID(target).value;
         }
