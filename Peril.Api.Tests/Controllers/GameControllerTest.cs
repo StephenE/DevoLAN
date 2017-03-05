@@ -868,6 +868,53 @@ namespace Peril.Api.Tests.Controllers
         [TestMethod]
         [TestCategory("Unit")]
         [TestCategory("GameController")]
+        public async Task TestAdvanceNextPhase_WithCombatOrders_WithTwoInvasionsSplitByBatchSize()
+        {
+            // Arrange
+            Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
+            ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(validGuid)
+                       .SetupBatchOperationCapacity(3)
+                       .SetupAddPlayer(DummyUserRepository.RegisteredUserIds[1], PlayerColour.Blue)
+                       .SetupDummyWorldAsTree(primaryUser.OwnerId)
+                       .SetupRegionOwnership(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, DummyUserRepository.RegisteredUserIds[1])
+                       .SetupRegionOwnership(ControllerMockRegionRepositoryExtensions.DummyWorldRegionC, DummyUserRepository.RegisteredUserIds[1])
+                       .SetupRegionTroops(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 5)
+                       .SetupRegionTroops(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 5)
+                       .SetupRegionTroops(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 2)
+                       .SetupSessionPhase(SessionPhase.CombatOrders)
+                       .QueueAttack(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 4)
+                       .QueueAttack(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, ControllerMockRegionRepositoryExtensions.DummyWorldRegionC, 4);
+            Guid currentSessionPhaseId = primaryUser.SessionRepository.SessionMap[validGuid].PhaseId;
+
+            // Act
+            await primaryUser.GameController.PostAdvanceNextPhase(validGuid, currentSessionPhaseId, true);
+
+            // Assert
+            Assert.AreEqual(SessionPhase.CombatOrders, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
+            Assert.AreEqual(currentSessionPhaseId, primaryUser.SessionRepository.SessionMap[validGuid].PhaseId);
+            Assert.AreEqual(1, primaryUser.WorldRepository.Invasions.Count());
+
+            Assert.AreEqual(0, primaryUser.CommandQueue.DummyDeployReinforcementsQueue.Count);
+            Assert.AreEqual(1, primaryUser.CommandQueue.DummyOrderAttackQueue.Count);
+            Assert.AreEqual(0, primaryUser.CommandQueue.DummyRedeployQueue.Count);
+
+            // Act
+            await primaryUser.GameController.PostAdvanceNextPhase(validGuid, currentSessionPhaseId, true);
+
+            // Assert
+            Assert.AreEqual(SessionPhase.Invasions, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
+            Assert.AreNotEqual(currentSessionPhaseId, primaryUser.SessionRepository.SessionMap[validGuid].PhaseId);
+            Assert.AreEqual(2, primaryUser.WorldRepository.Invasions.Count());
+
+            Assert.AreEqual(0, primaryUser.CommandQueue.DummyDeployReinforcementsQueue.Count);
+            Assert.AreEqual(0, primaryUser.CommandQueue.DummyOrderAttackQueue.Count);
+            Assert.AreEqual(0, primaryUser.CommandQueue.DummyRedeployQueue.Count);
+        }
+
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("GameController")]
         public async Task TestAdvanceNextPhase_WithCombatOrders_WithChainedInvasion()
         {
             // Arrange
