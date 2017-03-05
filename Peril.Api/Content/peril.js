@@ -779,9 +779,14 @@ system.sfxVolume = 1;
         function messageBox(title, message)
         {
             hideOverlay();
-        
+
             writeHTML("message", "<h3>" + title + "</h3><p>" + message + "</p>");
-            addClass("message", "show");
+            replaceClass("message", "show");
+
+            setTimeout(function ()
+            {
+                replaceClass("message", "hide");
+            }, 5000);
         }
         
 // Overlay
