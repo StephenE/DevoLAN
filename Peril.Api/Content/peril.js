@@ -1,34 +1,35 @@
 // Global Variables
-    var userToken = "";
-    var screenTarget = "";
-    var gamePulse = "";
-    var interactionTarget = ";"
-    var firstRun = true;
+var userToken = "";
+var screenTarget = "";
+var gamePulse = "";
+var interactionTarget = ";"
+var firstRun = true;
 
-    var apiUriBase = window.location.protocol + "//" + window.location.host + "/";
-    var maxPlayers = 14;
-    
-    var currentGame = {};
-    currentGame.GameId = "";
-    currentGame.PhaseId = "";
-    currentGame.PhaseType = null;
-    currentGame.OwnerId = "";
+var apiUriBase = window.location.protocol + "//" + window.location.host + "/";
+var maxPlayers = 14;
 
-    var currentPlayers = {};
+var currentGame = {};
+currentGame.GameId = "";
+currentGame.PhaseId = "";
+currentGame.PhaseType = null;
+currentGame.OwnerId = "";
 
-    var currentPhase = {};
-    currentPhase.reinforcements = 0;
+var currentPlayers = {};
 
-    var worldLookup = {};
-    
-    var system = {};
-    system.music = 1;
-    system.sfx = 1;
-    system.musicVolume = 0.5;
-    system.sfxVolume = 1;
+var currentPhase = {};
+currentPhase.reinforcements = 0;
+
+var worldLookup = {};
+
+var system = {};
+system.music = 1;
+system.sfx = 1;
+system.musicVolume = 0.5;
+system.sfxVolume = 1;
 
 // Load Screens
-    function loadScreen(screen, noOverlay){
+    function loadScreen(screen, noOverlay)
+    {
         console.log("Loading " + screen + "...");
         
         var url = "Content/parts/" + screen + ".html";
@@ -36,26 +37,31 @@
         
         screenTarget = screen;
         
-        if(noOverlay === false){
+        if (noOverlay === false)
+        {
             showOverlay("Loading...", "<img src='Content/images/waiting.svg' />");
         }
     }
     
-    function displayScreen(){
+    function displayScreen()
+    {
         console.log(screenTarget + " loaded.");
         
         getID("canvas").innerHTML = this.responseText;
         loadScripts();
     }
     
-    function loadScripts(){
+    function loadScripts()
+    {
         console.log("Loading scripts for " + screenTarget + "...");
         
-        switch(screenTarget){
+        switch (screenTarget)
+        {
             case "login":
                 hideOverlay();
                 
-                if(loadCookie("userToken")){
+                if (loadCookie("userToken"))
+                {
                     userToken = loadCookie("userToken");
                     loadScreen("browser");
                 }
@@ -91,34 +97,40 @@
     
 // Login Screen
     // Login
-        function login(loginUN, loginPW){
+        function login(loginUN, loginPW)
+        {
             // Validation
-                if(typeof loginUN === "undefined"){
-                    loginUN = getValue("loginUsername");
-                    loginPW = getValue("loginPassword");
-                }
+            if (typeof loginUN === "undefined")
+            {
+                loginUN = getValue("loginUsername");
+                loginPW = getValue("loginPassword");
+            }
                 
-                if(loginUN == ""){
-                    console.log("No username.");
-                    messageBox("Failed Validation.", "Please enter a username.");
-                    return false;
-                }
+            if (loginUN == "")
+            {
+                console.log("No username.");
+                messageBox("Failed Validation.", "Please enter a username.");
+                return false;
+            }
                 
-                if(loginPW == "" || loginPW.length < 6){
-                    console.log("No password.");
-                    messageBox("Failed Validation.", "Please enter a valid password.");
-                    return false;
-                }
+            if (loginPW == "" || loginPW.length < 6)
+            {
+                console.log("No password.");
+                messageBox("Failed Validation.", "Please enter a valid password.");
+                return false;
+            }
             
             // Request
-                var data = "grant_type=password&" + "username=" + loginUN + "&password=" + loginPW;
-                sendAjax("POST", "/Token", "", "form", loginResponse, loginResponse, false, data);
+            var data = "grant_type=password&" + "username=" + loginUN + "&password=" + loginPW;
+            sendAjax("POST", "/Token", "", "form", loginResponse, loginResponse, false, data);
                 
-                showOverlay("Logging in...", "<img src='Content/images/waiting.svg' />");
+            showOverlay("Logging in...", "<img src='Content/images/waiting.svg' />");
         }
         
-        function loginResponse(){
-            switch(this.status){
+        function loginResponse()
+        {
+            switch (this.status)
+            {
                 case 200:
                     console.log("Login successful.");
                     
@@ -137,40 +149,46 @@
         }
         
     // Register
-        function register(){
+        function register()
+        {
             // Get Values
-                var regUN = getValue("registerUsername");
-                var regPW = getValue("registerPassword");
-                var regPWC = getValue("registerPasswordConfirm");
+            var regUN = getValue("registerUsername");
+            var regPW = getValue("registerPassword");
+            var regPWC = getValue("registerPasswordConfirm");
             
             // Validation
-                if(regUN == ""){
-                    console.log("No username.");
-                    messageBox("Failed Validation.", "Please enter a username.");
-                    return false;
-                }
+            if (regUN == "")
+            {
+                console.log("No username.");
+                messageBox("Failed Validation.", "Please enter a username.");
+                return false;
+            }
                 
-                if(regPW == "" || regPW.length < 6){
-                    console.log("No password.");
-                    messageBox("Failed Validation.", "Please enter a password.");
-                    return false;
-                }
+            if (regPW == "" || regPW.length < 6)
+            {
+                console.log("No password.");
+                messageBox("Failed Validation.", "Please enter a password.");
+                return false;
+            }
                 
-                if(regPWC == "" || regPWC.length < 6 || regPW !== regPWC){
-                    console.log("No password confirmation.");
-                    messageBox("Failed Validation.", "Please enter a matching password.");
-                    return false;
-                }
+            if (regPWC == "" || regPWC.length < 6 || regPW !== regPWC)
+            {
+                console.log("No password confirmation.");
+                messageBox("Failed Validation.", "Please enter a matching password.");
+                return false;
+            }
             
             // Request
-                var data = '{"Email":"' + regUN + '", "Password":"' + regPW + '", "ConfirmPassword":"' + regPWC + '"}';
-                sendAjax("POST", "/api/account/register", "", "json", regResponse, regResponse, false, data);
+            var data = '{"Email":"' + regUN + '", "Password":"' + regPW + '", "ConfirmPassword":"' + regPWC + '"}';
+            sendAjax("POST", "/api/account/register", "", "json", regResponse, regResponse, false, data);
                 
-                showOverlay("Registering...", "<img src='Content/images/waiting.svg' />");
+            showOverlay("Registering...", "<img src='Content/images/waiting.svg' />");
         }
         
-        function regResponse(){
-            switch(this.status){
+        function regResponse()
+        {
+            switch (this.status)
+            {
                 case 200:
                     console.log("Registration successful.");
                     
@@ -189,7 +207,8 @@
         
 // Browser Screen
     // Retrieve Sessions
-        function sessions(){
+        function sessions()
+        {
             console.log("Retrieving game sessions...");
             
             var data = "";
@@ -198,7 +217,8 @@
             showOverlay("Finding Games...", "<img src='Content/images/waiting.svg' />");
         }
         
-        function sesResponse(){
+        function sesResponse()
+        {
             console.log("Outputting game sessions...");
             
             var sessions = JSON.parse(this.responseText);
@@ -206,36 +226,44 @@
             var build = "";
             
             // Assemble Game Browser
-                for(x = 0; x < sessions.length; x++){
-                    build += "<tr id='g-" + x + "' data-gameid='" + sessions[x].GameId + "' + class='hoverHighlight'>";
-                        build += "<td>" + sessions[x].GameId + "</td>";
-                        build += "<td>" + sessions[x].PhaseId + "</td>";
+            for (x = 0; x < sessions.length; x++)
+            {
+                build += "<tr id='g-" + x + "' data-gameid='" + sessions[x].GameId + "' + class='hoverHighlight'>";
+                build += "<td>" + sessions[x].GameId + "</td>";
+                build += "<td>" + sessions[x].PhaseId + "</td>";
                         
-                        build += "<td>";
-                            if(sessions[x].PhaseType == 0){
-                                build += "Open";
-                            } else if (sessions[x].PhaseType < 8) {
-                                build += "In Progress";
-                            } else {
-                                build += "Closed";
-                            }
-                        build += "</td>";
-                    build += "</tr>";
+                build += "<td>";
+                if (sessions[x].PhaseType == 0)
+                {
+                    build += "Open";
                 }
-                
-                if(x === 0){
-                    build = "<td colspan='3'><h3>No game sessions found.</h3></td>";
+                else if (sessions[x].PhaseType < 8)
+                {
+                    build += "In Progress";
                 }
+                else
+                {
+                    build += "Closed";
+                }
+                build += "</td>";
+                build += "</tr>";
+            }
+
+            if (x === 0)
+            {
+                build = "<td colspan='3'><h3>No game sessions found.</h3></td>";
+            }
                 
             // Output Game Browser
-                writeHTML("browserBody", build);
+            writeHTML("browserBody", build);
                 
             // Event Listeners
-                var y = 0;
+            var y = 0;
                 
-                for(y = 0; y < x; y++){
-                    addEvent("g-" + y, "click", function(){currentGame.GameId = getData(this.id, "gameid"); loadAudio("sfx", "button"); checkPlayers(currentGame.GameId);});
-                }
+            for (y = 0; y < x; y++)
+            {
+                addEvent("g-" + y, "click", function(){currentGame.GameId = getData(this.id, "gameid"); loadAudio("sfx", "button"); checkPlayers(currentGame.GameId);});
+            }
             
             // Overlay
                 hideOverlay();
@@ -250,38 +278,45 @@
             showOverlay("Checking Game...", "<img src='Content/images/waiting.svg' />");
         }
         
-        function checkResponse(){
+        function checkResponse()
+        {
             console.log("Looking for player in game...");
             
             // Search for player in game
-                var players = JSON.parse(this.responseText);
-                var x = 0;
-                var usedColours = [];
+            var players = JSON.parse(this.responseText);
+            var x = 0;
+            var usedColours = [];
                 
-                currentPlayers = JSON.parse(this.responseText);
+            currentPlayers = JSON.parse(this.responseText);
                 
-                for(x = 0; x < players.length; x++){
-                    usedColours[x] = players[x].Colour;
+            for (x = 0; x < players.length; x++)
+            {
+                usedColours[x] = players[x].Colour;
                     
-                    if(players[x].Name === userToken.userName){
-                        console.log("Player is already part of game. Rejoining.");
-                        enterGame();
-                        return true;
-                    }
+                if (players[x].Name === userToken.userName)
+                {
+                    console.log("Player is already part of game. Rejoining.");
+                    enterGame();
+                    return true;
                 }
+            }
 
-                colourSelectionScreen("join", usedColours);
+            colourSelectionScreen("join", usedColours);
         }
 
-        function colourSelectionScreen(mode, usedColours) {
-            if (mode === "host") {
+        function colourSelectionScreen(mode, usedColours)
+        {
+            if (mode === "host")
+            {
                 usedColours = [];
             }
 
             var x = 0;
             var content = "<div class='boxContainer'>";
-            for (x = 0; x < maxPlayers; x++) {
-                if (usedColours.indexOf(x) < 0) {
+            for (x = 0; x < maxPlayers; x++)
+            {
+                if (usedColours.indexOf(x) < 0)
+                {
                     content += "<div id='b-" + x + "' data-colour='" + x + "' class='box button player-" + x + "'><br/><br/></div>";
                 }
             }
@@ -293,9 +328,12 @@
 
             addEvent("b-cancel", "click", function () { hideOverlay(); });
 
-            for (x = 0; x < maxPlayers; x++) {
-                if (usedColours.indexOf(x) < 0) {
-                    switch(mode){
+            for (x = 0; x < maxPlayers; x++)
+            {
+                if (usedColours.indexOf(x) < 0)
+                {
+                    switch (mode)
+                    {
                         case "join":
                             addEvent("b-" + x, "click", function () { loadAudio("sfx", "confirm"); joinGame(currentGame.GameId, getData(this.id, "colour")); });
                             break;
@@ -309,7 +347,8 @@
         }
     
     // Join Game
-        function joinGame(gameid, colour){
+        function joinGame(gameid, colour)
+        {
             console.log("Joining game " + gameid + " as " + colour + "...");
             
             var data = "?sessionId=" + gameid + "&colour=" + colour;
@@ -318,8 +357,10 @@
             showOverlay("Joining Game...", "<img src='Content/images/waiting.svg' />");
         }
         
-        function joinResponse(){
-            switch(this.status){
+        function joinResponse()
+        {
+            switch (this.status)
+            {
                 case 204:
                     console.log("Join request successful.");
                     
@@ -335,7 +376,8 @@
         }
         
     // Enter Game
-        function enterGame(){
+        function enterGame()
+        {
             console.log("Entering game...")
             
             firstRun = true;
@@ -346,7 +388,8 @@
         }
         
     // Host Game
-        function hostGame(colour){
+        function hostGame(colour)
+        {
             console.log("Creating game...");
             var data = "?colour=" + colour;
             sendAjax("POST", "api/Game/StartNewGame", data, "json", onHostGameResponse, onHostGameResponse, true);
@@ -354,7 +397,8 @@
             showOverlay("Creating Game...", "<img src='Content/images/waiting.svg' />");
         }
 
-        function onHostGameResponse() {
+        function onHostGameResponse()
+        {
             console.log("New game created.")
             var session = JSON.parse(this.responseText);
 
@@ -364,20 +408,23 @@
         
 // Game Board
     // Update Board
-        function updateBoard(){
+        function updateBoard()
+        {
             console.log("Getting current game board status...");
             
             var data = "?sessionId=" + currentGame.GameId;
             sendAjax("GET", "api/World/RegionList", data, "adv", updateResponse, updateResponse, true);
         }
         
-        function updateResponse(){
+        function updateResponse()
+        {
             console.log("Updating board to current state...");
             
             var world = JSON.parse(this.responseText);
             var x = 0;
             
-            for(x = 0; x < world.length; x++){
+            for (x = 0; x < world.length; x++)
+            {
                 var target = "territory" + world[x].Name.replace(/ /g, "");
                 var y = 0;
                 var cpLength = currentPlayers.length;
@@ -411,36 +458,38 @@
         }
         
     // Update Player Information
-        function updatePlayers(gameid, eventDone, eventError){
-            //console.log("Getting player information for game " + gameid + ".");
-            
+        function updatePlayers(gameid, eventDone, eventError)
+        {
             var data = "?sessionId=" + currentGame.GameId;
             sendAjax("GET", "/api/Game/Players", data, "adv", eventDone, eventError, true);
         }
         
-        function playersResponse(){
-            //console.log("Updating player information...");
-            
+        function playersResponse()
+        {
             currentPlayers = JSON.parse(this.responseText);
 
             var x = 0;
             
-            for (x = 0; x < currentPlayers.length; x++) {
-                if(currentPlayers[x].Name === userToken.userName){
+            for (x = 0; x < currentPlayers.length; x++)
+            {
+                if (currentPlayers[x].Name === userToken.userName)
+                {
                     addClass("hud", "player-" + currentPlayers[x].Colour);
                 }
             }
         }
 
     // Update Phase Information
-        function updateGameState(gameid) {
+        function updateGameState(gameid)
+        {
             //console.log("Getting game state information...");
 
             var data = "?sessionId=" + currentGame.GameId;
             sendAjax("GET", "api/Game/Session", data, "adv", gameStateResponse, gameStateResponse, true)
         }
 
-        function gameStateResponse() {
+        function gameStateResponse()
+        {
             //console.log("Updating current game state.");
 
             var gamestate = JSON.parse(this.responseText);
@@ -449,11 +498,13 @@
             currentGame.PhaseId = gamestate.PhaseId;
             currentGame.OwnerId = gamestate.OwnerId;
 
-            if (gamestate.PhaseType !== currentGame.PhaseType){
+            if (gamestate.PhaseType !== currentGame.PhaseType)
+            {
                 currentGame.PhaseType = gamestate.PhaseType;
                 showPhase(currentGame.PhaseType);
 
-                if (currentGame.PhaseType === 0 || firstRun === true) {
+                if (currentGame.PhaseType === 0 || firstRun === true)
+                {
                     updatePlayers(currentGame.GameId, playersResponse, playersResponse);
                 }
 
@@ -462,12 +513,14 @@
         }
 
     // Game Phase Controller
-        function showPhase(phaseType) {
+        function showPhase(phaseType)
+        {
             console.log("Entering phase " + phaseType + ".")
 
             var instruction = "";
 
-            switch (currentGame.PhaseType) {
+            switch (currentGame.PhaseType)
+            {
                 case 0:
                     instruction = "Waiting for host to begin the game...";
                     break;
@@ -515,7 +568,8 @@
 
 // Game Phases
     // Territory Interaction
-        function territoryInteraction() {
+        function territoryInteraction()
+        {
             console.log("Resolving interaction with " + this.id + ".");
 
             interactionTarget = this.id;
@@ -538,7 +592,8 @@
                     }
                     targetRegionSelection += "</select>";
                     var targetRegionTroops = getData(this.id, "TroopCount") - 1;
-                    if (targetRegionTroops > 0) {
+                    if (targetRegionTroops > 0)
+                    {
                         var friendlyName = getData(this.id, "FriendlyName")
                         var data = targetRegionSelection + "<br /><input type=\"number\" id='attackTroops' min=\"1\" value=\"1\" max=\"" + targetRegionTroops + "\" /><br /><input type=\"submit\" id=\"buttonAttackCommit\" value=\"Attack!\"><input type=\"submit\" id=\"buttonAttackCancel\" value=\"Cancel!\">"
                         showOverlay("Attack from " + friendlyName, data);
@@ -548,7 +603,8 @@
                         addEvent("buttonAttackCommit", "click", function () { orderAttack(currentGame.GameId, getData(interactionTarget, "RegionId"), getValue("attackTroops"), getValue("attackTarget")); }, false);
                         addEvent("buttonAttackCancel", "click", function () { hideOverlay(); }, false);
                     }
-                    else {
+                    else
+                    {
                         showOverlay("Not enough troops", "<img src='Content/images/error.svg' />");
                         setTimeout(hideOverlay, 1500);
                     }
@@ -562,36 +618,44 @@
         }
 
     // Reinforcements
-        function reinforcementsPhase(gameid){
+        function reinforcementsPhase(gameid)
+        {
             console.log("Getting reinforcements.");
 
             var data = "?sessionId=" + currentGame.GameId;
             sendAjax("GET", "api/Nation/Reinforcements", data, "adv", reinforcementsResponse, null, true);
         }
 
-        function reinforcementsResponse(){
+        function reinforcementsResponse()
+        {
             currentPhase.reinforcements = +this.responseText;
             writeHTML("hudTextInformation", "You have " + this.responseText + " reinforcements to deploy.");
         }
 
-        function deployReinforcements(GameId, RegionId, troops) {
+        function deployReinforcements(GameId, RegionId, troops)
+        {
             console.log("Deploying troops to " + RegionId + ".");
             
-            if (currentPhase.reinforcements > 0) {
+            if (currentPhase.reinforcements > 0)
+            {
                 currentPhase.reinforcements -= 1;
 
                 var data = "?sessionId=" + currentGame.GameId + "&regionId=" + RegionId + "&numberOfTroops=" + troops;
                 sendAjax("POST", "api/Region/Deploy", data, "adv", deployResponse, deployResponse, true);
-            } else {
+            }
+            else
+            {
                 showOverlay("No more troops to deploy!", "<img src='Content/images/error.svg' />");
                 setTimeout(hideOverlay, 1500);
             }
         }
 
-        function deployResponse() {
+        function deployResponse()
+        {
             console.log("Resolving troop deployment order.");
 
-            switch (this.status) {
+            switch (this.status)
+            {
                 case 200:
                     var TroopCount = +getData(interactionTarget, "TroopCount") + 1;
                     writeHTML("hudTextInformation", "You have " + currentPhase.reinforcements + " reinforcements to deploy.");
@@ -612,14 +676,16 @@
         }
 
     // Combat
-        function orderAttack(gameId, sourceRegionId, numberOfTroops, targetRegionId) {
+        function orderAttack(gameId, sourceRegionId, numberOfTroops, targetRegionId)
+        {
             console.log("Attacking from " + sourceRegionId + " to " + targetRegionId);
 
             var data = "?sessionId=" + gameId + "&regionId=" + sourceRegionId + "&numberOfTroops=" + numberOfTroops + "&targetRegionId=" + targetRegionId;
             sendAjax("POST", "api/Region/Attack", data, "json", onOrderAttackResponse, onOrderAttackResponse, true);
         }
 
-        function onOrderAttackResponse() {
+        function onOrderAttackResponse()
+        {
             switch(this.status){
                 case 200:
                 case 204:
@@ -660,93 +726,105 @@
         }
         
 // Hud
-    function showHud() {
+        function showHud()
+        {
 
-    }
-
-    function hideHud() {
-
-    }
-
-    function endTurn(gameId, phaseId) {
-        // Technically, only the session host can do this. Anyone else will get an error and be ignored - they should EndPhase, but for DevoLAN 31 that doesn't actual do anything!
-        if (currentGame.OwnerId === userToken.id) {
-            var data = "?sessionId=" + gameId + "&phaseId=" + phaseId + "&force=false";
-            sendAjax("POST", "/api/Game/AdvanceNextPhase", data, "json", onEndTurnResponse, onEndTurnResponse, true);
         }
-        else {
-            var data = "?sessionId=" + gameId + "&phaseId=" + phaseId;
-            sendAjax("POST", "/api/Game/EndPhase", data, "json", onEndTurnResponse, onEndTurnResponse, true);
-        }
-    }
 
-    function onEndTurnResponse() {
-        switch (this.status) {
-            case 200:
-            case 204:
-                console.log("Advanced to next phase");
-                updateGameState(currentGame.GameId);
-                break;
-            case 401:
-                console.log("Not owner of session");
-                messageBox("End Turn Failed.", "Only the session owner is allowed to end the turn");
-                break;
-            case 417:
-                console.log("Not all players are ready");
-                messageBox("End Turn Failed.", "Waiting for other players to be ready...");
-                break;
-            default:
-                console.log("End turn request failed.");
-                messageBox("End Turn Failed.", "Not sure why -  Error code " + this.status);
-                break;
+        function hideHud()
+        {
+
         }
-    }
+
+        function endTurn(gameId, phaseId)
+        {
+            // Technically, only the session host can do this. Anyone else will get an error and be ignored - they should EndPhase, but for DevoLAN 31 that doesn't actual do anything!
+            if (currentGame.OwnerId === userToken.id)
+            {
+                var data = "?sessionId=" + gameId + "&phaseId=" + phaseId + "&force=false";
+                sendAjax("POST", "/api/Game/AdvanceNextPhase", data, "json", onEndTurnResponse, onEndTurnResponse, true);
+            }
+            else
+            {
+                var data = "?sessionId=" + gameId + "&phaseId=" + phaseId;
+                sendAjax("POST", "/api/Game/EndPhase", data, "json", onEndTurnResponse, onEndTurnResponse, true);
+            }
+        }
+
+        function onEndTurnResponse()
+        {
+            switch (this.status)
+            {
+                case 200:
+                case 204:
+                    console.log("Advanced to next phase");
+                    updateGameState(currentGame.GameId);
+                    break;
+                case 401:
+                    console.log("Not owner of session");
+                    messageBox("End Turn Failed.", "Only the session owner is allowed to end the turn");
+                    break;
+                case 417:
+                    console.log("Not all players are ready");
+                    messageBox("End Turn Failed.", "Waiting for other players to be ready...");
+                    break;
+                default:
+                    console.log("End turn request failed.");
+                    messageBox("End Turn Failed.", "Not sure why -  Error code " + this.status);
+                    break;
+            }
+        }
 
 // Message Box
-    function messageBox(title, message){
-        hideOverlay();
+        function messageBox(title, message)
+        {
+            hideOverlay();
         
-        writeHTML("message", "<h3>" + title + "</h3><p>" + message + "</p>");
-        addClass("message", "show");
-    }
+            writeHTML("message", "<h3>" + title + "</h3><p>" + message + "</p>");
+            addClass("message", "show");
+        }
         
 // Overlay
-    function showOverlay(title, content, blackout){
-        //console.log("Showing overlay.");
+        function showOverlay(title, content, blackout)
+        {
+            //console.log("Showing overlay.");
         
-        writeHTML("overlayContent", "<h1>" + title + "</h1>" + content);
-        addClass("overlay", "show");
+            writeHTML("overlayContent", "<h1>" + title + "</h1>" + content);
+            addClass("overlay", "show");
         
-        if(blackout){
-            addClass("overlay", "blackout", 1);
+            if (blackout)
+            {
+                addClass("overlay", "blackout", 1);
+            }
         }
-    }
     
-    function hideOverlay(fade){
-        //console.log("Hiding overlay.");
+        function hideOverlay(fade)
+        {
+            //console.log("Hiding overlay.");
         
-        if(fade){
-            removeClass("overlay", "blackout");
-            setTimeout(hideOverlay, 1500);
-        } else {
-            removeClass("overlay", "show");
+            if (fade)
+            {
+                removeClass("overlay", "blackout");
+                setTimeout(hideOverlay, 1500);
+            }
+            else
+            {
+                removeClass("overlay", "show");
+            }
         }
-    }
     
 // Save User Login Session
-    function saveCookie(name, data){
-        //console.log("Saving " + name + " cookie.");
-        
-        document.cookie = name + "=" + JSON.stringify(data);
-    }
+        function saveCookie(name, data)
+        {
+            document.cookie = name + "=" + JSON.stringify(data);
+        }
     
-    function loadCookie(name){
-        var cookies = document.cookie.split(";");
-        var x = 0;
-        
-        //console.log("Checking for " + name + " cookie...");
-        
-        // Cycle Cookies
+        function loadCookie(name)
+        {
+            var cookies = document.cookie.split(";");
+            var x = 0;
+
+            // Cycle Cookies
             for(x = 0; x < cookies.length; x++){
                 if(cookies[x].indexOf(name) > 0){
                     console.log(name + " cookie found.");
@@ -754,22 +832,20 @@
                     return JSON.parse(cookies[x].substring(cookies[x].indexOf("{"), cookies[x].length));
                 }
             }
-            
-        console.log(name + " cookie not found.");
-        return false;
-    }
+
+            console.log(name + " cookie not found.");
+            return false;
+        }
     
-    function deleteCookie(name){
-        //console.log("Removing " + name + " cookie.")
-        
-        document.cookie = name + "=''; expires=Thu, 01 Jan 1970 00:00:00 UTC";
-    }
+        function deleteCookie(name)
+        {
+            document.cookie = name + "=''; expires=Thu, 01 Jan 1970 00:00:00 UTC";
+        }
     
 // Menu & Settings
     // Menu
-        function menuRefresh(){
-            //console.log("Building settings menu.");
-            
+        function menuRefresh()
+        {
             var build = "";
             
             // Music Button
@@ -802,11 +878,15 @@
         }
         
     // Toggle Music
-        function toggleMusic(){
-            if(system.music == 0){
+        function toggleMusic()
+        {
+            if (system.music == 0)
+            {
                 system.music = 1;
                 playAudio("music");
-            } else {
+            }
+            else
+            {
                 system.music = 0;
                 stopAudio("music");
             }
@@ -815,11 +895,15 @@
         }
         
     // Toggle SFX
-        function toggleSFX(){
-            if(system.sfx == 0){
+        function toggleSFX()
+        {
+            if (system.sfx == 0)
+            {
                 system.sfx = 1;
                 playAudio("sfx");
-            } else {
+            }
+            else
+            {
                 system.sfx = 0;
                 stopAudio("sfx");
             }
@@ -827,159 +911,189 @@
             menuRefresh();
         }
         
-// Audio Handling
-    function playAudio(target){
-        console.log("Playing " + target + ".");
+    // Audio Handling
+        function playAudio(target)
+        {
+            console.log("Playing " + target + ".");
         
-        var player = getID(target);
+            var player = getID(target);
         
-        switch(target){
-            case "sfx":
-                if(system.sfx){
-                    player.play();
-                }
-                break;
+            switch (target)
+            {
+                case "sfx":
+                    if (system.sfx)
+                    {
+                        player.play();
+                    }
+                    break;
                 
-            case "music":
-                if(system.music){
-                    player.play();
-                }
-                break;
+                case "music":
+                    if (system.music)
+                    {
+                        player.play();
+                    }
+                    break;
+            }
         }
-    }
-    
-    function loadAudio(target, sound){
-        console.log("Loading " + sound + " on " + target + " channel.");
-        
-        var source = getID(target + "Source");
-        
-        stopAudio(target);
-        source.src = "Content/media/" + sound + ".mp3";
-        getID(target).load();
-        
-        playAudio(target);
-    }
-        
-    function stopAudio(target){
-        console.log("Stopping " + target + ".");
-        
-        getID(target).pause();
-    }
-    
-    function setAudioVolume(target, level){
-        //console.log("Adjusting " + target + " to volume level " + level + ".");
-        
-        var player = getID(target);
-        player.volume = level;
-    }
-    
-    function fadeAudio(target, level, duration){
-        //console.log("Fading " + target + " to " + level + " over " + duration + " seconds.");
-        
-        var player = getID(target);
-        var initial = player.volume;
 
-        duration = (duration * 1000) / (duration * 25);
-        level = initial / duration;
+        function loadAudio(target, sound)
+        {
+            console.log("Loading " + sound + " on " + target + " channel.");
         
-        var timer = setInterval(function(){
-                try{
+            var source = getID(target + "Source");
+        
+            stopAudio(target);
+            source.src = "Content/media/" + sound + ".mp3";
+            getID(target).load();
+        
+            playAudio(target);
+        }
+        
+        function stopAudio(target)
+        {
+            console.log("Stopping " + target + ".");
+        
+            getID(target).pause();
+        }
+    
+        function setAudioVolume(target, level)
+        {
+            //console.log("Adjusting " + target + " to volume level " + level + ".");
+        
+            var player = getID(target);
+            player.volume = level;
+        }
+    
+        function fadeAudio(target, level, duration)
+        {
+            //console.log("Fading " + target + " to " + level + " over " + duration + " seconds.");
+        
+            var player = getID(target);
+            var initial = player.volume;
+
+            duration = (duration * 1000) / (duration * 25);
+            level = initial / duration;
+        
+            var timer = setInterval(function ()
+            {
+                try
+                {
                     player.volume -= level;
-                }catch(err){
+                }
+                catch (err)
+                {
                     player.volume = 0;
                     clearInterval(timer);
                 }
 
-                if (player.volume === 0.0) {
+                if (player.volume === 0.0)
+                {
                     stopAudio(target);
                     setAudioVolume(target, initial)
                     clearInterval(timer);
                 }
             }, duration);
-    }
-    
+        }
+
 // Screen Sizing
-    function resizeBoard(){
+        function resizeBoard()
+        {
             var x = 0;
             var circles = document.getElementsByTagName("circle");
             var r = 17.5;
                 
-            for(x = 0; x < circles.length; x++){
-                if(window.innerWidth < 1100 || window.innerHeight < 650){
+            for (x = 0; x < circles.length; x++)
+            {
+                if (window.innerWidth < 1100 || window.innerHeight < 650)
+                {
                     r = 35;
-                } else {
+                }
+                else
+                {
                     r = 17.5;
                 }
                     
                 circles[x].setAttribute("r", r);
             }
-    }
+        }
         
 // Fill
     // Set Fill Colour
-        function setFillColour(target, colour){
+        function setFillColour(target, colour)
+        {
             getID(target).style.fill = colour;
         }
     
 // Stroke
     // Set Stroke Colour
-        function setStrokeColour(target, colour){
+        function setStrokeColour(target, colour)
+        {
             getID(target).style.stroke = colour;
         }
         
     // Set Stroke Width
-        function setStrokeWeight(target, weight){
+        function setStrokeWeight(target, weight)
+        {
             getID(target).style['stroke-width'] = weight;
         }
         
 // Text
     // Set Text Value
-        function setTextValue(target, value){
+        function setTextValue(target, value)
+        {
             getID(target).textContent = value;
         }
         
 // AJAX Requests
-    function sendAjax(method, url, urlData, content, eventLoad, eventError, auth, sendData, noURI){
-        var ajaxRequest = new XMLHttpRequest();
+        function sendAjax(method, url, urlData, content, eventLoad, eventError, auth, sendData, noURI)
+        {
+            var ajaxRequest = new XMLHttpRequest();
         
-        if (noURI) {
-            ajaxRequest.open(method, url + urlData);
-        } else {
-            ajaxRequest.open(method, apiUriBase + url + urlData);
-        }
+            if (noURI)
+            {
+                ajaxRequest.open(method, url + urlData);
+            }
+            else
+            {
+                ajaxRequest.open(method, apiUriBase + url + urlData);
+            }
         
-        if (eventLoad) {
-            ajaxRequest.addEventListener("load", eventLoad);
-        }
+            if (eventLoad)
+            {
+                ajaxRequest.addEventListener("load", eventLoad);
+            }
 
-        if (eventError) {
-            ajaxRequest.addEventListener("error", eventError);
-        }
+            if (eventError)
+            {
+                ajaxRequest.addEventListener("error", eventError);
+            }
             
-        if(auth){
-            ajaxRequest.setRequestHeader("Accept", "text/html");
-            ajaxRequest.setRequestHeader("Authorization", "bearer " + userToken.access_token);
-        }
+            if (auth)
+            {
+                ajaxRequest.setRequestHeader("Accept", "text/html");
+                ajaxRequest.setRequestHeader("Authorization", "bearer " + userToken.access_token);
+            }
         
-        switch(content){
-            case "form":
-                ajaxRequest.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
-                break;
+            switch (content)
+            {
+                case "form":
+                    ajaxRequest.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+                    break;
                 
-            case "json":
-                ajaxRequest.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
-                break;
+                case "json":
+                    ajaxRequest.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
+                    break;
             
-            case "adv":
-            default:
-                ajaxRequest.setRequestHeader("Content-Type", "application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-                break;
+                case "adv":
+                default:
+                    ajaxRequest.setRequestHeader("Content-Type", "application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+                    break;
+            }
+        
+            ajaxRequest.send(sendData);
+        
+            return ajaxRequest;
         }
-        
-        ajaxRequest.send(sendData);
-        
-        return ajaxRequest;
-    }
 
 // DOM Requests
     // Classes
