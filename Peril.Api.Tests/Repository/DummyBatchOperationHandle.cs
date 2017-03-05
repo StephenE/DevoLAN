@@ -11,13 +11,16 @@ namespace Peril.Api.Tests.Repository
         public DummyBatchOperationHandle()
         {
             QueuedOperations = new List<QueuedOperation>();
+            MaximumCapacity = 100;
         }
+
+        public int MaximumCapacity { get; set; }
 
         public int RemainingCapacity
         {
             get
             {
-                return 100 - QueuedOperations.Count;
+                return MaximumCapacity - QueuedOperations.Count;
             }
         }
 

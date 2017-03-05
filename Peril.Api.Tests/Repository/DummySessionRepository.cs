@@ -15,6 +15,7 @@ namespace Peril.Api.Tests.Repository
         {
             SessionMap = new Dictionary<Guid, DummySession>();
             StorageDelaySimulationTask = Task.FromResult(false);
+            BatchOperationCapacity = 100;
         }
 
         #region - ISessionRepository Implementation -
@@ -45,7 +46,7 @@ namespace Peril.Api.Tests.Repository
 
         public IBatchOperationHandle StartBatchOperation(Guid sessionId)
         {
-            return new DummyBatchOperationHandle();
+            return new DummyBatchOperationHandle { MaximumCapacity = BatchOperationCapacity };
         }
 
         public async Task<bool> ReservePlayerColour(Guid sessionId, String sessionEtag, PlayerColour colour)
@@ -144,6 +145,7 @@ namespace Peril.Api.Tests.Repository
 
         public Dictionary<Guid, DummySession> SessionMap { get; set; }
         public Task StorageDelaySimulationTask { get; set; }
+        public Int32 BatchOperationCapacity { get; set; }
     }
 
     static class ControllerMockSessionRepositoryExtensions
@@ -173,6 +175,12 @@ namespace Peril.Api.Tests.Repository
         static public ControllerMockSetupContext SetupAddPlayer(this ControllerMockSetupContext setupContext, String userId, PlayerColour colour)
         {
             setupContext.DummySession.SetupAddPlayer(userId, colour);
+            return setupContext;
+        }
+
+        static public ControllerMockSetupContext SetupBatchOperationCapacity(this ControllerMockSetupContext setupContext, Int32 capacity)
+        {
+            setupContext.ControllerMock.SessionRepository.BatchOperationCapacity = capacity;
             return setupContext;
         }
     }
