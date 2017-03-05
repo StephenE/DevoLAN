@@ -5,7 +5,7 @@
     var interactionTarget = ";"
     var firstRun = true;
 
-    var apiUriBase = "http://localhost:24063/";
+    var apiUriBase = "http://devolan.azurewebsites.net/";
     var maxPlayers = 14;
     
     var currentGame = {};
