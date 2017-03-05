@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Peril.Api.Repository
 {
-    
+
 
     public interface IRegionRepository
     {
@@ -18,5 +18,7 @@ namespace Peril.Api.Repository
         Task<IEnumerable<IRegionData>> GetRegions(Guid sessionId);
 
         void AssignRegionOwnership(IBatchOperationHandle batchOperationHandle, Guid sessionId, Dictionary<Guid, OwnershipChange> ownershipChanges);
+
+        void CommitTroopsToPhase(IBatchOperationHandle batchOperationHandle, IRegionData sourceRegion, UInt32 troopsToCommit);
     }
 }

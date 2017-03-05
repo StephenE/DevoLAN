@@ -169,6 +169,7 @@ namespace Peril.Api.Tests.Repository
                 TargetRegion = targetRegionId,
                 NumberOfTroops = numberOfTroops
             });
+            setupContext.ControllerMock.RegionRepository.RegionData[sourceRegionId].TroopsCommittedToPhase += numberOfTroops;
             return setupContext;
         }
     }

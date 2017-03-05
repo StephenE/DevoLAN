@@ -5,7 +5,6 @@ using Peril.Api.Repository.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
 
 namespace Peril.Api.Repository.Azure
@@ -120,6 +119,21 @@ namespace Peril.Api.Repository.Azure
                 });
 
             batchOperationHandle.AddPrerequisite(updateRegionOwnershipTask, ownershipChanges.Count);
+        }
+
+        public void CommitTroopsToPhase(IBatchOperationHandle batchOperationHandleInterface, IRegionData sourceRegion, UInt32 troopsToCommit)
+        {
+            BatchOperationHandle batchOperationHandle = batchOperationHandleInterface as BatchOperationHandle;
+            RegionTableEntry region = sourceRegion as RegionTableEntry;
+            if(region != null && region.TroopCount > region.TroopsCommittedToPhase + troopsToCommit)
+            {
+                region.StoredTroopsCommittedToPhase += (int)troopsToCommit;
+                batchOperationHandle.BatchOperation.Replace(region);
+            }
+            else
+            {
+                throw new InvalidOperationException();
+            }
         }
 
         private CloudStorageAccount StorageAccount { get; set; }

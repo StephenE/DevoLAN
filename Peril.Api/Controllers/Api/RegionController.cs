@@ -77,8 +77,10 @@ namespace Peril.Api.Controllers.Api
                 Guid orderGuid;
                 using (IBatchOperationHandle batchOperation = SessionRepository.StartBatchOperation(session.GameId))
                 {
-                    orderGuid = await CommandQueue.OrderAttack(batchOperation, session.GameId, session.PhaseId, sourceRegion.RegionId, sourceRegion.CurrentEtag, targetRegion.RegionId, numberOfTroops);
+                    var queueAttackTask = CommandQueue.OrderAttack(batchOperation, session.GameId, session.PhaseId, sourceRegion.RegionId, sourceRegion.CurrentEtag, targetRegion.RegionId, numberOfTroops);
+                    RegionRepository.CommitTroopsToPhase(batchOperation, sourceRegion, numberOfTroops);
                     await batchOperation.CommitBatch();
+                    orderGuid = await queueAttackTask;
                 }
 
                 return orderGuid;

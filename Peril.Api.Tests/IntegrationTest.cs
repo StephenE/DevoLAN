@@ -131,7 +131,7 @@ namespace Peril.Api.Tests
         }
 
         [TestMethod]
-        //[Timeout(30000)]
+        [Timeout(40000)]
         [TestCategory("Integration")]
         [DeploymentItem(@"Data\FullWorldDefinition.xml", "WorldData")]
         public async Task IntegrationTestStressTestAttacks()

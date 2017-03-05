@@ -415,7 +415,7 @@ namespace Peril.Api.Tests.Controllers
             Assert.AreEqual(operationId, primaryUser.CommandQueue.DummyOrderAttackQueue.First().OperationId);
             Assert.AreEqual(UnownedAdjacentRegionGuid, primaryUser.CommandQueue.DummyOrderAttackQueue.First().TargetRegion);
             Assert.AreEqual(1U, primaryUser.CommandQueue.DummyOrderAttackQueue.First().NumberOfTroops);
-            // Assert.AreEqual(1U, primaryUser.RegionRepository.RegionData[OwnedRegionGuid].TroopsCommittedToPhase);
+            Assert.AreEqual(1U, primaryUser.RegionRepository.RegionData[OwnedRegionGuid].TroopsCommittedToPhase);
         }
 
         [TestMethod]
@@ -440,7 +440,7 @@ namespace Peril.Api.Tests.Controllers
             Assert.AreEqual(operationId, primaryUser.CommandQueue.DummyOrderAttackQueue.First().OperationId);
             Assert.AreEqual(UnownedAdjacentRegionGuid, primaryUser.CommandQueue.DummyOrderAttackQueue.First().TargetRegion);
             Assert.AreEqual(1U, primaryUser.CommandQueue.DummyOrderAttackQueue.First().NumberOfTroops);
-            // Assert.AreEqual(2U, primaryUser.RegionRepository.RegionData[OwnedRegionGuid].TroopsCommittedToPhase);
+            Assert.AreEqual(2U, primaryUser.RegionRepository.RegionData[OwnedRegionGuid].TroopsCommittedToPhase);
         }
 
         [TestMethod]
@@ -474,7 +474,6 @@ namespace Peril.Api.Tests.Controllers
         [TestMethod]
         [TestCategory("Unit")]
         [TestCategory("RegionController")]
-        [Ignore]
         public async Task TestPostAttack_WithDuplicateRegion_WithInvalidTroops()
         {
             // Arrange

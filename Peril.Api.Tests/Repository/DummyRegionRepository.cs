@@ -65,6 +65,7 @@ namespace Peril.Api.Tests.Repository
                         {
                             regionData.OwnerId = change.Value.UserId;
                             regionData.TroopCount = change.Value.TroopCount;
+                            regionData.TroopsCommittedToPhase = 0;
                             regionData.GenerateNewEtag();
                         });
                     }
@@ -79,6 +80,24 @@ namespace Peril.Api.Tests.Repository
                 }
             }
         }
+
+        public void CommitTroopsToPhase(IBatchOperationHandle batchOperationHandleInterface, IRegionData sourceRegion, UInt32 troopsToCommit)
+        {
+            DummyBatchOperationHandle batchOperationHandle = batchOperationHandleInterface as DummyBatchOperationHandle;
+            DummyRegionData region = sourceRegion as DummyRegionData;
+            if (region != null && region.TroopCount > region.TroopsCommittedToPhase + troopsToCommit)
+            {
+                batchOperationHandle.QueuedOperations.Add(() =>
+                {
+                    region.TroopsCommittedToPhase += troopsToCommit;
+                });
+            }
+            else
+            {
+                throw new InvalidOperationException("Invalid arguments passed");
+            }
+        }
+
 
         #region - Test Setup Helpers -
         public DummyRegionData SetupRegion(Guid sessionId, Guid regionId, Guid continentId, String initialOwner)
