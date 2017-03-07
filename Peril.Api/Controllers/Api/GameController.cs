@@ -5,6 +5,7 @@ using Peril.Api.Repository.Model;
 using Peril.Core;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -214,9 +215,12 @@ namespace Peril.Api.Controllers.Api
                         }
                         case SessionPhase.BorderClashes:
                         {
-                            var borderClashes = WorldRepository.GetCombat(session.GameId, session.Round, CombatType.BorderClash);
-                            IEnumerable<CombatResult> results = await ResolveCombat(session.GameId, session.Round, await borderClashes);
-                            await ApplyBorderClashResults(session.GameId, session.Round, results);
+                            var allCombatTask = WorldRepository.GetCombat(session.GameId, session.Round);
+                            var borderClashQuery = from combat in await allCombatTask
+                                                    where combat.ResolutionType == CombatType.BorderClash
+                                                    select combat;
+                            IEnumerable < CombatResult > results = await ResolveCombat(session.GameId, session.Round, borderClashQuery.AsEnumerable());
+                            ApplyBorderClashResults(batchOperation, await allCombatTask, results);
                             nextPhase = SessionPhase.MassInvasions;
                             break;
                         }
@@ -636,11 +640,10 @@ namespace Peril.Api.Controllers.Api
             return combatResults;
         }
 
-        private async Task ApplyBorderClashResults(Guid sessionId, UInt32 round, IEnumerable<CombatResult> combatResults)
+        private void ApplyBorderClashResults(IBatchOperationHandle batchOperationHandle, IEnumerable<ICombat> allCombat, IEnumerable<CombatResult> combatResults)
         {
             Dictionary<Guid, IEnumerable<ICombatArmy>> survivingArmies = new Dictionary<Guid, IEnumerable<ICombatArmy>>();
-
-            foreach(CombatResult result in combatResults)
+            foreach (CombatResult result in combatResults)
             {
                 if(result.SurvivingArmies.Count() == 1)
                 {
@@ -654,7 +657,28 @@ namespace Peril.Api.Controllers.Api
                 }
             }
 
-            await WorldRepository.AddArmyToCombat(sessionId, round, CombatType.BorderClash, survivingArmies);
+            var combatByTargetRegionQuery = from combat in allCombat
+                                            where combat.ResolutionType != CombatType.BorderClash
+                                            from army in combat.InvolvedArmies
+                                            where army.ArmyMode == CombatArmyMode.Defending
+                                            let defendingRegion = army.OriginRegionId
+                                            group combat by defendingRegion into combatByTargetRegion
+                                            select combatByTargetRegion;
+            Dictionary<Guid, IEnumerable<ICombat>> targetRegionToCombatLookup = combatByTargetRegionQuery.ToDictionary(
+                entry => entry.Key,
+                entry => entry.Select(combat => combat)
+            );
+
+            foreach (var targetRegion in survivingArmies)
+            {
+                IEnumerable<ICombat> combatsInTargetRegion = targetRegionToCombatLookup[targetRegion.Key];
+                // Only expecting one combat in the target region (either an invasion or a mass invasion)
+                Debug.Assert(combatsInTargetRegion.Count() <= 1);
+                foreach (ICombat combatInTargetRegion in combatsInTargetRegion)
+                {
+                    WorldRepository.AddArmyToCombat(batchOperationHandle, combatInTargetRegion, targetRegion.Value);
+                }
+            }
         }
 
         private void ApplyCombatResults(IBatchOperationHandle batchOperationHandle, Guid sessionId, UInt32 round, CombatType type, IEnumerable<CombatResult> combatResults)

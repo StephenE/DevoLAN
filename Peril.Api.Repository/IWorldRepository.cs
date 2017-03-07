@@ -13,7 +13,7 @@ namespace Peril.Api.Repository
 
         void AddCombat(IBatchOperationHandle batchOperationHandle, Guid sessionId, UInt32 round, IEnumerable<Tuple<CombatType, IEnumerable<ICombatArmy>>> armies);
 
-        Task AddArmyToCombat(Guid sessionId, UInt32 round, CombatType sourceType, IDictionary<Guid, IEnumerable<ICombatArmy>> armies);
+        void AddArmyToCombat(IBatchOperationHandle batchOperationHandle, ICombat combat, IEnumerable<ICombatArmy> armies);
 
         Task AddCombatResults(Guid sessionId, UInt32 round, IEnumerable<ICombatResult> results);
 

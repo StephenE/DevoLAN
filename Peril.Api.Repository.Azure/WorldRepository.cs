@@ -19,69 +19,20 @@ namespace Peril.Api.Repository.Azure
             RandomNumberGenerator = new Random();
         }
 
-        public async Task AddArmyToCombat(Guid sessionId, UInt32 round, CombatType sourceType, IDictionary<Guid, IEnumerable<ICombatArmy>> armies)
+        public void AddArmyToCombat(IBatchOperationHandle batchOperationHandleInterface, ICombat combat, IEnumerable<ICombatArmy> armies)
         {
-            // Do a query to grab all combat
-            var allCombat = await GetCombat(sessionId, round);
-            var combatByTargetRegionQuery = from combat in allCombat
-                                            where combat.ResolutionType != CombatType.BorderClash
-                                            from army in combat.InvolvedArmies
-                                            where army.ArmyMode == CombatArmyMode.Defending
-                                            let defendingRegion = army.OriginRegionId
-                                            group combat by defendingRegion into combatByTargetRegion
-                                            select combatByTargetRegion;
-            Dictionary<Guid, IEnumerable<CombatTableEntry>> targetRegionToCombatLookup = combatByTargetRegionQuery.ToDictionary(
-                entry => entry.Key,
-                entry => entry.Select(combat => combat as CombatTableEntry)
-            );
+            BatchOperationHandle batchOperationHandle = batchOperationHandleInterface as BatchOperationHandle;
+            CombatTableEntry combatEntry = combat as CombatTableEntry;
+            combatEntry.IsValid();
 
-            // Iterate changes and apply to target regions
-            TableBatchOperation batchOperation = new TableBatchOperation();
-            foreach (var combatEntry in armies)
+            List<ICombatArmy> existingArmies = combat.InvolvedArmies.ToList();
+            foreach (var army in armies)
             {
-                Guid targetRegionId = combatEntry.Key;
-                if (targetRegionToCombatLookup.ContainsKey(targetRegionId))
-                {
-                    foreach (CombatTableEntry combat in targetRegionToCombatLookup[targetRegionId])
-                    {
-                        combat.IsValid();
-
-                        if (sourceType < combat.ResolutionType)
-                        {
-                            List<ICombatArmy> existingArmies = combat.InvolvedArmies.ToList();
-                            foreach (ICombatArmy army in combatEntry.Value)
-                            {
-                                existingArmies.Add(new CombatArmy(army.OriginRegionId, army.OwnerUserId, army.ArmyMode, army.NumberOfTroops));
-                            }
-                            combat.SetCombatArmy(existingArmies);
-
-                            batchOperation.Replace(combat);
-                        }
-                    }
-                }
-                else
-                {
-                    throw new InvalidOperationException("Unable to find the target region in the combat lookup");
-                }
+                existingArmies.Add(new CombatArmy(army.OriginRegionId, army.OwnerUserId, army.ArmyMode, army.NumberOfTroops));
             }
+            combatEntry.SetCombatArmy(existingArmies);
 
-            // Write entry back (fails on write conflict)
-            try
-            {
-                CloudTable dataTable = SessionRepository.GetTableForSessionData(TableClient, sessionId);
-                await dataTable.ExecuteBatchAsync(batchOperation);
-            }
-            catch (StorageException exception)
-            {
-                if (exception.RequestInformation.HttpStatusCode == (int)HttpStatusCode.PreconditionFailed)
-                {
-                    throw new ConcurrencyException();
-                }
-                else
-                {
-                    throw exception;
-                }
-            }
+            batchOperationHandle.BatchOperation.Replace(combatEntry);
         }
 
         public void AddCombat(IBatchOperationHandle batchOperationHandleInterface, Guid sessionId, UInt32 round, IEnumerable<Tuple<CombatType, IEnumerable<ICombatArmy>>> armies)

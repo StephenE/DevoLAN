@@ -89,31 +89,13 @@ namespace Peril.Api.Tests.Repository
             }
         }
 
-        public Task AddArmyToCombat(Guid sessionId, UInt32 round, CombatType sourceType, IDictionary<Guid, IEnumerable<ICombatArmy>> armies)
+        public void AddArmyToCombat(IBatchOperationHandle batchOperationHandleInterface, ICombat combat, IEnumerable<ICombatArmy> armies)
         {
-            foreach(var combatEntry in armies)
+            DummyCombat dummyCombat = combat as DummyCombat;
+            foreach (ICombatArmy army in armies)
             {
-                Guid targetRegionId = combatEntry.Key;
-                if (TargetRegionToCombatLookup.ContainsKey(targetRegionId))
-                {
-                    foreach(DummyCombat combat in TargetRegionToCombatLookup[targetRegionId])
-                    {
-                        if (sourceType < combat.ResolutionType)
-                        {
-                            foreach (ICombatArmy army in combatEntry.Value)
-                            {
-                                combat.SetupAddArmy(army.OriginRegionId, army.OwnerUserId, army.ArmyMode, army.NumberOfTroops);
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    throw new InvalidOperationException("Unable to find the target region in the combat lookup");
-                }
+                dummyCombat.SetupAddArmy(army.OriginRegionId, army.OwnerUserId, army.ArmyMode, army.NumberOfTroops);
             }
-
-            return Task.FromResult(false);
         }
 
         public Task AddCombatResults(Guid sessionId, UInt32 round, IEnumerable<ICombatResult> results)

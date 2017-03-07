@@ -51,16 +51,14 @@ namespace Peril.Api.Repository.Azure.Tests
             await testTable.ExecuteAsync(insertOperation);
 
             // Act
-            await repository.AddArmyToCombat(SessionId, 1, CombatType.BorderClash, new Dictionary<Guid, IEnumerable<ICombatArmy>>
+            using (BatchOperationHandle batchOperation = new BatchOperationHandle(testTable))
             {
+                repository.AddArmyToCombat(batchOperation, tableEntry, new List<ICombatArmy>
                 {
-                    defendingRegionId,  new List<ICombatArmy>
-                    {
-                        new CombatArmy(attacking2RegionId, "AttackingUser", Core.CombatArmyMode.Attacking, 6),
-                        new CombatArmy(attacking3RegionId, "AttackingUser2", Core.CombatArmyMode.Attacking, 3)
-                    }
-                }
-            });
+                    new CombatArmy(attacking2RegionId, "AttackingUser", Core.CombatArmyMode.Attacking, 6),
+                    new CombatArmy(attacking3RegionId, "AttackingUser2", Core.CombatArmyMode.Attacking, 3)
+                });
+            }
 
             // Assert
             TableOperation operation = TableOperation.Retrieve<CombatTableEntry>(SessionId.ToString(), "Combat_" + combatId.ToString());
