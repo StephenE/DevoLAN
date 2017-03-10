@@ -441,7 +441,7 @@ system.sfxVolume = 1;
                     }
                 }
 
-                replaceClass(target, "player-" + curColour);
+                replaceClass(target + "-circle", "player-" + curColour);
                 setTextContent(target + "-counter", world[x].TroopCount);
 
                 setData(target, "FriendlyName", world[x].Name);
@@ -679,6 +679,7 @@ system.sfxVolume = 1;
         function orderAttack(gameId, sourceRegionId, numberOfTroops, targetRegionId)
         {
             console.log("Attacking from " + sourceRegionId + " to " + targetRegionId);
+            createOrUpdateAttack(sourceRegionId, targetRegionId, numberOfTroops);
 
             var data = "?sessionId=" + gameId + "&regionId=" + sourceRegionId + "&numberOfTroops=" + numberOfTroops + "&targetRegionId=" + targetRegionId;
             sendAjax("POST", "api/Region/Attack", data, "json", onOrderAttackResponse, onOrderAttackResponse, true);
@@ -1000,6 +1001,87 @@ system.sfxVolume = 1;
             }, duration);
         }
 
+// Map helpers
+        function getRegionMapElementIdByGuid(sourceRegionId)
+        {
+            var regionName = worldLookup[sourceRegionId];
+            return getRegionMapElementIdByName(regionName);
+        }
+
+        function getRegionMapElementIdByName(sourceRegionName)
+        {
+            return "territory" + sourceRegionName.replace(/ /g, "");
+        }
+
+        function createOrUpdateAttack(sourceRegionId, targetRegionId, troopCount)
+        {
+            var sourceRegionMapElement = getID(getRegionMapElementIdByGuid(sourceRegionId));
+            var existingAttacks = sourceRegionMapElement.getElementsByTagName("g");
+            for(var counter = 0; counter < existingAttacks.length; ++counter)
+            {
+                if(getDataOnElement(existingAttacks[counter], "target-region") === targetRegionId)
+                {
+                    // Update this element
+                    var textElement = existingAttacks[counter].getElementsByTagName("text")[0];
+                    textElement.textContent = parseInt(textElement.textContent) + parseInt(troopCount);
+                    return;
+                }
+            }
+            
+            // Failed to find existing element, draw a new one
+            drawAttack(sourceRegionMapElement, targetRegionId, troopCount);
+        }
+
+        function drawAttack(sourceRegionMapElement, targetRegionId, troopCount)
+        {
+            var targetRegionMapElement = getID(getRegionMapElementIdByGuid(targetRegionId));
+
+            // Draw line between two, using the colour of the source region
+            var sourceRegionCircle = sourceRegionMapElement.getElementsByTagName("circle")[0];
+            var targetRegionCircle = targetRegionMapElement.getElementsByTagName("circle")[0];
+            
+            var source = new Victor(parseFloat(sourceRegionCircle.getAttribute("cx")), parseFloat(sourceRegionCircle.getAttribute("cy")));
+            var target = new Victor(parseFloat(targetRegionCircle.getAttribute("cx")), parseFloat(targetRegionCircle.getAttribute("cy")));
+
+            var sourceToTarget = target.clone().subtract(source).normalize();
+            var radius = parseFloat(sourceRegionCircle.getAttribute("r"));
+            var radiusOffsetVector = sourceToTarget.clone().multiply(new Victor(radius, radius));
+            var sourceToTargetNormal = new Victor(-sourceToTarget.y * radius, sourceToTarget.x * radius);
+
+            var sourceOffset = source.clone().add(radiusOffsetVector);
+            var sourceLhsOffset = source.clone().add(sourceToTargetNormal);
+            var sourceRhsOffset = source.clone().subtract(sourceToTargetNormal);
+            var targetOffset = target.clone().subtract(radiusOffsetVector);
+            var textOffset = sourceOffset.clone().add(radiusOffsetVector).add(radiusOffsetVector);
+
+            // Create group for attack arrow
+            var attackGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            setDataOnElement(attackGroup, "target-region", targetRegionId);
+            sourceRegionMapElement.insertBefore(attackGroup, sourceRegionCircle);
+
+            // Draw attack arrow
+            var attackArrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+            attackArrow.setAttribute('class', 'attack-' + sourceRegionCircle.getAttribute('class'));
+            attackArrow.setAttribute('points',
+                vectorToCommaString(sourceOffset) + ' ' +
+                vectorToCommaString(sourceLhsOffset) + ' ' +
+                vectorToCommaString(targetOffset) + ' ' +
+                vectorToCommaString(sourceRhsOffset));
+            attackGroup.appendChild(attackArrow);
+
+            // Draw troop count on attack
+            var attackText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            attackText.setAttribute('class', 'counter');
+            attackText.setAttribute('transform', 'translate(' + vectorToCommaString(textOffset) + ')');
+            attackText.textContent = troopCount;
+            attackGroup.appendChild(attackText);
+        }
+
+        function vectorToCommaString(targetVector) 
+        {
+            return targetVector.x + ',' + targetVector.y;
+        }
+
 // Screen Sizing
         function resizeBoard()
         {
@@ -1138,12 +1220,22 @@ system.sfxVolume = 1;
     // Data
         function getData(target, data)
         {
-            return getID(target).getAttribute("data-" + data);
+            return getDataOnElement(getID(target), data);
+        }
+
+        function getDataOnElement(target, data)
+        {
+            return target.getAttribute("data-" + data);
         }
         
         function setData(target, data, value)
         {
-            getID(target).setAttribute("data-" + data, value);
+            setDataOnElement(getID(target), data, value);
+        }
+
+        function setDataOnElement(target, data, value)
+        {
+            target.setAttribute("data-" + data, value);
         }
         
     // Get Element by ID

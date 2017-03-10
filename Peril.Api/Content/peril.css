@@ -602,116 +602,172 @@
     
     .player-0{
         background-color:rgba(24, 24, 24, 1);
-        fill:rgba(24, 24, 24, 0.75);
+        fill:rgba(24, 24, 24, 1);
         
         stroke: black;
         color: white;
+    }
+
+    .attack-player-0 {
+        fill: rgba(24, 24, 24, 1);
     }
     
     .player-1{
         background-color:rgba(65, 105, 225, 1);
-        fill:rgba(65,105,225,0.75);
+        fill:rgba(65,105,225,1);
         
         stroke: black;
         color:White;
+    }
+
+    .attack-player-1{
+        fill: rgba(65, 105, 225, 1);
     }
     
     .player-2{
         background-color:rgba(34, 139, 34, 1);
-        fill:rgba(34,139,34 ,0.75);
+        fill:rgba(34,139,34,1);
         
         stroke: black;
         color:White;
+    }
+
+    .attack-player-2{
+        fill: rgba(34, 139, 34, 1);
     }
     
     .player-3{
         background-color:rgba(178, 34, 34 , 1);
-        fill:rgba(178,34,34 ,0.75);
+        fill:rgba(178,34,34 ,1);
         
         stroke: black;
         color:White;
+    }
+
+    .attack-player-3{
+        fill: rgba(178, 34, 34 , 1);
     }
     
     .player-4{
         background-color:rgba(255, 165, 0, 1);
-        fill:rgba(255,165,0 ,0.75);
+        fill:rgba(255,165,0 ,1);
         
         stroke: black;
         color:White;
     }
+
+    .attack-player-4{
+        fill: rgba(255, 165, 0, 1);
+    }
     
     .player-5{
-        background-color:rgba(255, 255, 0, 1);
-        fill:rgba(255, 255, 0, 0.75);
+        background-color:rgba(239, 239, 0, 1);
+        fill:rgb(203, 203, 0);
         
         stroke: black;
         color:Black;
     }
-    
+
+    .attack-player-5{
+        fill: rgba(203, 203, 0, 1);
+    }
+
     .player-6{
         background-color:rgba(128, 0, 128, 1);
-        fill:rgba(128, 0, 128, 0.75);
+        fill:rgba(128, 0, 128, 1);
         
         stroke: black;
         color:White;
+    }
+
+    .attack-player-6{
+        fill: rgba(128, 0, 128, 1);
     }
     
     .player-7{
         background-color:rgba(255, 105, 180, 1);
-        fill:rgba(255, 105, 180, 0.75);
+        fill:rgba(255, 105, 180, 1);
         
         stroke: black;
         color:White;
+    }
+
+    .attack-player-7{
+        stroke :rgba(255, 105, 180, 1);
     }
     
     .player-8{
         background-color:rgba(248, 248, 255, 1);
-        fill:rgba(248, 248, 255, 0.75);
+        fill:rgba(248, 248, 255, 1);
         
         stroke: black;
         color: black;
     }
+
+    .attack-player-8{
+        fill: rgba(248, 248, 255, 1);
+    }
     
     .player-9{
         background-color:rgba(255, 69, 0, 1);
-        fill:rgba(255, 69, 0, 0.75);
+        fill:rgba(255, 69, 0, 1);
         
         stroke: black;
         color:White;
+    }
+
+    .attack-player-9{
+        fill: rgba(255, 69, 0, 1);
     }
     
     .player-10{
         background-color:rgba(173, 255, 47, 1);
-        fill:rgba(173, 255, 47, 0.75);
+        fill:rgba(173, 255, 47, 1);
         
         stroke: black;
         color:Black;
     }
+
+    .attack-player-10{
+        fill: rgba(173, 255, 47, 1);
+    }
     
     .player-11{
         background-color:rgba(32, 178, 170, 1);
-        fill:rgba(32, 178, 170, 0.75);
+        fill:rgba(32, 178, 170, 1);
         
         stroke: black;
         color: white;
     }
+
+    .attack-player-11{
+        fill: rgba(32, 178, 170, 1);
+    }
     
     .player-12{
         background-color: rgba(186, 85, 211, 1);
-        fill: rgba(186, 85, 211, 0.75);
+        fill: rgba(186, 85, 211, 1);
         
         stroke: black;
         color:White;
+    }
+
+    .attack-player-12{
+        fill: rgba(186, 85, 211, 1);
     }
     
     .player-13{
         background-color: rgba(75, 0, 130, 1);
-        fill: rgba(75, 0, 130, 0.75);
+        fill: rgba(75, 0, 130, 1);
         
         stroke: black;
         color:White;
     }
-    
+
+    .attack-player-13 {
+        fill: rgba(75, 0, 130, 1);
+    }
+
 /* @Media Tags */
     @media(max-width:1100px), (max-height:650px){
         /* SVG */
