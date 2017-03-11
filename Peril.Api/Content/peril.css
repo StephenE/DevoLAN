@@ -592,6 +592,10 @@
         }
         
 /* Player Colours */
+    .attack-future {
+        fill-opacity: 0.2;
+    }
+
     .player-, g{
         background-color: rgba(150, 150, 150, 1);
         fill: rgba(150, 150, 150, 0.75);
@@ -693,7 +697,7 @@
     }
 
     .attack-player-7{
-        stroke :rgba(255, 105, 180, 1);
+        fill :rgba(255, 105, 180, 1);
     }
     
     .player-8{

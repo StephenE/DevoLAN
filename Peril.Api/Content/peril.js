@@ -19,6 +19,7 @@ var currentPlayers = {};
 var currentPhase = {};
 currentPhase.reinforcements = 0;
 
+var worldElementsLookup = {};
 var worldLookup = {};
 
 var system = {};
@@ -457,11 +458,18 @@ system.sfxVolume = 1;
             setDataOnElement(targetElement, "ContinentId", regionData.ContinentId);
             setDataOnElement(targetElement, "TroopCount", regionData.TroopCount);
             setDataOnElement(targetElement, "ConnectedRegions", regionData.ConnectedRegions);
+            var targetElementHasHandlers = getDataOnElement(targetElement, "HasEventHandlers");
+            setCommittedToPhase(targetElement, 0);
 
+            worldElementsLookup[regionData.RegionId] = targetElement;
             worldLookup[regionData.RegionId] = regionData.Name;
 
-            addEvent(target, "click", function () { territoryInteraction(targetElement); }, false);
-            addEvent(target + "-outline", "click", function () { territoryInteraction(targetElement); }, false);
+            if (targetElementHasHandlers === null)
+            {
+                addEvent(target, "click", function () { territoryInteraction(targetElement); }, false);
+                addEvent(target + "-outline", "click", function () { territoryInteraction(targetElement); }, false);
+                setDataOnElement(targetElement, "HasEventHandlers", true);
+            }
             removeAllAttacks(targetElement);
         }
 
@@ -487,14 +495,32 @@ system.sfxVolume = 1;
         function processCombatEntry(combatEntry)
         {
             console.log("Processing combat " + combatEntry.CombatId + " of type " + combatEntry.ResolutionType);
+
+            var activeCombatPhase = 0;
+            switch(currentGame.PhaseType)
+            {
+                case 3:
+                    activeCombatPhase = 0;
+                    break;
+                case 4:
+                    activeCombatPhase = 1;
+                    break;
+                case 5:
+                    activeCombatPhase = 2;
+                    break;
+                case 6:
+                    activeCombatPhase = 3;
+                    break;
+            }
+
             if(combatEntry.ResolutionType === 0)
             {
                 // Border clash
                 var armyA = combatEntry.InvolvedArmies[0];
                 var armyB = combatEntry.InvolvedArmies[1];
 
-                createOrUpdateAttack(armyA.OriginRegionId, armyB.OriginRegionId, armyA.NumberOfTroops, false);
-                createOrUpdateAttack(armyB.OriginRegionId, armyA.OriginRegionId, armyB.NumberOfTroops, false);
+                createOrUpdateAttack(armyA.OriginRegionId, armyB.OriginRegionId, armyA.NumberOfTroops, false, combatEntry.ResolutionType === activeCombatPhase);
+                createOrUpdateAttack(armyB.OriginRegionId, armyA.OriginRegionId, armyB.NumberOfTroops, false, combatEntry.ResolutionType === activeCombatPhase);
             }
             else
             {
@@ -513,7 +539,7 @@ system.sfxVolume = 1;
                 {
                     if (combatEntry.InvolvedArmies[counter].ArmyMode === 0)
                     {
-                        createOrUpdateAttack(combatEntry.InvolvedArmies[counter].OriginRegionId, defendingRegionId, combatEntry.InvolvedArmies[counter].NumberOfTroops, false);
+                        createOrUpdateAttack(combatEntry.InvolvedArmies[counter].OriginRegionId, defendingRegionId, combatEntry.InvolvedArmies[counter].NumberOfTroops, false, combatEntry.ResolutionType === activeCombatPhase);
                     }
                 }
             }
@@ -614,7 +640,8 @@ system.sfxVolume = 1;
                     break;
 
                 case 7:
-                    instruction = "Redeployment Phase: Not implemented for DevoLAN 31.";
+                    instruction = "Redeployment Phase: Not implemented for DevoLAN 32.";
+                    break;
 
                 case 8:
                     instruction = "Victory Phase: Speak up now if you've won!";
@@ -631,34 +658,45 @@ system.sfxVolume = 1;
             console.log("Resolving interaction with " + territoryElement.id + ".");
 
             interactionTarget = territoryElement.id;
+            var regionOwner = getDataOnElement(territoryElement, "OwnerId");
+            if (regionOwner != userToken.id)
+            {
+                // Early out if not owner of clicked region
+                return;
+            }
 
             switch (currentGame.PhaseType) {
                 case 1:
                     console.log("Deploying troop...");
-                    deployReinforcements(currentGame.GameId, getData(territoryElement.id, "RegionId"), 1);
+                    deployReinforcements(currentGame.GameId, getDataOnElement(territoryElement, "RegionId"), 1);
                     break;
 
                 case 2:
                     console.log("Resolving attack...");
                     var targetRegionSelection = "<select id='attackTarget'>";
-                    var connectedRegions = getData(territoryElement.id, "ConnectedRegions").split(',');
-                    
+                    var connectedRegions = getDataOnElement(territoryElement, "ConnectedRegions").split(',');
+
                     for (var index = 0, numberOfRegions = connectedRegions.length; index < numberOfRegions; ++index)
                     {
                         var connectedRegionId = connectedRegions[index];
-                        targetRegionSelection += "<option value=\"" + connectedRegionId + "\">" + worldLookup[connectedRegionId] + "</option>";
+                        var targetRegionElement = worldElementsLookup[connectedRegionId];
+                        var targetOwner = getDataOnElement(targetRegionElement, "OwnerId");
+                        if (targetOwner !== regionOwner)
+                        {
+                            targetRegionSelection += "<option value=\"" + connectedRegionId + "\">" + worldLookup[connectedRegionId] + "</option>";
+                        }
                     }
                     targetRegionSelection += "</select>";
-                    var targetRegionTroops = getData(territoryElement.id, "TroopCount") - 1;
+                    var targetRegionTroops = getDataOnElement(territoryElement, "TroopCount") - getCommittedToPhase(territoryElement) - 1;
                     if (targetRegionTroops > 0)
                     {
-                        var friendlyName = getData(territoryElement.id, "FriendlyName")
+                        var friendlyName = getDataOnElement(territoryElement, "FriendlyName")
                         var data = targetRegionSelection + "<br /><input type=\"number\" id='attackTroops' min=\"1\" value=\"1\" max=\"" + targetRegionTroops + "\" /><br /><input type=\"submit\" id=\"buttonAttackCommit\" value=\"Attack!\"><input type=\"submit\" id=\"buttonAttackCancel\" value=\"Cancel!\">"
                         showOverlay("Attack from " + friendlyName, data);
 
                         console.log("Starting attack");
 
-                        addEvent("buttonAttackCommit", "click", function () { orderAttack(currentGame.GameId, getData(interactionTarget, "RegionId"), getValue("attackTroops"), getValue("attackTarget")); }, false);
+                        addEvent("buttonAttackCommit", "click", function () { orderAttack(currentGame.GameId, getDataOnElement(territoryElement, "RegionId"), getValue("attackTroops"), getValue("attackTarget")); }, false);
                         addEvent("buttonAttackCancel", "click", function () { hideOverlay(); }, false);
                     }
                     else
@@ -670,7 +708,6 @@ system.sfxVolume = 1;
 
                 case 7:
                     console.log("Redeploying troop...");
-                    
                     break;
             }
         }
@@ -737,19 +774,26 @@ system.sfxVolume = 1;
         function orderAttack(gameId, sourceRegionId, numberOfTroops, targetRegionId)
         {
             console.log("Attacking from " + sourceRegionId + " to " + targetRegionId);
-            createOrUpdateAttack(sourceRegionId, targetRegionId, numberOfTroops, true);
+            createOrUpdateAttack(sourceRegionId, targetRegionId, numberOfTroops, true, true);
+            updateCommittedToPhase(worldElementsLookup[sourceRegionId], numberOfTroops);
 
             var data = "?sessionId=" + gameId + "&regionId=" + sourceRegionId + "&numberOfTroops=" + numberOfTroops + "&targetRegionId=" + targetRegionId;
-            sendAjax("POST", "api/Region/Attack", data, "json", onOrderAttackResponse, onOrderAttackResponse, true);
+            sendAjax("POST", "api/Region/Attack", data, "json",
+                function () { onOrderAttackResponse(this.status, sourceRegionId, numberOfTroops, targetRegionId); },
+                function () { onOrderAttackResponse(this.status, sourceRegionId, numberOfTroops, targetRegionId); },
+                true);
         }
 
-        function onOrderAttackResponse()
+        function onOrderAttackResponse(status, sourceRegionId, numberOfTroops, targetRegionId)
         {
-            switch(this.status){
+            var undoAttackUiChanges = true;
+            switch (status)
+            {
                 case 200:
                 case 204:
                     console.log("Attack order successful");
                     hideOverlay();
+                    undoAttackUiChanges = false;
                     break;
                 case 400:
                     console.log("Attack failed. Troops already committed");
@@ -782,6 +826,13 @@ system.sfxVolume = 1;
                     setTimeout(hideOverlay, 1500);
                     break;
             }
+
+            if(undoAttackUiChanges)
+            {
+                var troopsToRemove = parseInt(numberOfTroops) * -1;
+                createOrUpdateAttack(sourceRegionId, targetRegionId, troopsToRemove, true, true);
+                updateCommittedToPhase(worldElementsLookup[sourceRegionId], troopsToRemove);
+            }
         }
         
 // Hud
@@ -807,6 +858,7 @@ system.sfxVolume = 1;
             {
                 var data = "?sessionId=" + gameId + "&phaseId=" + phaseId;
                 sendAjax("POST", "/api/Game/EndPhase", data, "json", onEndTurnResponse, onEndTurnResponse, true);
+                writeHTML("hudTextInstructions", "Waiting for the leader to move to the next phase");
             }
         }
 
@@ -1071,10 +1123,29 @@ system.sfxVolume = 1;
             return "territory" + sourceRegionName.replace(/ /g, "");
         }
 
-        function createOrUpdateAttack(sourceRegionId, targetRegionId, troopCount, appendToExisting)
+        function getCommittedToPhase(sourceRegionMapElement)
+        {
+            return parseInt(getDataOnElement(sourceRegionMapElement, "CommittedTroopCount"));
+        }
+
+        function setCommittedToPhase(sourceRegionMapElement, troopCount)
+        {
+            setDataOnElement(sourceRegionMapElement, "CommittedTroopCount", troopCount);
+            var originalTroopCount = parseInt(getDataOnElement(sourceRegionMapElement, "TroopCount"));
+            setTextContent(sourceRegionMapElement.id + "-counter", originalTroopCount - parseInt(troopCount));
+        }
+
+        function updateCommittedToPhase(sourceRegionMapElement, troopCountChange)
+        {
+            var currentTroopCount = getCommittedToPhase(sourceRegionMapElement);
+            setCommittedToPhase(sourceRegionMapElement, currentTroopCount + parseInt(troopCountChange));
+        }
+
+        function createOrUpdateAttack(sourceRegionId, targetRegionId, troopCount, appendToExisting, isForThisPhase)
         {
             var sourceRegionMapElement = getID(getRegionMapElementIdByGuid(sourceRegionId));
             var existingAttacks = sourceRegionMapElement.getElementsByTagName("g");
+            var attackElement = null;
             for(var counter = 0; counter < existingAttacks.length; ++counter)
             {
                 if(getDataOnElement(existingAttacks[counter], "target-region") === targetRegionId)
@@ -1089,12 +1160,24 @@ system.sfxVolume = 1;
                     {
                         textElement.textContent = troopCount;
                     }
-                    return;
+                    attackElement = existingAttacks[counter];
                 }
             }
             
             // Failed to find existing element, draw a new one
-            drawAttack(sourceRegionMapElement, targetRegionId, troopCount);
+            if (attackElement === null)
+            {
+                attackElement = drawAttack(sourceRegionMapElement, targetRegionId, troopCount);
+            }
+
+            if (isForThisPhase)
+            {
+                removeClassOnElement(attackElement, "attack-future");
+            }
+            else
+            {
+                addClassOnElement(attackElement, "attack-future");
+            }
         }
 
         function removeAllAttacks(sourceRegionMapElement)
@@ -1151,6 +1234,8 @@ system.sfxVolume = 1;
             attackText.setAttribute('transform', 'translate(' + vectorToCommaString(textOffset) + ')');
             attackText.textContent = troopCount;
             attackGroup.appendChild(attackText);
+
+            return attackGroup;
         }
 
         function vectorToCommaString(targetVector) 
@@ -1262,12 +1347,21 @@ system.sfxVolume = 1;
     // Classes
         function addClass(target, clss)
         {
-            getID(target).classList.add(clss)
+            addClassOnElement(getID(target), clss);
+        }
+
+        function addClassOnElement(targetElement, clss)
+        {
+            targetElement.classList.add(clss)
         }
 
         function replaceClass(target, clss)
         {
-            var targetElement = getID(target);
+            replaceClassOnElement(getID(target), clss);
+        }
+
+        function replaceClassOnElement(targetElement, clss)
+        {
             for (var i = targetElement.classList.length - 1; i >= 0; i--)
             {
                 targetElement.classList.remove(targetElement.classList.item(i));
@@ -1277,9 +1371,14 @@ system.sfxVolume = 1;
 
         function removeClass(target, clss)
         {
-            if (checkClass(target, clss))
+            removeClassOnElement(getID(target), clss);
+        }
+
+        function removeClassOnElement(targetElement, clss)
+        {
+            if (checkClassOnElement(targetElement, clss))
             {
-                getID(target).classList.remove(clss);
+                targetElement.classList.remove(clss);
             }
         }
         
@@ -1290,7 +1389,12 @@ system.sfxVolume = 1;
 
         function checkClass(target, clss)
         {
-            return getID(target).classList.contains(clss);
+            checkClassOnElement(getID(target), clss);
+        }
+
+        function checkClassOnElement(targetElement, clss)
+        {
+            return targetElement.classList.contains(clss);
         }
         
     // Data
@@ -1331,7 +1435,8 @@ system.sfxVolume = 1;
     // Event Listeners
         function addEvent(target, evnt, func, c)
         {
-            getID(target).addEventListener(evnt, func, c);
+            var targetElement = getID(target);
+            targetElement.addEventListener(evnt, func, c);
         }
         
     // innerHTML
