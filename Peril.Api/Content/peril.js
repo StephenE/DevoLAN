@@ -419,41 +419,44 @@ system.sfxVolume = 1;
         function updateResponse()
         {
             console.log("Updating board to current state...");
-            
+
             var world = JSON.parse(this.responseText);
             var x = 0;
-            
+
             for (x = 0; x < world.length; x++)
             {
-                var target = "territory" + world[x].Name.replace(/ /g, "");
-                var y = 0;
-                var cpLength = currentPlayers.length;
-                var curColour = "";
-
-                console.log("Next territory to check for owner: " + world[x].Name);
-
-                for (y = 0; y < cpLength; y++)
+                (function ()
                 {
-                    if (world[x].OwnerId === currentPlayers[y].UserId)
-                    {
-                        curColour = currentPlayers[y].Colour;
-                        break;
+                    var target = "territory" + world[x].Name.replace(/ /g, "");
+                    var y = 0;
+                    var cpLength = currentPlayers.length;
+                    var curColour = "";
+
+                    console.log("Next territory to check for owner: " + world[x].Name);
+
+                    for (y = 0; y < cpLength; y++) {
+                        if (world[x].OwnerId === currentPlayers[y].UserId) {
+                            curColour = currentPlayers[y].Colour;
+                            break;
+                        }
                     }
-                }
 
-                replaceClass(target + "-circle", "player-" + curColour);
-                setTextContent(target + "-counter", world[x].TroopCount);
+                    replaceClass(target + "-circle", "player-" + curColour);
+                    setTextContent(target + "-counter", world[x].TroopCount);
 
-                setData(target, "FriendlyName", world[x].Name);
-                setData(target, "OwnerId", world[x].OwnerId);
-                setData(target, "RegionId", world[x].RegionId);
-                setData(target, "ContinentId", world[x].ContinentId);
-                setData(target, "TroopCount", world[x].TroopCount);
-                setData(target, "ConnectedRegions", world[x].ConnectedRegions);
+                    var targetElement = getID(target);
+                    setDataOnElement(targetElement, "FriendlyName", world[x].Name);
+                    setDataOnElement(targetElement, "OwnerId", world[x].OwnerId);
+                    setDataOnElement(targetElement, "RegionId", world[x].RegionId);
+                    setDataOnElement(targetElement, "ContinentId", world[x].ContinentId);
+                    setDataOnElement(targetElement, "TroopCount", world[x].TroopCount);
+                    setDataOnElement(targetElement, "ConnectedRegions", world[x].ConnectedRegions);
 
-                worldLookup[world[x].RegionId] = world[x].Name;
+                    worldLookup[world[x].RegionId] = world[x].Name;
 
-                addEvent(target, "click", territoryInteraction, false);
+                    addEvent(target, "click", function () { territoryInteraction(targetElement); }, false);
+                    addEvent(target + "-outline", "click", function () { territoryInteraction(targetElement); }, false);
+                })();
             }
         }
         
@@ -568,22 +571,22 @@ system.sfxVolume = 1;
 
 // Game Phases
     // Territory Interaction
-        function territoryInteraction()
+        function territoryInteraction(territoryElement)
         {
-            console.log("Resolving interaction with " + this.id + ".");
+            console.log("Resolving interaction with " + territoryElement.id + ".");
 
-            interactionTarget = this.id;
+            interactionTarget = territoryElement.id;
 
             switch (currentGame.PhaseType) {
                 case 1:
                     console.log("Deploying troop...");
-                    deployReinforcements(currentGame.GameId, getData(this.id, "RegionId"), 1);
+                    deployReinforcements(currentGame.GameId, getData(territoryElement.id, "RegionId"), 1);
                     break;
 
                 case 2:
                     console.log("Resolving attack...");
                     var targetRegionSelection = "<select id='attackTarget'>";
-                    var connectedRegions = getData(this.id, "ConnectedRegions").split(',');
+                    var connectedRegions = getData(territoryElement.id, "ConnectedRegions").split(',');
                     
                     for (var index = 0, numberOfRegions = connectedRegions.length; index < numberOfRegions; ++index)
                     {
@@ -591,10 +594,10 @@ system.sfxVolume = 1;
                         targetRegionSelection += "<option value=\"" + connectedRegionId + "\">" + worldLookup[connectedRegionId] + "</option>";
                     }
                     targetRegionSelection += "</select>";
-                    var targetRegionTroops = getData(this.id, "TroopCount") - 1;
+                    var targetRegionTroops = getData(territoryElement.id, "TroopCount") - 1;
                     if (targetRegionTroops > 0)
                     {
-                        var friendlyName = getData(this.id, "FriendlyName")
+                        var friendlyName = getData(territoryElement.id, "FriendlyName")
                         var data = targetRegionSelection + "<br /><input type=\"number\" id='attackTroops' min=\"1\" value=\"1\" max=\"" + targetRegionTroops + "\" /><br /><input type=\"submit\" id=\"buttonAttackCommit\" value=\"Attack!\"><input type=\"submit\" id=\"buttonAttackCancel\" value=\"Cancel!\">"
                         showOverlay("Attack from " + friendlyName, data);
 
