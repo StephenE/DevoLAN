@@ -43,6 +43,7 @@ namespace Peril.Api.Controllers.Api
 
             IEnumerable<ICombat> combatData = await WorldRepository.GetCombat(session.GameId, session.Round);
             return from combat in combatData
+                   where IsStillValid(session, combat)
                    select new Combat(combat);
         }
 
@@ -55,6 +56,23 @@ namespace Peril.Api.Controllers.Api
             //   - Must be valid combat id
             //   - Must be in correct round
             throw new NotImplementedException("Not implemented");
+        }
+
+        private bool IsStillValid(ISession session, ICombat combat)
+        {
+            switch(session.PhaseType)
+            {
+                case SessionPhase.BorderClashes:
+                    return true;
+                case SessionPhase.MassInvasions:
+                    return combat.ResolutionType >= CombatType.MassInvasion;
+                case SessionPhase.Invasions:
+                    return combat.ResolutionType >= CombatType.Invasion;
+                case SessionPhase.SpoilsOfWar:
+                    return combat.ResolutionType >= CombatType.SpoilsOfWar;
+                default:
+                    return false;
+            }
         }
 
         private INationRepository NationRepository { get; set; }

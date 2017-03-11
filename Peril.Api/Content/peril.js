@@ -425,38 +425,97 @@ system.sfxVolume = 1;
 
             for (x = 0; x < world.length; x++)
             {
-                (function ()
+                processRegionData(world[x]);
+            }
+
+            updateCombat();
+        }
+
+        function processRegionData(regionData)
+        {
+            var target = "territory" + regionData.Name.replace(/ /g, "");
+            var y = 0;
+            var cpLength = currentPlayers.length;
+            var curColour = "";
+
+            console.log("Next territory to check for owner: " + regionData.Name);
+
+            for (y = 0; y < cpLength; y++) {
+                if (regionData.OwnerId === currentPlayers[y].UserId) {
+                    curColour = currentPlayers[y].Colour;
+                    break;
+                }
+            }
+
+            replaceClass(target + "-circle", "player-" + curColour);
+            setTextContent(target + "-counter", regionData.TroopCount);
+
+            var targetElement = getID(target);
+            setDataOnElement(targetElement, "FriendlyName", regionData.Name);
+            setDataOnElement(targetElement, "OwnerId", regionData.OwnerId);
+            setDataOnElement(targetElement, "RegionId", regionData.RegionId);
+            setDataOnElement(targetElement, "ContinentId", regionData.ContinentId);
+            setDataOnElement(targetElement, "TroopCount", regionData.TroopCount);
+            setDataOnElement(targetElement, "ConnectedRegions", regionData.ConnectedRegions);
+
+            worldLookup[regionData.RegionId] = regionData.Name;
+
+            addEvent(target, "click", function () { territoryInteraction(targetElement); }, false);
+            addEvent(target + "-outline", "click", function () { territoryInteraction(targetElement); }, false);
+            removeAllAttacks(targetElement);
+        }
+
+        function updateCombat()
+        {
+            console.log("Getting current combat status...");
+
+            var data = "?sessionId=" + currentGame.GameId;
+            sendAjax("GET", "api/World/Combat", data, "adv", updateCombatResponse, updateCombatResponse, true);
+        }
+
+        function updateCombatResponse()
+        {
+            console.log("Updating combat on board to current state...");
+
+            var plannedCombat = JSON.parse(this.responseText);
+            for (var counter = 0; counter < plannedCombat.length; counter++)
+            {
+                processCombatEntry(plannedCombat[counter]);
+            }
+        }
+
+        function processCombatEntry(combatEntry)
+        {
+            console.log("Processing combat " + combatEntry.CombatId + " of type " + combatEntry.ResolutionType);
+            if(combatEntry.ResolutionType === 0)
+            {
+                // Border clash
+                var armyA = combatEntry.InvolvedArmies[0];
+                var armyB = combatEntry.InvolvedArmies[1];
+
+                createOrUpdateAttack(armyA.OriginRegionId, armyB.OriginRegionId, armyA.NumberOfTroops, false);
+                createOrUpdateAttack(armyB.OriginRegionId, armyA.OriginRegionId, armyB.NumberOfTroops, false);
+            }
+            else
+            {
+                // All other combat. One army defending, the others are all attackers
+                var defendingRegionId;
+                for (var counter = 0; counter < combatEntry.InvolvedArmies.length; counter++)
                 {
-                    var target = "territory" + world[x].Name.replace(/ /g, "");
-                    var y = 0;
-                    var cpLength = currentPlayers.length;
-                    var curColour = "";
-
-                    console.log("Next territory to check for owner: " + world[x].Name);
-
-                    for (y = 0; y < cpLength; y++) {
-                        if (world[x].OwnerId === currentPlayers[y].UserId) {
-                            curColour = currentPlayers[y].Colour;
-                            break;
-                        }
+                    if(combatEntry.InvolvedArmies[counter].ArmyMode === 1)
+                    {
+                        defendingRegionId = combatEntry.InvolvedArmies[counter].OriginRegionId;
+                        break;
                     }
+                }
 
-                    replaceClass(target + "-circle", "player-" + curColour);
-                    setTextContent(target + "-counter", world[x].TroopCount);
-
-                    var targetElement = getID(target);
-                    setDataOnElement(targetElement, "FriendlyName", world[x].Name);
-                    setDataOnElement(targetElement, "OwnerId", world[x].OwnerId);
-                    setDataOnElement(targetElement, "RegionId", world[x].RegionId);
-                    setDataOnElement(targetElement, "ContinentId", world[x].ContinentId);
-                    setDataOnElement(targetElement, "TroopCount", world[x].TroopCount);
-                    setDataOnElement(targetElement, "ConnectedRegions", world[x].ConnectedRegions);
-
-                    worldLookup[world[x].RegionId] = world[x].Name;
-
-                    addEvent(target, "click", function () { territoryInteraction(targetElement); }, false);
-                    addEvent(target + "-outline", "click", function () { territoryInteraction(targetElement); }, false);
-                })();
+                for (counter = 0; counter < combatEntry.InvolvedArmies.length; counter++)
+                {
+                    if (combatEntry.InvolvedArmies[counter].ArmyMode === 0)
+                    {
+                        createOrUpdateAttack(combatEntry.InvolvedArmies[counter].OriginRegionId, defendingRegionId, combatEntry.InvolvedArmies[counter].NumberOfTroops, false);
+                    }
+                }
             }
         }
         
@@ -540,22 +599,18 @@ system.sfxVolume = 1;
 
                 case 3:
                     instruction = "Combat Phase: Showing border clashes.";
-                    endTurn(currentGame.GameId, currentGame.PhaseId);
                     break;
 
                 case 4:
                     instruction = "Combat Phase: Showing mass invasions.";
-                    endTurn(currentGame.GameId, currentGame.PhaseId);
                     break;
 
                 case 5:
                     instruction = "Combat Phase: Showing invasions.";
-                    endTurn(currentGame.GameId, currentGame.PhaseId);
                     break;
 
                 case 6:
                     instruction = "Combat Phase: Showing spoils of war";
-                    endTurn(currentGame.GameId, currentGame.PhaseId);
                     break;
 
                 case 7:
@@ -682,7 +737,7 @@ system.sfxVolume = 1;
         function orderAttack(gameId, sourceRegionId, numberOfTroops, targetRegionId)
         {
             console.log("Attacking from " + sourceRegionId + " to " + targetRegionId);
-            createOrUpdateAttack(sourceRegionId, targetRegionId, numberOfTroops);
+            createOrUpdateAttack(sourceRegionId, targetRegionId, numberOfTroops, true);
 
             var data = "?sessionId=" + gameId + "&regionId=" + sourceRegionId + "&numberOfTroops=" + numberOfTroops + "&targetRegionId=" + targetRegionId;
             sendAjax("POST", "api/Region/Attack", data, "json", onOrderAttackResponse, onOrderAttackResponse, true);
@@ -1016,7 +1071,7 @@ system.sfxVolume = 1;
             return "territory" + sourceRegionName.replace(/ /g, "");
         }
 
-        function createOrUpdateAttack(sourceRegionId, targetRegionId, troopCount)
+        function createOrUpdateAttack(sourceRegionId, targetRegionId, troopCount, appendToExisting)
         {
             var sourceRegionMapElement = getID(getRegionMapElementIdByGuid(sourceRegionId));
             var existingAttacks = sourceRegionMapElement.getElementsByTagName("g");
@@ -1026,13 +1081,31 @@ system.sfxVolume = 1;
                 {
                     // Update this element
                     var textElement = existingAttacks[counter].getElementsByTagName("text")[0];
-                    textElement.textContent = parseInt(textElement.textContent) + parseInt(troopCount);
+                    if (appendToExisting)
+                    {
+                        textElement.textContent = parseInt(textElement.textContent) + parseInt(troopCount);
+                    }
+                    else
+                    {
+                        textElement.textContent = troopCount;
+                    }
                     return;
                 }
             }
             
             // Failed to find existing element, draw a new one
             drawAttack(sourceRegionMapElement, targetRegionId, troopCount);
+        }
+
+        function removeAllAttacks(sourceRegionMapElement)
+        {
+            // Eventually, we'll just hide the element as it'll save the effort of re-adding it later
+            // For now, let's just delete it!
+            var existingAttackGroups = sourceRegionMapElement.getElementsByTagName("g");
+            for(var counter = 0; counter < existingAttackGroups.length; ++counter)
+            {
+                sourceRegionMapElement.removeChild(existingAttackGroups[counter]);
+            }
         }
 
         function drawAttack(sourceRegionMapElement, targetRegionId, troopCount)

@@ -171,6 +171,7 @@ namespace Peril.Api.Tests.Controllers
             ControllerMock primaryUser = new ControllerMock();
             primaryUser.SetupDummySession(SessionGuid)
                        .SetupDummyWorldAsTree()
+                       .SetupSessionPhase(SessionPhase.BorderClashes)
                        .SetupRegionOwnership(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, DummyUserRepository.RegisteredUserIds[1])
                        .SetupRegionTroops(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 7)
                        .SetupRegionTroops(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 2)
@@ -203,12 +204,36 @@ namespace Peril.Api.Tests.Controllers
         [TestMethod]
         [TestCategory("Unit")]
         [TestCategory("WorldController")]
+        public async Task TestGetCombat_WithExpiredBorderClash()
+        {
+            // Arrange
+            ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(SessionGuid)
+                       .SetupDummyWorldAsTree()
+                       .SetupSessionPhase(SessionPhase.MassInvasions)
+                       .SetupRegionOwnership(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, DummyUserRepository.RegisteredUserIds[1])
+                       .SetupRegionTroops(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 7)
+                       .SetupRegionTroops(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 2)
+                       .SetupBorderClash(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 5, ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 1);
+
+            // Act
+            IEnumerable<ICombat> result = await primaryUser.WorldController.GetCombat(SessionGuid);
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.AreEqual(2, result.Count());
+        }
+
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("WorldController")]
         public async Task TestGetCombat_WithMassInvasion()
         {
             // Arrange
             ControllerMock primaryUser = new ControllerMock();
             primaryUser.SetupDummySession(SessionGuid)
                        .SetupDummyWorldAsTree()
+                       .SetupSessionPhase(SessionPhase.MassInvasions)
                        .SetupRegionOwnership(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, DummyUserRepository.RegisteredUserIds[1])
                        .SetupRegionOwnership(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, DummyUserRepository.RegisteredUserIds[2])
                        .SetupRegionTroops(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 10)
@@ -236,6 +261,7 @@ namespace Peril.Api.Tests.Controllers
             ControllerMock primaryUser = new ControllerMock();
             primaryUser.SetupDummySession(SessionGuid)
                        .SetupDummyWorldAsTree()
+                       .SetupSessionPhase(SessionPhase.Invasions)
                        .SetupRegionOwnership(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, DummyUserRepository.RegisteredUserIds[1])
                        .SetupRegionTroops(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 1)
                        .SetupInvasion(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 5);
@@ -261,6 +287,7 @@ namespace Peril.Api.Tests.Controllers
             ControllerMock primaryUser = new ControllerMock();
             primaryUser.SetupDummySession(SessionGuid)
                        .SetupDummyWorldAsTree()
+                       .SetupSessionPhase(SessionPhase.SpoilsOfWar)
                        .SetupRegionOwnership(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, DummyUserRepository.RegisteredUserIds[1])
                        .SetupRegionOwnership(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, DummyUserRepository.RegisteredUserIds[2])
                        .SetupSpoilsOfWar(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 5, ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 1);
