@@ -519,8 +519,8 @@ system.sfxVolume = 1;
                 var armyA = combatEntry.InvolvedArmies[0];
                 var armyB = combatEntry.InvolvedArmies[1];
 
-                createOrUpdateAttack(armyA.OriginRegionId, armyB.OriginRegionId, armyA.NumberOfTroops, false, combatEntry.ResolutionType === activeCombatPhase);
-                createOrUpdateAttack(armyB.OriginRegionId, armyA.OriginRegionId, armyB.NumberOfTroops, false, combatEntry.ResolutionType === activeCombatPhase);
+                createOrUpdateAttack(armyA.OriginRegionId, armyB.OriginRegionId, armyA.NumberOfTroops, false, combatEntry.ResolutionType === activeCombatPhase, true);
+                createOrUpdateAttack(armyB.OriginRegionId, armyA.OriginRegionId, armyB.NumberOfTroops, false, combatEntry.ResolutionType === activeCombatPhase, true);
             }
             else
             {
@@ -539,7 +539,7 @@ system.sfxVolume = 1;
                 {
                     if (combatEntry.InvolvedArmies[counter].ArmyMode === 0)
                     {
-                        createOrUpdateAttack(combatEntry.InvolvedArmies[counter].OriginRegionId, defendingRegionId, combatEntry.InvolvedArmies[counter].NumberOfTroops, false, combatEntry.ResolutionType === activeCombatPhase);
+                        createOrUpdateAttack(combatEntry.InvolvedArmies[counter].OriginRegionId, defendingRegionId, combatEntry.InvolvedArmies[counter].NumberOfTroops, false, combatEntry.ResolutionType === activeCombatPhase, false);
                     }
                 }
             }
@@ -774,7 +774,7 @@ system.sfxVolume = 1;
         function orderAttack(gameId, sourceRegionId, numberOfTroops, targetRegionId)
         {
             console.log("Attacking from " + sourceRegionId + " to " + targetRegionId);
-            createOrUpdateAttack(sourceRegionId, targetRegionId, numberOfTroops, true, true);
+            createOrUpdateAttack(sourceRegionId, targetRegionId, numberOfTroops, true, true, false);
             updateCommittedToPhase(worldElementsLookup[sourceRegionId], numberOfTroops);
 
             var data = "?sessionId=" + gameId + "&regionId=" + sourceRegionId + "&numberOfTroops=" + numberOfTroops + "&targetRegionId=" + targetRegionId;
@@ -830,7 +830,7 @@ system.sfxVolume = 1;
             if(undoAttackUiChanges)
             {
                 var troopsToRemove = parseInt(numberOfTroops) * -1;
-                createOrUpdateAttack(sourceRegionId, targetRegionId, troopsToRemove, true, true);
+                createOrUpdateAttack(sourceRegionId, targetRegionId, troopsToRemove, true, true, false);
                 updateCommittedToPhase(worldElementsLookup[sourceRegionId], troopsToRemove);
             }
         }
@@ -1141,7 +1141,7 @@ system.sfxVolume = 1;
             setCommittedToPhase(sourceRegionMapElement, currentTroopCount + parseInt(troopCountChange));
         }
 
-        function createOrUpdateAttack(sourceRegionId, targetRegionId, troopCount, appendToExisting, isForThisPhase)
+        function createOrUpdateAttack(sourceRegionId, targetRegionId, troopCount, appendToExisting, isForThisPhase, isBorderClash)
         {
             var sourceRegionMapElement = getID(getRegionMapElementIdByGuid(sourceRegionId));
             var existingAttacks = sourceRegionMapElement.getElementsByTagName("g");
@@ -1167,7 +1167,7 @@ system.sfxVolume = 1;
             // Failed to find existing element, draw a new one
             if (attackElement === null)
             {
-                attackElement = drawAttack(sourceRegionMapElement, targetRegionId, troopCount);
+                attackElement = drawAttack(sourceRegionMapElement, targetRegionId, troopCount, isBorderClash);
             }
 
             if (isForThisPhase)
@@ -1191,7 +1191,7 @@ system.sfxVolume = 1;
             }
         }
 
-        function drawAttack(sourceRegionMapElement, targetRegionId, troopCount)
+        function drawAttack(sourceRegionMapElement, targetRegionId, troopCount, drawAsBorderClash)
         {
             var targetRegionMapElement = getID(getRegionMapElementIdByGuid(targetRegionId));
 
@@ -1210,7 +1210,14 @@ system.sfxVolume = 1;
             var sourceOffset = source.clone().add(radiusOffsetVector);
             var sourceLhsOffset = source.clone().add(sourceToTargetNormal);
             var sourceRhsOffset = source.clone().subtract(sourceToTargetNormal);
-            var targetOffset = target.clone().subtract(radiusOffsetVector);
+            if (drawAsBorderClash === true)
+            {
+                var targetOffset = target.clone().add(sourceToTargetNormal);
+            }
+            else
+            {
+                var targetOffset = target.clone().subtract(radiusOffsetVector);
+            }
             var textOffset = sourceOffset.clone().add(radiusOffsetVector).add(radiusOffsetVector);
 
             // Create group for attack arrow
