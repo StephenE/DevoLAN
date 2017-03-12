@@ -640,7 +640,7 @@ system.sfxVolume = 1;
                     break;
 
                 case 7:
-                    instruction = "Redeployment Phase: Not implemented for DevoLAN 32.";
+                    instruction = "Redeployment Phase: Move troops between two regions you own";
                     break;
 
                 case 8:
@@ -673,28 +673,18 @@ system.sfxVolume = 1;
 
                 case 2:
                     console.log("Resolving attack...");
-                    var targetRegionSelection = "<select id='attackTarget'>";
-                    var connectedRegions = getDataOnElement(territoryElement, "ConnectedRegions").split(',');
 
-                    for (var index = 0, numberOfRegions = connectedRegions.length; index < numberOfRegions; ++index)
+                    var data = createTerritoryInteractionPopup(territoryElement, "Attack!", function (adjoiningTerritory)
                     {
-                        var connectedRegionId = connectedRegions[index];
-                        var targetRegionElement = worldElementsLookup[connectedRegionId];
-                        var targetOwner = getDataOnElement(targetRegionElement, "OwnerId");
-                        if (targetOwner !== regionOwner)
-                        {
-                            targetRegionSelection += "<option value=\"" + connectedRegionId + "\">" + worldLookup[connectedRegionId] + "</option>";
-                        }
-                    }
-                    targetRegionSelection += "</select>";
+                        var targetOwner = getDataOnElement(adjoiningTerritory, "OwnerId");
+                        return targetOwner !== regionOwner;
+                    });
+
                     var targetRegionTroops = getDataOnElement(territoryElement, "TroopCount") - getCommittedToPhase(territoryElement) - 1;
                     if (targetRegionTroops > 0)
                     {
                         var friendlyName = getDataOnElement(territoryElement, "FriendlyName")
-                        var data = targetRegionSelection + "<br /><input type=\"number\" id='attackTroops' min=\"1\" value=\"1\" max=\"" + targetRegionTroops + "\" /><br /><input type=\"submit\" id=\"buttonAttackCommit\" value=\"Attack!\"><input type=\"submit\" id=\"buttonAttackCancel\" value=\"Cancel!\">"
                         showOverlay("Attack from " + friendlyName, data);
-
-                        console.log("Starting attack");
 
                         addEvent("buttonAttackCommit", "click", function () { orderAttack(currentGame.GameId, getDataOnElement(territoryElement, "RegionId"), getValue("attackTroops"), getValue("attackTarget")); }, false);
                         addEvent("buttonAttackCancel", "click", function () { hideOverlay(); }, false);
@@ -708,8 +698,51 @@ system.sfxVolume = 1;
 
                 case 7:
                     console.log("Redeploying troop...");
+
+                    var data = createTerritoryInteractionPopup(territoryElement, "Redeploy!", function (adjoiningTerritory)
+                    {
+                        var targetOwner = getDataOnElement(adjoiningTerritory, "OwnerId");
+                        return targetOwner === regionOwner;
+                    });
+
+                    var targetRegionTroops = getDataOnElement(territoryElement, "TroopCount") - getCommittedToPhase(territoryElement) - 1;
+                    if (targetRegionTroops > 0)
+                    {
+                        var friendlyName = getDataOnElement(territoryElement, "FriendlyName")
+                        showOverlay("Redeploy from " + friendlyName, data);
+
+                        addEvent("buttonAttackCommit", "click", function () { orderRedeploy(currentGame.GameId, getDataOnElement(territoryElement, "RegionId"), getValue("attackTroops"), getValue("attackTarget")); }, false);
+                        addEvent("buttonAttackCancel", "click", function () { hideOverlay(); }, false);
+                    }
+                    else
+                    {
+                        showOverlay("Not enough troops", "<img src='Content/images/error.svg' />");
+                        setTimeout(hideOverlay, 1500);
+                    }
                     break;
             }
+        }
+
+        function createTerritoryInteractionPopup(territoryElement, commitButtonText, shouldShowRegionCallback)
+        {
+            var targetRegionSelection = "<select id='attackTarget'>";
+            var connectedRegions = getDataOnElement(territoryElement, "ConnectedRegions").split(',');
+
+            for (var index = 0, numberOfRegions = connectedRegions.length; index < numberOfRegions; ++index)
+            {
+                var connectedRegionId = connectedRegions[index];
+                var targetRegionElement = worldElementsLookup[connectedRegionId];
+
+                if (shouldShowRegionCallback(targetRegionElement) === true)
+                {
+                    targetRegionSelection += "<option value=\"" + connectedRegionId + "\">" + worldLookup[connectedRegionId] + "</option>";
+                }
+            }
+            targetRegionSelection += "</select>";
+            var targetRegionTroops = getDataOnElement(territoryElement, "TroopCount") - getCommittedToPhase(territoryElement) - 1;
+
+            var friendlyName = getDataOnElement(territoryElement, "FriendlyName")
+            return targetRegionSelection + "<br /><input type=\"number\" id='attackTroops' min=\"1\" value=\"1\" max=\"" + targetRegionTroops + "\" /><br /><input type=\"submit\" id=\"buttonAttackCommit\" value=\"" + commitButtonText + "\"><input type=\"submit\" id=\"buttonAttackCancel\" value=\"Cancel!\">"
         }
 
     // Reinforcements
@@ -831,6 +864,71 @@ system.sfxVolume = 1;
             {
                 var troopsToRemove = parseInt(numberOfTroops) * -1;
                 createOrUpdateAttack(sourceRegionId, targetRegionId, troopsToRemove, true, true, false);
+                updateCommittedToPhase(worldElementsLookup[sourceRegionId], troopsToRemove);
+            }
+        }
+
+    // Redeployment
+        function orderRedeploy(gameId, sourceRegionId, numberOfTroops, targetRegionId)
+        {
+            console.log("Redeploying from " + sourceRegionId + " to " + targetRegionId);
+            createOrUpdateAttack(sourceRegionId, targetRegionId, numberOfTroops, false, true, false);
+            updateCommittedToPhase(worldElementsLookup[sourceRegionId], numberOfTroops);
+
+            var data = "?sessionId=" + gameId + "&regionId=" + sourceRegionId + "&numberOfTroops=" + numberOfTroops + "&targetRegionId=" + targetRegionId;
+            sendAjax("POST", "api/Region/Redeploy", data, "json",
+                function () { onOrderRedeployResponse(this.status, sourceRegionId, numberOfTroops, targetRegionId); },
+                function () { onOrderRedeployResponse(this.status, sourceRegionId, numberOfTroops, targetRegionId); },
+                true);
+        }
+
+        function onOrderRedeployResponse(status, sourceRegionId, numberOfTroops, targetRegionId)
+        {
+            var undoRedeploymentUiChanges = true;
+            switch (status)
+            {
+                case 200:
+                case 204:
+                    console.log("Redeployment order successful");
+                    writeHTML("hudTextInstructions", "Redployment queued. Click 'End Turn' (only your first redeployment will be counted)");
+                    hideOverlay();
+                    undoRedeploymentUiChanges = false;
+                    break;
+                case 400:
+                    console.log("Redeployment failed. Troops already committed");
+                    showOverlay("Redeployment failed: Not enough troops.", "<img src='Content/images/error.svg' />");
+                    setTimeout(hideOverlay, 1500);
+                    break;
+                case 402:
+                    console.log("Redeployment failed. Regions not connected");
+                    showOverlay("Redeployment failed: Regions not connected.", "<img src='Content/images/error.svg' />");
+                    setTimeout(hideOverlay, 1500);
+                    break;
+                case 404:
+                    console.log("Redeployment failed. Invalid region id");
+                    showOverlay("Redeployment failed: Invalid region.", "<img src='Content/images/error.svg' />");
+                    setTimeout(hideOverlay, 1500);
+                    break;
+                case 406:
+                    console.log("Redeployment failed. Not owner of source, or owner of target");
+                    showOverlay("Redeployment failed: You don't own that territory!", "<img src='Content/images/error.svg' />");
+                    setTimeout(hideOverlay, 1500);
+                    break;
+                case 417:
+                    console.log("Redeployment failed. Invalid session phase");
+                    showOverlay("Redeployment failed: The orders phase is over.", "<img src='Content/images/error.svg' />");
+                    setTimeout(hideOverlay, 1500);
+                    break;
+                default:
+                    console.log("Redeployment failed. Unknown error..");
+                    showOverlay("Redeployment failed: Unknown issue, sorry...", "<img src='Content/images/error.svg' />");
+                    setTimeout(hideOverlay, 1500);
+                    break;
+            }
+
+            if (undoRedeploymentUiChanges)
+            {
+                removeAllAttacks(worldElementsLookup[sourceRegionId]);
                 updateCommittedToPhase(worldElementsLookup[sourceRegionId], troopsToRemove);
             }
         }
