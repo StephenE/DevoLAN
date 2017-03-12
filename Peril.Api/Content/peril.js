@@ -88,9 +88,6 @@ system.sfxVolume = 1;
                 
                 setTimeout(function () { hideOverlay(true); loadAudio("music", "planning"); }, 1500);
 
-                window.addEventListener("resize", function () { resizeBoard() }, true);
-                resizeBoard();
-
                 addEvent("hudButtonEndTurn", "click", function () { loadAudio("sfx", "button"); endTurn(currentGame.GameId, currentGame.PhaseId); }, false)
                 break;
         }
@@ -1348,28 +1345,6 @@ system.sfxVolume = 1;
             return targetVector.x + ',' + targetVector.y;
         }
 
-// Screen Sizing
-        function resizeBoard()
-        {
-            var x = 0;
-            var circles = document.getElementsByTagName("circle");
-            var r = 17.5;
-                
-            for (x = 0; x < circles.length; x++)
-            {
-                if (window.innerWidth < 1100 || window.innerHeight < 650)
-                {
-                    r = 35;
-                }
-                else
-                {
-                    r = 17.5;
-                }
-                    
-                circles[x].setAttribute("r", r);
-            }
-        }
-        
 // Fill
     // Set Fill Colour
         function setFillColour(target, colour)
