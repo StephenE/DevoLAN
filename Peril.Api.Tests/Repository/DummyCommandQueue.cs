@@ -76,7 +76,7 @@ namespace Peril.Api.Tests.Repository
                                                                       select message);
         }
 
-        public void RemoveCommand(IBatchOperationHandle batchOperationHandle, Guid sessionId, ICommandQueueMessage message)
+        public void RemoveCommand(IBatchOperationHandle batchOperationHandle, ICommandQueueMessage message)
         {
             DummyBatchOperationHandle dummyBatch = batchOperationHandle as DummyBatchOperationHandle;
             dummyBatch.QueuedOperations.Add(() =>
@@ -87,11 +87,11 @@ namespace Peril.Api.Tests.Repository
             });
         }
 
-        public void RemoveCommands(IBatchOperationHandle batchOperationHandle, Guid sessionId, IEnumerable<ICommandQueueMessage> messages)
+        public void RemoveCommands(IBatchOperationHandle batchOperationHandle, IEnumerable<ICommandQueueMessage> messages)
         {
             foreach (var message in messages)
             {
-                RemoveCommand(batchOperationHandle, sessionId, message);
+                RemoveCommand(batchOperationHandle, message);
             }
         }
 
@@ -169,6 +169,29 @@ namespace Peril.Api.Tests.Repository
                 TargetRegion = targetRegionId,
                 NumberOfTroops = numberOfTroops
             });
+            setupContext.ControllerMock.RegionRepository.RegionData[sourceRegionId].TroopsCommittedToPhase += numberOfTroops;
+            return setupContext;
+        }
+
+        static public ControllerMockSetupContext QueueRedeployment(this ControllerMockSetupContext setupContext, Guid sourceRegionId, Guid targetRegionId, UInt32 numberOfTroops)
+        {
+            Guid operationId;
+            return QueueRedeployment(setupContext, sourceRegionId, targetRegionId, numberOfTroops, out operationId);
+        }
+
+        static public ControllerMockSetupContext QueueRedeployment(this ControllerMockSetupContext setupContext, Guid sourceRegionId, Guid targetRegionId, UInt32 numberOfTroops, out Guid operationId)
+        {
+            operationId = Guid.NewGuid();
+            setupContext.ControllerMock.CommandQueue.DummyRedeployQueue.Add(new DummyRedeploy
+            {
+                OperationId = operationId,
+                SessionId = setupContext.DummySession.GameId,
+                PhaseId = setupContext.DummySession.PhaseId,
+                SourceRegion = sourceRegionId,
+                TargetRegion = targetRegionId,
+                NumberOfTroops = numberOfTroops
+            });
+
             setupContext.ControllerMock.RegionRepository.RegionData[sourceRegionId].TroopsCommittedToPhase += numberOfTroops;
             return setupContext;
         }

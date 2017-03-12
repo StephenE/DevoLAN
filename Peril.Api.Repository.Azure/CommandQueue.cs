@@ -116,10 +116,8 @@ namespace Peril.Api.Repository.Azure
             return results;
         }
 
-        public void RemoveCommand(IBatchOperationHandle batchOperationHandle, Guid sessionId, ICommandQueueMessage command)
+        public void RemoveCommand(IBatchOperationHandle batchOperationHandle, ICommandQueueMessage command)
         {
-            CloudTable commandQueueTable = GetCommandQueueTableForSession(sessionId);
-
             lock (batchOperationHandle)
             {
                 TableBatchOperation batchOperation = (batchOperationHandle as BatchOperationHandle).BatchOperation;
@@ -129,15 +127,13 @@ namespace Peril.Api.Repository.Azure
             }
         }
 
-        public void RemoveCommands(IBatchOperationHandle batchOperationHandle, Guid sessionId, IEnumerable<ICommandQueueMessage> commands)
+        public void RemoveCommands(IBatchOperationHandle batchOperationHandle, IEnumerable<ICommandQueueMessage> commands)
         {
-            CloudTable commandQueueTable = GetCommandQueueTableForSession(sessionId);
-
             lock (batchOperationHandle)
             {
                 foreach (var command in commands)
                 {
-                    RemoveCommand(batchOperationHandle, sessionId, command);
+                    RemoveCommand(batchOperationHandle, command);
                 }
             }
         }

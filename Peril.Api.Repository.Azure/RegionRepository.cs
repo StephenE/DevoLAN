@@ -98,27 +98,30 @@ namespace Peril.Api.Repository.Azure
 
             // Fetch all regions (quicker than fetching only what we need, one by one)
             var updateRegionOwnershipTask = GetRegions(sessionId)
-                .ContinueWith(regionTask =>
-                {
-                    // Get NationTableEntry for every player that needs updating
-                    var regions = regionTask.Result;
-                    var updateOperations = from ownershipChange in ownershipChanges
-                                           join region in regions.Cast<RegionTableEntry>() on ownershipChange.Key equals region.RegionId
-                                           select new { Region = region, NewOwner = ownershipChange.Value.UserId, NewTroopCount = (Int32)ownershipChange.Value.TroopCount };
-
-                    // Modify entries as required
-                    foreach (var operation in updateOperations)
-                    {
-                        RegionTableEntry regionEntry = operation.Region;
-                        regionEntry.IsValid();
-                        regionEntry.OwnerId = operation.NewOwner;
-                        regionEntry.StoredTroopCount = operation.NewTroopCount;
-                        regionEntry.StoredTroopsCommittedToPhase = 0;
-                        batchOperationHandle.BatchOperation.Replace(regionEntry);
-                    }
-                });
+                .ContinueWith(regionTask => { AssignRegionOwnership(batchOperationHandleInterface, regionTask.Result, ownershipChanges); });
 
             batchOperationHandle.AddPrerequisite(updateRegionOwnershipTask, ownershipChanges.Count);
+        }
+
+        public void AssignRegionOwnership(IBatchOperationHandle batchOperationHandleInterface, IEnumerable<IRegionData> regions, Dictionary<Guid, OwnershipChange> ownershipChanges)
+        {
+            BatchOperationHandle batchOperationHandle = batchOperationHandleInterface as BatchOperationHandle;
+
+            // Get NationTableEntry for every player that needs updating
+            var updateOperations = from ownershipChange in ownershipChanges
+                                    join region in regions.Cast<RegionTableEntry>() on ownershipChange.Key equals region.RegionId
+                                    select new { Region = region, NewOwner = ownershipChange.Value.UserId, NewTroopCount = (Int32)ownershipChange.Value.TroopCount };
+
+            // Modify entries as required
+            foreach (var operation in updateOperations)
+            {
+                RegionTableEntry regionEntry = operation.Region;
+                regionEntry.IsValid();
+                regionEntry.OwnerId = operation.NewOwner;
+                regionEntry.StoredTroopCount = operation.NewTroopCount;
+                regionEntry.StoredTroopsCommittedToPhase = 0;
+                batchOperationHandle.BatchOperation.Replace(regionEntry);
+            }
         }
 
         public void CommitTroopsToPhase(IBatchOperationHandle batchOperationHandleInterface, IRegionData sourceRegion, UInt32 troopsToCommit)

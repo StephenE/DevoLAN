@@ -195,7 +195,7 @@ namespace Peril.Api.Controllers.Api
                             }
 
                             NationRepository.SetAvailableReinforcements(batchOperation, session.GameId, initialReinforcements);
-                            CommandQueue.RemoveCommands(batchOperation, session.GameId, pendingMessages);
+                            CommandQueue.RemoveCommands(batchOperation, pendingMessages);
                             nextPhase = SessionPhase.CombatOrders;
                             break;
                         }
@@ -250,8 +250,10 @@ namespace Peril.Api.Controllers.Api
                         }
                         case SessionPhase.Redeployment:
                         {
-                            // For DevoLAN 31, we're skipping redeployment!
-                            nextPhase = SessionPhase.Victory;
+                            var regions = RegionRepository.GetRegions(session.GameId);
+                            IEnumerable<ICommandQueueMessage> pendingMessages = await CommandQueue.GetQueuedCommands(session.GameId, session.PhaseId);
+                            IEnumerable<IRedeployMessage> pendingReinforcementMessages = pendingMessages.GetQueuedRedeployCommands();
+                            nextPhase = ProcessRedeployments(batchOperation, await regions, pendingReinforcementMessages);
                             break;
                         }
                         case SessionPhase.Victory:
@@ -417,7 +419,7 @@ namespace Peril.Api.Controllers.Api
                     }
 
                     // Remove all attack commands for the invalid region
-                    CommandQueue.RemoveCommands(batchOperation, sessionId, sourceRegionMessages.Value);
+                    CommandQueue.RemoveCommands(batchOperation, sourceRegionMessages.Value);
                 }
             }
 
@@ -471,9 +473,9 @@ namespace Peril.Api.Controllers.Api
                             resolvedCombat.Add(Tuple.Create(CombatType.BorderClash, involvedArmies));
 
                             // Queue up removal of all involved messages
-                            CommandQueue.RemoveCommands(batchOperation, sessionId, targetRegionData.OutgoingArmies[sourceRegionId]);
+                            CommandQueue.RemoveCommands(batchOperation, targetRegionData.OutgoingArmies[sourceRegionId]);
                             targetRegionData.OutgoingArmies[sourceRegionId].Clear();
-                            CommandQueue.RemoveCommands(batchOperation, sessionId, sourceRegionData.OutgoingArmies[targetRegionId]);
+                            CommandQueue.RemoveCommands(batchOperation, sourceRegionData.OutgoingArmies[targetRegionId]);
                             sourceRegionData.OutgoingArmies[targetRegionId].Clear();
 
                             // Modify involved regions to reduce their remaining troop count
@@ -603,7 +605,7 @@ namespace Peril.Api.Controllers.Api
 
                 resolvedCombat.Add(Tuple.Create(combatType, involvedArmies.AsEnumerable()));
 
-                CommandQueue.RemoveCommands(batchOperation, sessionId, combatOrdersInvolved);
+                CommandQueue.RemoveCommands(batchOperation, combatOrdersInvolved);
 
                 // Update the next session phase if required
                 if(nextSessionPhase == SessionPhase.Redeployment || nextSessionPhase == SessionPhase.Invasions)
@@ -729,6 +731,51 @@ namespace Peril.Api.Controllers.Api
             {
                 WorldRepository.AddCombat(batchOperationHandle, sessionId, round, spoilsOfWar);
             }
+        }
+
+        private SessionPhase ProcessRedeployments(IBatchOperationHandle batchOperationHandle, IEnumerable<IRegionData> regions, IEnumerable<IRedeployMessage> redeploymentMessages)
+        {
+            var regionsQuery = from region in regions
+                               select region;
+            var regionsLookup = regionsQuery.ToDictionary(entry => entry.RegionId);
+
+            // Process all messages. Discard any duplicates or that don't point to valid regions
+            Dictionary<Guid, IRedeployMessage> pendingProcessing = new Dictionary<Guid, IRedeployMessage>();
+            foreach(IRedeployMessage message in redeploymentMessages)
+            {
+                if(pendingProcessing.ContainsKey(message.SourceRegion)
+                    || !regionsLookup.ContainsKey(message.SourceRegion)
+                    || !regionsLookup.ContainsKey(message.TargetRegion)
+                    || regionsLookup[message.SourceRegion].OwnerId != regionsLookup[message.TargetRegion].OwnerId)
+                {
+                    CommandQueue.RemoveCommand(batchOperationHandle, message);
+                }
+                else
+                {
+                    pendingProcessing[message.SourceRegion] = message;
+                }
+
+                if(batchOperationHandle.RemainingCapacity <= (3 * pendingProcessing.Count) + 1)
+                {
+                    return SessionPhase.Redeployment;
+                }
+            }
+
+            // If we get to this point, we should have enough batch space to process all redeployments
+            Dictionary<Guid, OwnershipChange> ownershipChanges = new Dictionary<Guid, OwnershipChange>();
+            foreach (var pendingRedeployment in pendingProcessing)
+            {
+                var sourceRegionData = regionsLookup[pendingRedeployment.Value.SourceRegion];
+                var targetRegionData = regionsLookup[pendingRedeployment.Value.TargetRegion];
+
+                ownershipChanges[sourceRegionData.RegionId] = new OwnershipChange(sourceRegionData.OwnerId, sourceRegionData.TroopCount - pendingRedeployment.Value.NumberOfTroops);
+                ownershipChanges[targetRegionData.RegionId] = new OwnershipChange(targetRegionData.OwnerId, targetRegionData.TroopCount + pendingRedeployment.Value.NumberOfTroops);
+                CommandQueue.RemoveCommand(batchOperationHandle, pendingRedeployment.Value);
+            }
+
+            RegionRepository.AssignRegionOwnership(batchOperationHandle, regions, ownershipChanges);
+
+            return SessionPhase.Victory;
         }
 
         private async Task AwardReinforcements(Guid sessionId, IEnumerable<IRegionData> regions)

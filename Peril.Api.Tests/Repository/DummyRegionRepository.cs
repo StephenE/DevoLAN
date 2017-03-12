@@ -53,26 +53,25 @@ namespace Peril.Api.Tests.Repository
 
         public void AssignRegionOwnership(IBatchOperationHandle batchOperationHandleInterface, Guid sessionId, Dictionary<Guid, OwnershipChange> ownershipChanges)
         {
+            IEnumerable<IRegionData> regions = null;
+            AssignRegionOwnership(batchOperationHandleInterface, regions, ownershipChanges);
+        }
+
+        public void AssignRegionOwnership(IBatchOperationHandle batchOperationHandleInterface, IEnumerable<IRegionData> regions, Dictionary<Guid, OwnershipChange> ownershipChanges)
+        {
             DummyBatchOperationHandle batchOperationHandle = batchOperationHandleInterface as DummyBatchOperationHandle;
             foreach (var change in ownershipChanges)
             {
                 if (RegionData.ContainsKey(change.Key))
                 {
                     DummyRegionData regionData = RegionData[change.Key];
-                    if(regionData.SessionId == sessionId)
+                    batchOperationHandle.QueuedOperations.Add(() =>
                     {
-                        batchOperationHandle.QueuedOperations.Add(() =>
-                        {
-                            regionData.OwnerId = change.Value.UserId;
-                            regionData.TroopCount = change.Value.TroopCount;
-                            regionData.TroopsCommittedToPhase = 0;
-                            regionData.GenerateNewEtag();
-                        });
-                    }
-                    else
-                    {
-                        throw new InvalidOperationException("Region id does not exist in the specified session");
-                    }
+                        regionData.OwnerId = change.Value.UserId;
+                        regionData.TroopCount = change.Value.TroopCount;
+                        regionData.TroopsCommittedToPhase = 0;
+                        regionData.GenerateNewEtag();
+                    });
                 }
                 else
                 {

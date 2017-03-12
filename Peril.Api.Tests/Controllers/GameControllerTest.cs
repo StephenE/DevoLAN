@@ -1507,7 +1507,11 @@ namespace Peril.Api.Tests.Controllers
             Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
             ControllerMock primaryUser = new ControllerMock();
             primaryUser.SetupDummySession(validGuid)
-                       .SetupSessionPhase(SessionPhase.Redeployment);
+                       .SetupDummyWorldAsTree(primaryUser.OwnerId)
+                       .SetupSessionPhase(SessionPhase.Redeployment)
+                       .SetupRegionTroops(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 10)
+                       .SetupRegionTroops(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 1)
+                       .QueueRedeployment(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 9);
             Guid currentSessionPhaseId = primaryUser.SessionRepository.SessionMap[validGuid].PhaseId;
             UInt32 currentRound = primaryUser.SessionRepository.SessionMap[validGuid].Round;
 
@@ -1518,6 +1522,41 @@ namespace Peril.Api.Tests.Controllers
             Assert.AreEqual(SessionPhase.Victory, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
             Assert.AreNotEqual(currentSessionPhaseId, primaryUser.SessionRepository.SessionMap[validGuid].PhaseId);
             Assert.AreNotEqual(currentRound, primaryUser.SessionRepository.SessionMap[validGuid].Round);
+            Assert.AreEqual(1U, primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionA].TroopCount);
+            Assert.AreEqual(10U, primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionB].TroopCount);
+            Assert.AreEqual(0, primaryUser.CommandQueue.DummyRedeployQueue.Count);
+        }
+
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("GameController")]
+        public async Task TestAdvanceNextPhase_WithDuplicateRedeployment()
+        {
+            // Arrange
+            Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
+            ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(validGuid)
+                       .SetupDummyWorldAsTree(primaryUser.OwnerId)
+                       .SetupSessionPhase(SessionPhase.Redeployment)
+                       .SetupRegionTroops(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 10)
+                       .SetupRegionTroops(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 1)
+                       .SetupRegionTroops(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 1)
+                       .QueueRedeployment(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 9)
+                       .QueueRedeployment(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 9);
+            Guid currentSessionPhaseId = primaryUser.SessionRepository.SessionMap[validGuid].PhaseId;
+            UInt32 currentRound = primaryUser.SessionRepository.SessionMap[validGuid].Round;
+
+            // Act
+            await primaryUser.GameController.PostAdvanceNextPhase(validGuid, currentSessionPhaseId, true);
+
+            // Assert
+            Assert.AreEqual(SessionPhase.Victory, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
+            Assert.AreNotEqual(currentSessionPhaseId, primaryUser.SessionRepository.SessionMap[validGuid].PhaseId);
+            Assert.AreNotEqual(currentRound, primaryUser.SessionRepository.SessionMap[validGuid].Round);
+            Assert.AreEqual(1U, primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionA].TroopCount);
+            Assert.AreEqual(10U, primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionB].TroopCount);
+            Assert.AreEqual(1U, primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionD].TroopCount);
+            Assert.AreEqual(0, primaryUser.CommandQueue.DummyRedeployQueue.Count);
         }
 
         [TestMethod]

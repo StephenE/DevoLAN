@@ -15,8 +15,8 @@ namespace Peril.Api.Repository
 
         Task<IEnumerable<ICommandQueueMessage>> GetQueuedCommands(Guid sessionId, Guid sessionPhaseId);
 
-        void RemoveCommand(IBatchOperationHandle batchOperation, Guid sessionId, ICommandQueueMessage command);
+        void RemoveCommand(IBatchOperationHandle batchOperation, ICommandQueueMessage command);
 
-        void RemoveCommands(IBatchOperationHandle batchOperation, Guid sessionId, IEnumerable<ICommandQueueMessage> commands);
+        void RemoveCommands(IBatchOperationHandle batchOperation, IEnumerable<ICommandQueueMessage> commands);
     }
 }

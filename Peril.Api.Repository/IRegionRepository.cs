@@ -19,6 +19,8 @@ namespace Peril.Api.Repository
 
         void AssignRegionOwnership(IBatchOperationHandle batchOperationHandle, Guid sessionId, Dictionary<Guid, OwnershipChange> ownershipChanges);
 
+        void AssignRegionOwnership(IBatchOperationHandle batchOperationHandle, IEnumerable<IRegionData> regions, Dictionary<Guid, OwnershipChange> ownershipChanges);
+
         void CommitTroopsToPhase(IBatchOperationHandle batchOperationHandle, IRegionData sourceRegion, UInt32 troopsToCommit);
     }
 }

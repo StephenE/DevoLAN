@@ -200,7 +200,7 @@ namespace Peril.Api.Repository.Azure.Tests
             // Act
             using (BatchOperationHandle handle = new BatchOperationHandle(randomCommandTable))
             {
-                repository.RemoveCommands(handle, sessionId, new List<ICommandQueueMessage> { queuedAttacks.Where(attack => attack.OperationId == attackId).First() });
+                repository.RemoveCommands(handle, new List<ICommandQueueMessage> { queuedAttacks.Where(attack => attack.OperationId == attackId).First() });
             }
 
             // Assert
