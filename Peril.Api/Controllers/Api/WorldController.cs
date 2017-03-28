@@ -44,6 +44,7 @@ namespace Peril.Api.Controllers.Api
             IEnumerable<ICombat> combatData = await WorldRepository.GetCombat(session.GameId, session.Round);
             return from combat in combatData
                    where IsStillValid(session, combat)
+                   orderby combat.ResolutionType ascending
                    select new Combat(combat);
         }
 

@@ -28,6 +28,15 @@ system.sfx = 1;
 system.musicVolume = 0.5;
 system.sfxVolume = 1;
 
+// Enumerations
+var CombatTypeEnum = {
+    BorderClash: 0,
+    MassInvasion: 1,
+    Invasion: 2,
+    SpoilsOfWar: 3,
+    PendingAttack: 4
+};
+
 // Load Screens
     function loadScreen(screen, noOverlay)
     {
@@ -434,16 +443,9 @@ system.sfxVolume = 1;
             var target = "territory" + regionData.Name.replace(/ /g, "");
             var y = 0;
             var cpLength = currentPlayers.length;
-            var curColour = "";
 
             console.log("Next territory to check for owner: " + regionData.Name);
-
-            for (y = 0; y < cpLength; y++) {
-                if (regionData.OwnerId === currentPlayers[y].UserId) {
-                    curColour = currentPlayers[y].Colour;
-                    break;
-                }
-            }
+            var curColour = getPlayerColour(regionData.OwnerId);
 
             replaceClass(target + "-circle", "player-" + curColour);
             setTextContent(target + "-counter", regionData.TroopCount);
@@ -493,31 +495,15 @@ system.sfxVolume = 1;
         {
             console.log("Processing combat " + combatEntry.CombatId + " of type " + combatEntry.ResolutionType);
 
-            var activeCombatPhase = 0;
-            switch(currentGame.PhaseType)
-            {
-                case 3:
-                    activeCombatPhase = 0;
-                    break;
-                case 4:
-                    activeCombatPhase = 1;
-                    break;
-                case 5:
-                    activeCombatPhase = 2;
-                    break;
-                case 6:
-                    activeCombatPhase = 3;
-                    break;
-            }
-
+            var activeCombatPhase = convertPhaseTypeToCombatPhase(currentGame.PhaseType);
             if(combatEntry.ResolutionType === 0)
             {
                 // Border clash
                 var armyA = combatEntry.InvolvedArmies[0];
                 var armyB = combatEntry.InvolvedArmies[1];
 
-                createOrUpdateAttack(armyA.OriginRegionId, armyB.OriginRegionId, armyA.NumberOfTroops, false, combatEntry.ResolutionType === activeCombatPhase, true);
-                createOrUpdateAttack(armyB.OriginRegionId, armyA.OriginRegionId, armyB.NumberOfTroops, false, combatEntry.ResolutionType === activeCombatPhase, true);
+                createOrUpdateAttack(armyA.OriginRegionId, armyB.OriginRegionId, armyA.OwnerUserId, armyA.NumberOfTroops, false, combatEntry.ResolutionType === activeCombatPhase, activeCombatPhase);
+                createOrUpdateAttack(armyB.OriginRegionId, armyA.OriginRegionId, armyB.OwnerUserId, armyB.NumberOfTroops, false, combatEntry.ResolutionType === activeCombatPhase, activeCombatPhase);
             }
             else
             {
@@ -536,7 +522,7 @@ system.sfxVolume = 1;
                 {
                     if (combatEntry.InvolvedArmies[counter].ArmyMode === 0)
                     {
-                        createOrUpdateAttack(combatEntry.InvolvedArmies[counter].OriginRegionId, defendingRegionId, combatEntry.InvolvedArmies[counter].NumberOfTroops, false, combatEntry.ResolutionType === activeCombatPhase, false);
+                        createOrUpdateAttack(combatEntry.InvolvedArmies[counter].OriginRegionId, defendingRegionId, combatEntry.InvolvedArmies[counter].OwnerUserId, combatEntry.InvolvedArmies[counter].NumberOfTroops, false, combatEntry.ResolutionType === activeCombatPhase, activeCombatPhase);
                     }
                 }
             }
@@ -783,7 +769,14 @@ system.sfxVolume = 1;
             {
                 case 200:
                     var TroopCount = +getData(interactionTarget, "TroopCount") + 1;
-                    writeHTML("hudTextInformation", "You have " + currentPhase.reinforcements + " reinforcements to deploy.");
+                    if (currentPhase.reinforcements === 0)
+                    {
+                        writeHTML("hudTextInformation", "");
+                    }
+                    else
+                    {
+                        writeHTML("hudTextInformation", "You have " + currentPhase.reinforcements + " reinforcements to deploy.");
+                    }
                     writeHTML(interactionTarget + "-counter", TroopCount);
                     setData(interactionTarget, "TroopCount", TroopCount)
                     break;
@@ -804,7 +797,8 @@ system.sfxVolume = 1;
         function orderAttack(gameId, sourceRegionId, numberOfTroops, targetRegionId)
         {
             console.log("Attacking from " + sourceRegionId + " to " + targetRegionId);
-            createOrUpdateAttack(sourceRegionId, targetRegionId, numberOfTroops, true, true, false);
+            var regionOwnerId = getDataOnElement(worldElementsLookup[sourceRegionId], "OwnerId");
+            createOrUpdateAttack(sourceRegionId, targetRegionId, regionOwnerId, numberOfTroops, true, true, CombatTypeEnum.PendingAttack);
             updateCommittedToPhase(worldElementsLookup[sourceRegionId], numberOfTroops);
 
             var data = "?sessionId=" + gameId + "&regionId=" + sourceRegionId + "&numberOfTroops=" + numberOfTroops + "&targetRegionId=" + targetRegionId;
@@ -860,7 +854,8 @@ system.sfxVolume = 1;
             if(undoAttackUiChanges)
             {
                 var troopsToRemove = parseInt(numberOfTroops) * -1;
-                createOrUpdateAttack(sourceRegionId, targetRegionId, troopsToRemove, true, true, false);
+                var regionOwnerId = getDataOnElement(worldElementsLookup[sourceRegionId], "OwnerId");
+                createOrUpdateAttack(sourceRegionId, targetRegionId, regionOwnerId, troopsToRemove, true, true, CombatTypeEnum.PendingAttack);
                 updateCommittedToPhase(worldElementsLookup[sourceRegionId], troopsToRemove);
             }
         }
@@ -869,7 +864,8 @@ system.sfxVolume = 1;
         function orderRedeploy(gameId, sourceRegionId, numberOfTroops, targetRegionId)
         {
             console.log("Redeploying from " + sourceRegionId + " to " + targetRegionId);
-            createOrUpdateAttack(sourceRegionId, targetRegionId, numberOfTroops, false, true, false);
+            var regionOwnerId = getDataOnElement(worldElementsLookup[sourceRegionId], "OwnerId");
+            createOrUpdateAttack(sourceRegionId, targetRegionId, regionOwnerId, numberOfTroops, false, true, CombatTypeEnum.PendingAttack);
             updateCommittedToPhase(worldElementsLookup[sourceRegionId], numberOfTroops);
 
             var data = "?sessionId=" + gameId + "&regionId=" + sourceRegionId + "&numberOfTroops=" + numberOfTroops + "&targetRegionId=" + targetRegionId;
@@ -1207,6 +1203,19 @@ system.sfxVolume = 1;
         }
 
 // Map helpers
+        function getPlayerColour(ownerId)
+        {
+            var cpLength = currentPlayers.length;
+            var y;
+            for (y = 0; y < cpLength; y++)
+            {
+                if (ownerId === currentPlayers[y].UserId)
+                {
+                    return currentPlayers[y].Colour;
+                }
+            }
+        }
+
         function getRegionMapElementIdByGuid(sourceRegionId)
         {
             var regionName = worldLookup[sourceRegionId];
@@ -1236,7 +1245,7 @@ system.sfxVolume = 1;
             setCommittedToPhase(sourceRegionMapElement, currentTroopCount + parseInt(troopCountChange));
         }
 
-        function createOrUpdateAttack(sourceRegionId, targetRegionId, troopCount, appendToExisting, isForThisPhase, isBorderClash)
+        function createOrUpdateAttack(sourceRegionId, targetRegionId, troopOwnerId, troopCount, appendToExisting, isForThisPhase, combatType)
         {
             var sourceRegionMapElement = getID(getRegionMapElementIdByGuid(sourceRegionId));
             var existingAttacks = sourceRegionMapElement.getElementsByTagName("g");
@@ -1245,25 +1254,36 @@ system.sfxVolume = 1;
             {
                 if(getDataOnElement(existingAttacks[counter], "target-region") === targetRegionId)
                 {
-                    // Update this element
-                    var textElement = existingAttacks[counter].getElementsByTagName("text")[0];
-                    if (appendToExisting)
+                    var attackElementCombatType = getDataOnElement(existingAttacks[counter], "combat-type");
+                    if ((attackElementCombatType === CombatTypeEnum.BorderClash && combatType !== CombatTypeEnum.BorderClash)
+                        || (attackElementCombatType !== CombatTypeEnum.BorderClash && combatType === CombatTypeEnum.BorderClash))
                     {
-                        textElement.textContent = parseInt(textElement.textContent) + parseInt(troopCount);
+                        // Remove this attack, it doesn't match the type we want to draw
+                        sourceRegionMapElement.removeChild(existingAttacks[counter]);
                     }
                     else
                     {
-                        textElement.textContent = troopCount;
+                        // Update this element
+                        var textElement = existingAttacks[counter].getElementsByTagName("text")[0];
+                        if (appendToExisting)
+                        {
+                            textElement.textContent = parseInt(textElement.textContent) + parseInt(troopCount);
+                        }
+                        else
+                        {
+                            textElement.textContent = troopCount;
+                        }
+                        attackElement = existingAttacks[counter];
                     }
-                    attackElement = existingAttacks[counter];
                 }
             }
-            
+
             // Failed to find existing element, draw a new one
             if (attackElement === null)
             {
-                attackElement = drawAttack(sourceRegionMapElement, targetRegionId, troopCount, isBorderClash);
+                attackElement = drawAttack(sourceRegionMapElement, targetRegionId, troopOwnerId, troopCount, combatType === CombatTypeEnum.BorderClash);
             }
+            setDataOnElement(attackElement, "combat-type", combatType);
 
             if (isForThisPhase)
             {
@@ -1280,15 +1300,16 @@ system.sfxVolume = 1;
             // Eventually, we'll just hide the element as it'll save the effort of re-adding it later
             // For now, let's just delete it!
             var existingAttackGroups = sourceRegionMapElement.getElementsByTagName("g");
-            for(var counter = 0; counter < existingAttackGroups.length; ++counter)
+            while(existingAttackGroups.length > 0)
             {
-                sourceRegionMapElement.removeChild(existingAttackGroups[counter]);
+                sourceRegionMapElement.removeChild(existingAttackGroups[0]);
             }
         }
 
-        function drawAttack(sourceRegionMapElement, targetRegionId, troopCount, drawAsBorderClash)
+        function drawAttack(sourceRegionMapElement, targetRegionId, troopOwnerId, troopCount, drawAsBorderClash)
         {
             var targetRegionMapElement = getID(getRegionMapElementIdByGuid(targetRegionId));
+            var playerColour = getPlayerColour(troopOwnerId);
 
             // Draw line between two, using the colour of the source region
             var sourceRegionCircle = sourceRegionMapElement.getElementsByTagName("circle")[0];
@@ -1322,7 +1343,7 @@ system.sfxVolume = 1;
 
             // Draw attack arrow
             var attackArrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-            attackArrow.setAttribute('class', 'attack-' + sourceRegionCircle.getAttribute('class'));
+            attackArrow.setAttribute('class', 'attack-player-' + playerColour);
             attackArrow.setAttribute('points',
                 vectorToCommaString(sourceOffset) + ' ' +
                 vectorToCommaString(sourceLhsOffset) + ' ' +
@@ -1343,6 +1364,23 @@ system.sfxVolume = 1;
         function vectorToCommaString(targetVector) 
         {
             return targetVector.x + ',' + targetVector.y;
+        }
+
+        function convertPhaseTypeToCombatPhase(phaseTypeId)
+        {
+            switch (phaseTypeId)
+            {
+                case 3:
+                    return CombatTypeEnum.BorderClash;
+                case 4:
+                    return CombatTypeEnum.MassInvasion;
+                case 5:
+                    return CombatTypeEnum.Invasion;
+                case 6:
+                    return CombatTypeEnum.SpoilsOfWar;
+                default:
+                    return CombatTypeEnum.PendingAttack;
+            }
         }
 
 // Fill
