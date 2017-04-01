@@ -1216,15 +1216,37 @@ var CombatTypeEnum = {
             }
         }
 
-        function getRegionMapElementIdByGuid(sourceRegionId)
+        function getRegionMapElementIdFromGuid(sourceRegionId)
         {
             var regionName = worldLookup[sourceRegionId];
-            return getRegionMapElementIdByName(regionName);
+            return getRegionMapElementIdFromName(regionName);
         }
 
-        function getRegionMapElementIdByName(sourceRegionName)
+        function getRegionMapElementIdFromName(sourceRegionName)
         {
             return "territory" + sourceRegionName.replace(/ /g, "");
+        }
+
+        function getRegionAttackMapElementNameFromGuid(targetRegionId)
+        {
+            var regionName = worldLookup[targetRegionId];
+            return getRegionAttackMapElementName(regionName);
+        }
+
+        function getRegionAttackMapElementName(targetRegionName)
+        {
+            return "Attacking" + targetRegionName.replace(/ /g, "");
+        }
+
+        function getRegionBorderClashMapElementNameFromGuid(targetRegionId)
+        {
+            var regionName = worldLookup[targetRegionId];
+            return getRegionBorderClashMapElementName(regionName);
+        }
+
+        function getRegionBorderClashMapElementName(targetRegionName)
+        {
+            return "BorderClash" + targetRegionName.replace(/ /g, "");
         }
 
         function getCommittedToPhase(sourceRegionMapElement)
@@ -1247,118 +1269,77 @@ var CombatTypeEnum = {
 
         function createOrUpdateAttack(sourceRegionId, targetRegionId, troopOwnerId, troopCount, appendToExisting, isForThisPhase, combatType)
         {
-            var sourceRegionMapElement = getID(getRegionMapElementIdByGuid(sourceRegionId));
+            var sourceRegionMapElement = getID(getRegionMapElementIdFromGuid(sourceRegionId));
+            var targetRegionMapElementAttackId = getRegionAttackMapElementNameFromGuid(targetRegionId);
+            var targetRegionMapElementBorderClashId = getRegionBorderClashMapElementNameFromGuid(targetRegionId);
             var existingAttacks = sourceRegionMapElement.getElementsByTagName("g");
             var attackElement = null;
             for(var counter = 0; counter < existingAttacks.length; ++counter)
             {
-                if(getDataOnElement(existingAttacks[counter], "target-region") === targetRegionId)
+                var existingAttacksTargetRegionId = getDataOnElement(existingAttacks[counter], "target-region");
+                if (existingAttacksTargetRegionId === targetRegionMapElementAttackId)
                 {
-                    var attackElementCombatType = getDataOnElement(existingAttacks[counter], "combat-type");
-                    if ((attackElementCombatType === CombatTypeEnum.BorderClash && combatType !== CombatTypeEnum.BorderClash)
-                        || (attackElementCombatType !== CombatTypeEnum.BorderClash && combatType === CombatTypeEnum.BorderClash))
+                    if (combatType !== CombatTypeEnum.BorderClash)
                     {
-                        // Remove this attack, it doesn't match the type we want to draw
-                        sourceRegionMapElement.removeChild(existingAttacks[counter]);
+                        // Found element to update
+                        attackElement = existingAttacks[counter];
                     }
                     else
                     {
-                        // Update this element
-                        var textElement = existingAttacks[counter].getElementsByTagName("text")[0];
-                        if (appendToExisting)
-                        {
-                            textElement.textContent = parseInt(textElement.textContent) + parseInt(troopCount);
-                        }
-                        else
-                        {
-                            textElement.textContent = troopCount;
-                        }
+                        // Hide this element, we're displaying a border clash
+                        replaceClassOnElement(existingAttacks[counter], "attack-hidden");
+                    }
+                }
+                else if (existingAttacksTargetRegionId == targetRegionMapElementBorderClashId)
+                {
+                    if (combatType === CombatTypeEnum.BorderClash)
+                    {
+                        // Found element to update
                         attackElement = existingAttacks[counter];
+                    }
+                    else
+                    {
+                        // Hide this element, we're displaying a border clash
+                        replaceClassOnElement(existingAttacks[counter], "attack-hidden");
                     }
                 }
             }
 
             // Failed to find existing element, draw a new one
-            if (attackElement === null)
+            if (attackElement !== null)
             {
-                attackElement = drawAttack(sourceRegionMapElement, targetRegionId, troopOwnerId, troopCount, combatType === CombatTypeEnum.BorderClash);
-            }
-            setDataOnElement(attackElement, "combat-type", combatType);
+                setDataOnElement(attackElement, "combat-type", combatType);
 
-            if (isForThisPhase)
-            {
-                removeClassOnElement(attackElement, "attack-future");
-            }
-            else
-            {
-                addClassOnElement(attackElement, "attack-future");
+                // Update the text element
+                var textElement = attackElement.getElementsByTagName("text")[0];
+                if (appendToExisting)
+                {
+                    textElement.textContent = parseInt(textElement.textContent) + parseInt(troopCount);
+                }
+                else
+                {
+                    textElement.textContent = troopCount;
+                }
+
+                // Update the CSS class
+                var playerColour = getPlayerColour(troopOwnerId);
+                replaceClassOnElement(attackElement, "attack-player-" + playerColour);
+                if (!isForThisPhase)
+                {
+                    addClassOnElement(attackElement, "attack-future");
+                }
             }
         }
 
         function removeAllAttacks(sourceRegionMapElement)
         {
-            // Eventually, we'll just hide the element as it'll save the effort of re-adding it later
-            // For now, let's just delete it!
             var existingAttackGroups = sourceRegionMapElement.getElementsByTagName("g");
-            while(existingAttackGroups.length > 0)
+            for (var counter = 0; counter < existingAttackGroups.length; ++counter)
             {
-                sourceRegionMapElement.removeChild(existingAttackGroups[0]);
+                replaceClassOnElement(existingAttackGroups[counter], "attack-hidden");
+                var textElement = existingAttackGroups[counter].getElementsByTagName("text")[0];
+                textElement.textContent = "0";
             }
-        }
-
-        function drawAttack(sourceRegionMapElement, targetRegionId, troopOwnerId, troopCount, drawAsBorderClash)
-        {
-            var targetRegionMapElement = getID(getRegionMapElementIdByGuid(targetRegionId));
-            var playerColour = getPlayerColour(troopOwnerId);
-
-            // Draw line between two, using the colour of the source region
-            var sourceRegionCircle = sourceRegionMapElement.getElementsByTagName("circle")[0];
-            var targetRegionCircle = targetRegionMapElement.getElementsByTagName("circle")[0];
-            
-            var source = new Victor(parseFloat(sourceRegionCircle.getAttribute("cx")), parseFloat(sourceRegionCircle.getAttribute("cy")));
-            var target = new Victor(parseFloat(targetRegionCircle.getAttribute("cx")), parseFloat(targetRegionCircle.getAttribute("cy")));
-
-            var sourceToTarget = target.clone().subtract(source).normalize();
-            var radius = parseFloat(sourceRegionCircle.getAttribute("r"));
-            var radiusOffsetVector = sourceToTarget.clone().multiply(new Victor(radius, radius));
-            var sourceToTargetNormal = new Victor(-sourceToTarget.y * radius, sourceToTarget.x * radius);
-
-            var sourceOffset = source.clone().add(radiusOffsetVector);
-            var sourceLhsOffset = source.clone().add(sourceToTargetNormal);
-            var sourceRhsOffset = source.clone().subtract(sourceToTargetNormal);
-            if (drawAsBorderClash === true)
-            {
-                var targetOffset = target.clone().add(sourceToTargetNormal);
-            }
-            else
-            {
-                var targetOffset = target.clone().subtract(radiusOffsetVector);
-            }
-            var textOffset = sourceOffset.clone().add(radiusOffsetVector).add(radiusOffsetVector);
-
-            // Create group for attack arrow
-            var attackGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-            setDataOnElement(attackGroup, "target-region", targetRegionId);
-            sourceRegionMapElement.insertBefore(attackGroup, sourceRegionCircle);
-
-            // Draw attack arrow
-            var attackArrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-            attackArrow.setAttribute('class', 'attack-player-' + playerColour);
-            attackArrow.setAttribute('points',
-                vectorToCommaString(sourceOffset) + ' ' +
-                vectorToCommaString(sourceLhsOffset) + ' ' +
-                vectorToCommaString(targetOffset) + ' ' +
-                vectorToCommaString(sourceRhsOffset));
-            attackGroup.appendChild(attackArrow);
-
-            // Draw troop count on attack
-            var attackText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            attackText.setAttribute('class', 'counter');
-            attackText.setAttribute('transform', 'translate(' + vectorToCommaString(textOffset) + ')');
-            attackText.textContent = troopCount;
-            attackGroup.appendChild(attackText);
-
-            return attackGroup;
         }
 
         function vectorToCommaString(targetVector) 

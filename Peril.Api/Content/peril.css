@@ -592,6 +592,10 @@
         }
         
 /* Player Colours */
+    .attack-hidden {
+        display: none;
+    }
+
     .attack-future {
         fill-opacity: 0.2;
     }

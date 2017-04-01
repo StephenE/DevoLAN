@@ -294,6 +294,7 @@
     <Content Include="Content\parts\board.html" />
     <Content Include="Content\parts\browser.html" />
     <Content Include="Content\parts\login.html" />
+    <Content Include="Content\peril-dev.js" />
     <Content Include="Content\peril.css" />
     <Content Include="Content\peril.js" />
     <Content Include="Content\victor.js" />
