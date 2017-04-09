@@ -55,3 +55,24 @@ function drawAttack(sourceRegionMapElement, targetRegionId, troopOwnerId, troopC
 
     return attackGroup;
 }
+
+// Change visibility on all attacks attached to a region
+function setAttackElementVisbility(sourceRegionMapElement, showBorderClashes)
+{
+    var existingAttacks = sourceRegionMapElement.getElementsByTagName("g");
+    var prefixToShow = showBorderClashes ? "BorderClash" : "Attack";
+    for (var counter = 0; counter < existingAttacks.length; ++counter)
+    {
+        var targetRegionId = getDataOnElement(existingAttacks[counter], "target-region");
+        if (targetRegionId.startsWith(prefixToShow))
+        {
+            replaceClassOnElement(existingAttacks[counter], "attack-player-1");
+            var textElement = existingAttacks[counter].getElementsByTagName("text")[0];
+            textElement.textContent = "99";
+        }
+        else
+        {
+            replaceClassOnElement(existingAttacks[counter], "attack-hidden");
+        }
+    }
+}
