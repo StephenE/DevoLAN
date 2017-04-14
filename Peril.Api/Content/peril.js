@@ -942,7 +942,7 @@ var CombatTypeEnum = {
             // Technically, only the session host can do this. Anyone else will get an error and be ignored - they should EndPhase, but for DevoLAN 31 that doesn't actual do anything!
             if (currentGame.OwnerId === userToken.id)
             {
-                var data = "?sessionId=" + gameId + "&phaseId=" + phaseId + "&force=false";
+                var data = "?sessionId=" + gameId + "&phaseId=" + phaseId + "&force=" + getForceArgument(currentGame.PhaseType);
                 sendAjax("POST", "/api/Game/AdvanceNextPhase", data, "json", onEndTurnResponse, onEndTurnResponse, true);
             }
             else
@@ -950,6 +950,21 @@ var CombatTypeEnum = {
                 var data = "?sessionId=" + gameId + "&phaseId=" + phaseId;
                 sendAjax("POST", "/api/Game/EndPhase", data, "json", onEndTurnResponse, onEndTurnResponse, true);
                 writeHTML("hudTextInstructions", "Waiting for the leader to move to the next phase");
+            }
+        }
+
+        function getForceArgument(roundId)
+        {
+            switch (roundId)
+            {
+                case 3:
+                case 4:
+                case 5:
+                case 6:
+                case 8:
+                    return "true";
+                default:
+                    return "false";
             }
         }
 
