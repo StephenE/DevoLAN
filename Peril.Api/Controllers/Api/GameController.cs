@@ -137,15 +137,24 @@ namespace Peril.Api.Controllers.Api
                                                       .IsPhaseIdOrThrow(phaseId)
                                                       .IsSessionOwnerOrThrow(User.Identity.GetUserId());
             var nationsTask = NationRepository.GetNations(session.GameId);
+            var regionsTask = RegionRepository.GetRegions(session.GameId);
 
             // Check all players ready (unless force == true)
             bool allPlayersReady = true;
             if (!force)
             {
                 IEnumerable<INationData> nations = await nationsTask;
+                IEnumerable<IRegionData> regions = await regionsTask;
+
+                var regionQuery = from regionData in regions
+                                  let regionOwnerId = regionData.OwnerId
+                                  group regionData.OwnerId by regionData.OwnerId into ownedRegions
+                                  select new { OwnerId = ownedRegions.Key, OwnedRegions = ownedRegions.Count() };
+                var regionsOwnedById = regionQuery.ToDictionary(thing => thing.OwnerId);
+
                 foreach (INationData nation in nations)
                 {
-                    if (nation.CompletedPhase != session.PhaseId && nation.UserId != session.OwnerId)
+                    if (nation.CompletedPhase != session.PhaseId && nation.UserId != session.OwnerId && regionsOwnedById.ContainsKey(nation.UserId) && regionsOwnedById[nation.UserId].OwnedRegions >= 1)
                     {
                         allPlayersReady = false;
                         break;
@@ -165,9 +174,8 @@ namespace Peril.Api.Controllers.Api
                     {
                         case SessionPhase.NotStarted:
                         {
-                            var regions = RegionRepository.GetRegions(session.GameId);
                             var nations = await nationsTask;
-                            DistributeInitialRegions(batchOperation, session.GameId, await regions, nations);
+                            DistributeInitialRegions(batchOperation, session.GameId, await regionsTask, nations);
                             Dictionary<String, UInt32> initialReinforcements = new Dictionary<string, uint>();
                             foreach(INationData nation in nations)
                             {
@@ -180,12 +188,11 @@ namespace Peril.Api.Controllers.Api
                         }
                         case SessionPhase.Reinforcements:
                         {
-                            var regions = RegionRepository.GetRegions(session.GameId);
                             IEnumerable<ICommandQueueMessage> pendingMessages = await CommandQueue.GetQueuedCommands(session.GameId, session.PhaseId);
                             IEnumerable<IDeployReinforcementsMessage> pendingReinforcementMessages = pendingMessages.GetQueuedDeployReinforcementsCommands();
 
                             IEnumerable<INationData> nations = await nationsTask;
-                            await ProcessReinforcementMessages(batchOperation, session.GameId, await regions, nations, pendingReinforcementMessages);
+                            await ProcessReinforcementMessages(batchOperation, session.GameId, await regionsTask, nations, pendingReinforcementMessages);
                             await batchOperation.CommitBatch();
 
                             // Reset all players to 0 reinforcements
@@ -201,12 +208,11 @@ namespace Peril.Api.Controllers.Api
                         }
                         case SessionPhase.CombatOrders:
                         {
-                            var regions = RegionRepository.GetRegions(session.GameId);
                             var borderClashesTask = WorldRepository.GetCombat(session.GameId, session.Round, CombatType.BorderClash);
                             IEnumerable<ICommandQueueMessage> pendingMessages = await CommandQueue.GetQueuedCommands(session.GameId, session.PhaseId);
                             IEnumerable<IOrderAttackMessage> pendingAttackMessages = pendingMessages.GetQueuedOrderAttacksCommands();
 
-                            nextPhase = ProcessCombatOrders(batchOperation, session.GameId, session.Round, await regions, await nationsTask, await borderClashesTask, pendingAttackMessages);
+                            nextPhase = ProcessCombatOrders(batchOperation, session.GameId, session.Round, await regionsTask, await nationsTask, await borderClashesTask, pendingAttackMessages);
                             if(nextPhase == SessionPhase.CombatOrders)
                             {
                                 shouldSetPhaseAtEnd = false;
@@ -250,17 +256,15 @@ namespace Peril.Api.Controllers.Api
                         }
                         case SessionPhase.Redeployment:
                         {
-                            var regions = RegionRepository.GetRegions(session.GameId);
                             IEnumerable<ICommandQueueMessage> pendingMessages = await CommandQueue.GetQueuedCommands(session.GameId, session.PhaseId);
                             IEnumerable<IRedeployMessage> pendingReinforcementMessages = pendingMessages.GetQueuedRedeployCommands();
-                            nextPhase = ProcessRedeployments(batchOperation, await regions, pendingReinforcementMessages);
+                            nextPhase = ProcessRedeployments(batchOperation, await regionsTask, pendingReinforcementMessages);
                             break;
                         }
                         case SessionPhase.Victory:
                         {
                             // Award reinforcements
-                            var regions = RegionRepository.GetRegions(session.GameId);
-                            await AwardReinforcements(sessionId, await regions);
+                            await AwardReinforcements(sessionId, await regionsTask);
                             nextPhase = SessionPhase.Reinforcements;
                             break;
                         }

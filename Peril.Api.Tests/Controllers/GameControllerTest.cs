@@ -452,6 +452,8 @@ namespace Peril.Api.Tests.Controllers
             ControllerMock primaryUser = new ControllerMock();
             primaryUser.SetupDummySession(validGuid)
                        .SetupAddPlayer(DummyUserRepository.RegisteredUserIds[1], PlayerColour.Blue)
+                       .SetupDummyWorldAsTree(DummyUserRepository.RegisteredUserIds[0])
+                       .SetupRegionOwnership(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, DummyUserRepository.RegisteredUserIds[1])
                        .SetupSessionPhase(SessionPhase.NotStarted);
 
             // Act
@@ -469,6 +471,26 @@ namespace Peril.Api.Tests.Controllers
             }
 
             Assert.AreEqual(SessionPhase.NotStarted, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
+        }
+
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("GameController")]
+        public async Task TestAdvanceNextPhase_WithDefeatedPlayerNotReady()
+        {
+            // Arrange
+            Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
+            ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(validGuid)
+                       .SetupDummyWorldAsTree(DummyUserRepository.RegisteredUserIds[0])
+                       .SetupAddPlayer(DummyUserRepository.RegisteredUserIds[1], PlayerColour.Blue)
+                       .SetupSessionPhase(SessionPhase.NotStarted);
+
+            // Act
+            await primaryUser.GameController.PostAdvanceNextPhase(validGuid, primaryUser.SessionRepository.SessionMap[validGuid].PhaseId, false);
+
+            // Assert
+            Assert.AreEqual(SessionPhase.Reinforcements, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
         }
 
         [TestMethod]
