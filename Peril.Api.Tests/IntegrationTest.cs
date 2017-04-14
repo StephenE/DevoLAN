@@ -134,6 +134,42 @@ namespace Peril.Api.Tests
         [Timeout(40000)]
         [TestCategory("Integration")]
         [DeploymentItem(@"Data\FullWorldDefinition.xml", "WorldData")]
+        public async Task IntegrationTestStressDeployTroops()
+        {
+            var primaryUser = new ControllerAzure(DevelopmentStorageAccountConnectionString, @"WorldData\FullWorldDefinition.xml");
+            var secondaryUser = new ControllerAzure(DevelopmentStorageAccountConnectionString, @"WorldData\FullWorldDefinition.xml", DummyUserRepository.RegisteredUserIds[1]);
+
+            // Start new session
+            var sessionDetails = await primaryUser.GameController.PostStartNewSession(Core.PlayerColour.Black);
+            await secondaryUser.GameController.PostJoinSession(sessionDetails.GameId, Core.PlayerColour.Green);
+
+            // Assert all players in session
+            var playersInSession = await primaryUser.GameController.GetPlayers(sessionDetails.GameId);
+            Assert.AreEqual(2, playersInSession.Count());
+
+            // Start game (with primary user)
+            sessionDetails = await primaryUser.GameController.GetSession(sessionDetails.GameId);
+            await primaryUser.GameController.PostAdvanceNextPhase(sessionDetails.GameId, sessionDetails.PhaseId, true);
+
+            // Ensure primary user has enough troops for the test
+            using (IBatchOperationHandle batchOperation = new BatchOperationHandle(primaryUser.AzureSessionRepository.GetTableForSessionData(sessionDetails.GameId)))
+            {
+                primaryUser.AzureNationRepository.SetAvailableReinforcements(batchOperation, sessionDetails.GameId, new Dictionary<String, UInt32> { { primaryUser.OwnerId, 1000 } });
+                secondaryUser.AzureNationRepository.SetAvailableReinforcements(batchOperation, sessionDetails.GameId, new Dictionary<String, UInt32> { { secondaryUser.OwnerId, 1000 } });
+            }
+
+            // Deploy initial troops for primary user
+            await Controllers.IntegrationTest.RandomlyDeployReinforcements(primaryUser.GameController, primaryUser.NationController, primaryUser.WorldController, primaryUser.RegionController, sessionDetails.GameId, primaryUser.OwnerId);
+            await Controllers.IntegrationTest.RandomlyDeployReinforcements(secondaryUser.GameController, secondaryUser.NationController, secondaryUser.WorldController, secondaryUser.RegionController, sessionDetails.GameId, secondaryUser.OwnerId);
+
+            sessionDetails = await primaryUser.GameController.GetSession(sessionDetails.GameId);
+            await primaryUser.GameController.PostAdvanceNextPhase(sessionDetails.GameId, sessionDetails.PhaseId, true);
+        }
+
+        [TestMethod]
+        [Timeout(40000)]
+        [TestCategory("Integration")]
+        [DeploymentItem(@"Data\FullWorldDefinition.xml", "WorldData")]
         public async Task IntegrationTestStressTestAttacks()
         {
             var primaryUser = new ControllerAzure(DevelopmentStorageAccountConnectionString, @"WorldData\FullWorldDefinition.xml");

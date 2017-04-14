@@ -121,12 +121,6 @@ namespace Peril.Api.Repository.Azure
                 regionEntry.StoredTroopCount = operation.NewTroopCount;
                 regionEntry.StoredTroopsCommittedToPhase = 0;
                 batchOperationHandle.BatchOperation.Replace(regionEntry);
-
-                if(batchOperationHandle.RemainingCapacity <= 10)
-                {
-                    var commitOp = batchOperationHandle.CommitBatch();
-                    commitOp.Wait();
-                }
             }
         }
 

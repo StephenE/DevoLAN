@@ -185,7 +185,8 @@ namespace Peril.Api.Controllers.Api
                             IEnumerable<IDeployReinforcementsMessage> pendingReinforcementMessages = pendingMessages.GetQueuedDeployReinforcementsCommands();
 
                             IEnumerable<INationData> nations = await nationsTask;
-                            ProcessReinforcementMessages(batchOperation, session.GameId, await regions, nations, pendingReinforcementMessages);
+                            await ProcessReinforcementMessages(batchOperation, session.GameId, await regions, nations, pendingReinforcementMessages);
+                            await batchOperation.CommitBatch();
 
                             // Reset all players to 0 reinforcements
                             Dictionary<String, UInt32> initialReinforcements = new Dictionary<string, uint>();
@@ -195,7 +196,6 @@ namespace Peril.Api.Controllers.Api
                             }
 
                             NationRepository.SetAvailableReinforcements(batchOperation, session.GameId, initialReinforcements);
-                            CommandQueue.RemoveCommands(batchOperation, pendingMessages);
                             nextPhase = SessionPhase.CombatOrders;
                             break;
                         }
@@ -336,9 +336,10 @@ namespace Peril.Api.Controllers.Api
             RegionRepository.AssignRegionOwnership(batchOperation, sessionId, assignedRegions);
         }
 
-        private void ProcessReinforcementMessages(IBatchOperationHandle batchOperation, Guid sessionId, IEnumerable<IRegionData> availableRegions, IEnumerable<INationData> players, IEnumerable<IDeployReinforcementsMessage> messages)
+        private async Task ProcessReinforcementMessages(IBatchOperationHandle batchOperation, Guid sessionId, IEnumerable<IRegionData> availableRegions, IEnumerable<INationData> players, IEnumerable<IDeployReinforcementsMessage> messages)
         {
             Dictionary<Guid, OwnershipChange> assignedRegions = new Dictionary<Guid, OwnershipChange>();
+            Dictionary<Guid, List<IDeployReinforcementsMessage>> processedMessage = new Dictionary<Guid, List<IDeployReinforcementsMessage>>();
             Dictionary<String, UInt32> playerLookup = players.ToDictionary(nationData => nationData.UserId, nationData => nationData.AvailableReinforcements);
             Dictionary<Guid, IRegionData> regionLookup = availableRegions.ToDictionary(regionData => regionData.RegionId);
 
@@ -359,11 +360,13 @@ namespace Peril.Api.Controllers.Api
                             {
                                 // Already an entry for this region, so merge
                                 assignedRegions[regionData.RegionId].TroopCount += message.NumberOfTroops;
+                                processedMessage[regionData.RegionId].Add(message);
                             }
                             else
                             {
                                 // New entry for this region, so add
                                 assignedRegions[regionData.RegionId] = new OwnershipChange(regionData.OwnerId, regionData.TroopCount + message.NumberOfTroops);
+                                processedMessage[regionData.RegionId] = new List<IDeployReinforcementsMessage> { message };
                             }
 
                             playerLookup[regionData.OwnerId] -= message.NumberOfTroops;
@@ -372,9 +375,21 @@ namespace Peril.Api.Controllers.Api
                 }
             }
 
-            if (assignedRegions.Count > 0)
+            foreach(var pair in assignedRegions)
             {
-                RegionRepository.AssignRegionOwnership(batchOperation, sessionId, assignedRegions);
+                var regionId = pair.Key;
+                if(processedMessage[regionId].Count + 1 > batchOperation.RemainingCapacity)
+                {
+                    await batchOperation.CommitBatch();
+                }
+
+                if (processedMessage[regionId].Count + 1 > batchOperation.RemainingCapacity)
+                {
+                    throw new Exception(String.Format("Too many messages to process {0}", processedMessage[regionId].Count));
+                }
+
+                CommandQueue.RemoveCommands(batchOperation, processedMessage[regionId]);
+                RegionRepository.AssignRegionOwnership(batchOperation, availableRegions, new Dictionary<Guid, OwnershipChange> { { pair.Key, pair.Value } });
             }
         }
 
