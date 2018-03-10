@@ -233,6 +233,33 @@ namespace Peril.Api.Tests.Controllers
                 Assert.AreEqual(HttpStatusCode.BadRequest, exception.Response.StatusCode);
             }
         }
+
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("RegionController")]
+        public async Task TestPostDeployTroops_WithValidRegion_WithZeroTroops()
+        {
+            // Arrange
+            ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(SessionGuid)
+                       .SetupSessionPhase(SessionPhase.Reinforcements)
+                       .SetupAvailableReinforcements(9)
+                       .SetupDummyWorldAsTree();
+
+            // Act
+            Task result = primaryUser.RegionController.PostDeployTroops(SessionGuid, OwnedRegionGuid, 0);
+
+            // Assert
+            try
+            {
+                await result;
+                Assert.Fail("Expected exception to be thrown");
+            }
+            catch (HttpResponseException exception)
+            {
+                Assert.AreEqual(HttpStatusCode.BadRequest, exception.Response.StatusCode);
+            }
+        }
         #endregion
 
         #region - Post Attack -
@@ -474,6 +501,34 @@ namespace Peril.Api.Tests.Controllers
         [TestMethod]
         [TestCategory("Unit")]
         [TestCategory("RegionController")]
+        public async Task TestPostAttack_WithValidRegion_WithZeroTroops()
+        {
+            // Arrange
+            ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(SessionGuid)
+                       .SetupSessionPhase(SessionPhase.CombatOrders)
+                       .SetupDummyWorldAsTree()
+                       .SetupRegionOwnership(UnownedAdjacentRegionGuid, DummyUserRepository.RegisteredUserIds[1])
+                       .SetupRegionTroops(OwnedRegionGuid, 10);
+
+            // Act
+            Task result = primaryUser.RegionController.PostAttack(SessionGuid, OwnedRegionGuid, 0, UnownedAdjacentRegionGuid);
+
+            // Assert
+            try
+            {
+                await result;
+                Assert.Fail("Expected exception to be thrown");
+            }
+            catch (HttpResponseException exception)
+            {
+                Assert.AreEqual(HttpStatusCode.BadRequest, exception.Response.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("RegionController")]
         public async Task TestPostAttack_WithDuplicateRegion_WithInvalidTroops()
         {
             // Arrange
@@ -698,6 +753,33 @@ namespace Peril.Api.Tests.Controllers
 
             // Act
             Task result = primaryUser.RegionController.PostRedeployTroops(SessionGuid, OwnedRegionGuid, 10, OwnedAdjacentRegionGuid);
+
+            // Assert
+            try
+            {
+                await result;
+                Assert.Fail("Expected exception to be thrown");
+            }
+            catch (HttpResponseException exception)
+            {
+                Assert.AreEqual(HttpStatusCode.BadRequest, exception.Response.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("RegionController")]
+        public async Task TestPostRedeploy_WithValidRegion_WithZeroTroops()
+        {
+            // Arrange
+            ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(SessionGuid)
+                       .SetupSessionPhase(SessionPhase.Redeployment)
+                       .SetupDummyWorldAsTree()
+                       .SetupRegionTroops(OwnedRegionGuid, 10);
+
+            // Act
+            Task result = primaryUser.RegionController.PostRedeployTroops(SessionGuid, OwnedRegionGuid, 0, OwnedAdjacentRegionGuid);
 
             // Assert
             try

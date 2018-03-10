@@ -797,15 +797,24 @@ var CombatTypeEnum = {
         function orderAttack(gameId, sourceRegionId, numberOfTroops, targetRegionId)
         {
             console.log("Attacking from " + sourceRegionId + " to " + targetRegionId);
-            var regionOwnerId = getDataOnElement(worldElementsLookup[sourceRegionId], "OwnerId");
-            createOrUpdateAttack(sourceRegionId, targetRegionId, regionOwnerId, numberOfTroops, true, true, CombatTypeEnum.PendingAttack);
-            updateCommittedToPhase(worldElementsLookup[sourceRegionId], numberOfTroops);
+            if (numberOfTroops > 0)
+            {
+                var regionOwnerId = getDataOnElement(worldElementsLookup[sourceRegionId], "OwnerId");
+                createOrUpdateAttack(sourceRegionId, targetRegionId, regionOwnerId, numberOfTroops, true, true, CombatTypeEnum.PendingAttack);
+                updateCommittedToPhase(worldElementsLookup[sourceRegionId], numberOfTroops);
 
-            var data = "?sessionId=" + gameId + "&regionId=" + sourceRegionId + "&numberOfTroops=" + numberOfTroops + "&targetRegionId=" + targetRegionId;
-            sendAjax("POST", "api/Region/Attack", data, "json",
-                function () { onOrderAttackResponse(this.status, sourceRegionId, numberOfTroops, targetRegionId); },
-                function () { onOrderAttackResponse(this.status, sourceRegionId, numberOfTroops, targetRegionId); },
-                true);
+                var data = "?sessionId=" + gameId + "&regionId=" + sourceRegionId + "&numberOfTroops=" + numberOfTroops + "&targetRegionId=" + targetRegionId;
+                sendAjax("POST", "api/Region/Attack", data, "json",
+                    function () { onOrderAttackResponse(this.status, sourceRegionId, numberOfTroops, targetRegionId); },
+                    function () { onOrderAttackResponse(this.status, sourceRegionId, numberOfTroops, targetRegionId); },
+                    true);
+            }
+            else
+            {
+                console.log("Attack failed. Tried to send less than 1 troop");
+                showOverlay("Order failed: Must send at least 1 troop!.", "<img src='Content/images/error.svg' />");
+                setTimeout(hideOverlay, 1500);
+            }
         }
 
         function onOrderAttackResponse(status, sourceRegionId, numberOfTroops, targetRegionId)
@@ -864,15 +873,24 @@ var CombatTypeEnum = {
         function orderRedeploy(gameId, sourceRegionId, numberOfTroops, targetRegionId)
         {
             console.log("Redeploying from " + sourceRegionId + " to " + targetRegionId);
-            var regionOwnerId = getDataOnElement(worldElementsLookup[sourceRegionId], "OwnerId");
-            createOrUpdateAttack(sourceRegionId, targetRegionId, regionOwnerId, numberOfTroops, false, true, CombatTypeEnum.PendingAttack);
-            updateCommittedToPhase(worldElementsLookup[sourceRegionId], numberOfTroops);
+            if (numberOfTroops > 0)
+            {
+                var regionOwnerId = getDataOnElement(worldElementsLookup[sourceRegionId], "OwnerId");
+                createOrUpdateAttack(sourceRegionId, targetRegionId, regionOwnerId, numberOfTroops, false, true, CombatTypeEnum.PendingAttack);
+                updateCommittedToPhase(worldElementsLookup[sourceRegionId], numberOfTroops);
 
-            var data = "?sessionId=" + gameId + "&regionId=" + sourceRegionId + "&numberOfTroops=" + numberOfTroops + "&targetRegionId=" + targetRegionId;
-            sendAjax("POST", "api/Region/Redeploy", data, "json",
-                function () { onOrderRedeployResponse(this.status, sourceRegionId, numberOfTroops, targetRegionId); },
-                function () { onOrderRedeployResponse(this.status, sourceRegionId, numberOfTroops, targetRegionId); },
-                true);
+                var data = "?sessionId=" + gameId + "&regionId=" + sourceRegionId + "&numberOfTroops=" + numberOfTroops + "&targetRegionId=" + targetRegionId;
+                sendAjax("POST", "api/Region/Redeploy", data, "json",
+                    function () { onOrderRedeployResponse(this.status, sourceRegionId, numberOfTroops, targetRegionId); },
+                    function () { onOrderRedeployResponse(this.status, sourceRegionId, numberOfTroops, targetRegionId); },
+                    true);
+            }
+            else
+            {
+                console.log("Redeployment failed. Tried to send less than 1 troop");
+                showOverlay("Redeployment failed: You must send at least one troop.", "<img src='Content/images/error.svg' />");
+                setTimeout(hideOverlay, 1500);
+            }
         }
 
         function onOrderRedeployResponse(status, sourceRegionId, numberOfTroops, targetRegionId)

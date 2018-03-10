@@ -49,6 +49,10 @@ namespace Peril.Api.Controllers.Api
             {
                 throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.BadRequest, ReasonPhrase = "You do not have that many troops available to deploy" });
             }
+            else if (numberOfTroops <= 0)
+            {
+                throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.BadRequest, ReasonPhrase = "You can not deploy less than 1 troop" });
+            }
             else
             {
                 return await CommandQueue.DeployReinforcements(session.GameId, session.PhaseId, region.RegionId, region.CurrentEtag, numberOfTroops);
@@ -71,6 +75,10 @@ namespace Peril.Api.Controllers.Api
             if (sourceRegion.TroopCount <= (sourceRegion.TroopsCommittedToPhase + numberOfTroops))
             {
                 throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.BadRequest, ReasonPhrase = "You do not have that many troops available to attack with" });
+            }
+            else if (numberOfTroops <= 0)
+            {
+                throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.BadRequest, ReasonPhrase = "You can not attack with less than 1 troop" });
             }
             else
             {
@@ -104,6 +112,10 @@ namespace Peril.Api.Controllers.Api
             if (sourceRegion.TroopCount <= numberOfTroops)
             {
                 throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.BadRequest, ReasonPhrase = "You do not have that many troops available to redeploy" });
+            }
+            else if (numberOfTroops <= 0)
+            {
+                throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.BadRequest, ReasonPhrase = "You can not redeploy less than 1 troop" });
             }
             else
             {
