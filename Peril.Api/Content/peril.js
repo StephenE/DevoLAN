@@ -925,6 +925,11 @@ var CombatTypeEnum = {
                     showOverlay("Redeployment failed: You don't own that territory!", "<img src='Content/images/error.svg' />");
                     setTimeout(hideOverlay, 1500);
                     break;
+                case 409:
+                    console.log("Redeployment failed. Already queued up a redeployment");
+                    showOverlay("Redeployment failed: You can only order one redeployment!", "<img src='Content/images/error.svg' />");
+                    setTimeout(hideOverlay, 1500);
+                    break;
                 case 417:
                     console.log("Redeployment failed. Invalid session phase");
                     showOverlay("Redeployment failed: The orders phase is over.", "<img src='Content/images/error.svg' />");

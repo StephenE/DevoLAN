@@ -792,6 +792,34 @@ namespace Peril.Api.Tests.Controllers
                 Assert.AreEqual(HttpStatusCode.BadRequest, exception.Response.StatusCode);
             }
         }
+
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("RegionController")]
+        public async Task TestPostRedeploy_WithTwoRedeployments()
+        {
+            // Arrange
+            ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(SessionGuid)
+                       .SetupSessionPhase(SessionPhase.Redeployment)
+                       .SetupDummyWorldAsTree()
+                       .SetupRegionTroops(OwnedRegionGuid, 10);
+
+            // Act
+            await primaryUser.RegionController.PostRedeployTroops(SessionGuid, OwnedRegionGuid, 5, OwnedAdjacentRegionGuid);
+            Task result = primaryUser.RegionController.PostRedeployTroops(SessionGuid, OwnedRegionGuid, 4, OwnedAdjacentRegionGuid);
+
+            // Assert
+            try
+            {
+                await result;
+                Assert.Fail("Expected exception to be thrown");
+            }
+            catch (HttpResponseException exception)
+            {
+                Assert.AreEqual(HttpStatusCode.Conflict, exception.Response.StatusCode);
+            }
+        }
         #endregion
 
         Guid SessionGuid { get { return new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45"); } }

@@ -1584,6 +1584,38 @@ namespace Peril.Api.Tests.Controllers
         [TestMethod]
         [TestCategory("Unit")]
         [TestCategory("GameController")]
+        public async Task TestAdvanceNextPhase_WithConflictingRedeployment()
+        {
+            // Arrange
+            Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
+            ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(validGuid)
+                       .SetupDummyWorldAsTree(primaryUser.OwnerId)
+                       .SetupSessionPhase(SessionPhase.Redeployment)
+                       .SetupRegionTroops(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 1)
+                       .SetupRegionTroops(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, 5)
+                       .SetupRegionTroops(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, 4)
+                       .QueueRedeployment(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB, ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 4)
+                       .QueueRedeployment(ControllerMockRegionRepositoryExtensions.DummyWorldRegionD, ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, 3);
+            Guid currentSessionPhaseId = primaryUser.SessionRepository.SessionMap[validGuid].PhaseId;
+            UInt32 currentRound = primaryUser.SessionRepository.SessionMap[validGuid].Round;
+
+            // Act
+            await primaryUser.GameController.PostAdvanceNextPhase(validGuid, currentSessionPhaseId, true);
+
+            // Assert
+            Assert.AreEqual(SessionPhase.Victory, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
+            Assert.AreNotEqual(currentSessionPhaseId, primaryUser.SessionRepository.SessionMap[validGuid].PhaseId);
+            Assert.AreNotEqual(currentRound, primaryUser.SessionRepository.SessionMap[validGuid].Round);
+            Assert.AreEqual(5U, primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionA].TroopCount);
+            Assert.AreEqual(1U, primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionB].TroopCount);
+            Assert.AreEqual(4U, primaryUser.RegionRepository.RegionData[ControllerMockRegionRepositoryExtensions.DummyWorldRegionD].TroopCount);
+            Assert.AreEqual(0, primaryUser.CommandQueue.DummyRedeployQueue.Count);
+        }
+
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("GameController")]
         public async Task TestAdvanceNextPhase_WithVictory()
         {
             // Arrange

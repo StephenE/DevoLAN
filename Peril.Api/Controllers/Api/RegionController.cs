@@ -117,9 +117,22 @@ namespace Peril.Api.Controllers.Api
             {
                 throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.BadRequest, ReasonPhrase = "You can not redeploy less than 1 troop" });
             }
+            else if(nation.CompletedPhase == session.PhaseId)
+            {
+                throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.Conflict, ReasonPhrase = "You may only issue 1 redeployment" });
+            }
             else
             {
-                return await CommandQueue.Redeploy(session.GameId, session.PhaseId, nation.CurrentEtag, sourceRegion.RegionId, targetRegion.RegionId, numberOfTroops);
+                Guid redeployOp = await CommandQueue.Redeploy(session.GameId, session.PhaseId, nation.CurrentEtag, sourceRegion.RegionId, targetRegion.RegionId, numberOfTroops);
+                try
+                {
+                    await NationRepository.MarkPlayerCompletedPhase(sessionId, User.Identity.GetUserId(), session.PhaseId);
+                }
+                catch(ConcurrencyException)
+                {
+                    // The host has moved onto the next phase while we were waiting. No further action required.
+                }
+                return redeployOp;
             }
         }
 

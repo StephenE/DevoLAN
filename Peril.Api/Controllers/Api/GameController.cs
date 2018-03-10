@@ -760,18 +760,22 @@ namespace Peril.Api.Controllers.Api
 
             // Process all messages. Discard any duplicates or that don't point to valid regions
             Dictionary<Guid, IRedeployMessage> pendingProcessing = new Dictionary<Guid, IRedeployMessage>();
+            HashSet<String> uniquePlayersSeen = new HashSet<String>();
             foreach(IRedeployMessage message in redeploymentMessages)
             {
-                if(pendingProcessing.ContainsKey(message.SourceRegion)
+                String regionOwnerId = regionsLookup[message.SourceRegion].OwnerId;
+                if (pendingProcessing.ContainsKey(message.SourceRegion)
                     || !regionsLookup.ContainsKey(message.SourceRegion)
                     || !regionsLookup.ContainsKey(message.TargetRegion)
-                    || regionsLookup[message.SourceRegion].OwnerId != regionsLookup[message.TargetRegion].OwnerId)
+                    || regionOwnerId != regionsLookup[message.TargetRegion].OwnerId
+                    || uniquePlayersSeen.Contains(regionOwnerId))
                 {
                     CommandQueue.RemoveCommand(batchOperationHandle, message);
                 }
                 else
                 {
                     pendingProcessing[message.SourceRegion] = message;
+                    uniquePlayersSeen.Add(regionOwnerId);
                 }
 
                 if(batchOperationHandle.RemainingCapacity <= (3 * pendingProcessing.Count) + 1)
