@@ -40,6 +40,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ICard.cs" />
     <Compile Include="ICombat.cs" />
     <Compile Include="ICombatArmy.cs" />
     <Compile Include="ICombatArmyRoundResult.cs" />

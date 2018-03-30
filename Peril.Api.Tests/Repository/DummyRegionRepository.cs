@@ -129,6 +129,8 @@ namespace Peril.Api.Tests.Repository
             setupContext.SetupRegion(DummyWorldRegionE, continentId, initialOwnerId)
                         .SetupRegionConnection(DummyWorldRegionD);
 
+            // TODO: Setup cards in each region to be unowned
+
             return setupContext;
         }
 
@@ -193,5 +195,15 @@ namespace Peril.Api.Tests.Repository
         static public Guid DummyWorldRegionC { get { return new Guid("24BF6F0E-3395-49FC-B055-FA1F91594F35"); } }
         static public Guid DummyWorldRegionD { get { return new Guid("AA064349-D1D6-4CF1-9B26-F81F2C450B8C"); } }
         static public Guid DummyWorldRegionE { get { return new Guid("C667E285-52B0-4B63-867E-E3D390BBCCEA"); } }
+        static public Dictionary<Guid, int> DummyWorldCardValues { get { return m_DummyWorldCardValues; } }
+
+        static private Dictionary<Guid, int> m_DummyWorldCardValues = new Dictionary<Guid, int>
+        {
+            {DummyWorldRegionA, 3},
+            {DummyWorldRegionB, 5},
+            {DummyWorldRegionC, 7},
+            {DummyWorldRegionD, 3},
+            {DummyWorldRegionE, 3},
+        };
     }
 }

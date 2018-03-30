@@ -3,6 +3,7 @@ using Peril.Api.Models;
 using Peril.Api.Repository;
 using Peril.Core;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Web.Http;
 
@@ -28,7 +29,26 @@ namespace Peril.Api.Controllers.Api
             return nation.AvailableReinforcements;
         }
 
-        // #ToDo Cards & Missions: Stretch goal for now
+        // GET /api/Nation/Cards
+        [Route("Cards")]
+        public async Task<IEnumerable<ICard>> GetCards(Guid sessionId)
+        {
+            ISession session = await SessionRepository.GetSessionOrThrow(sessionId)
+                                                      .IsUserIdJoinedOrThrow(NationRepository, User.Identity.GetUserId());
+
+            throw new NotImplementedException("To do");
+        }
+
+        // POST /api/Nation/Cards
+        [Route("Cards")]
+        public async Task PostCards(Guid sessionId, IEnumerable<Guid> cards)
+        {
+            ISession session = await SessionRepository.GetSessionOrThrow(sessionId)
+                                                      .IsUserIdJoinedOrThrow(NationRepository, User.Identity.GetUserId())
+                                                      .IsPhaseTypeOrThrow(SessionPhase.Reinforcements);
+
+            throw new NotImplementedException("To do");
+        }
 
         private INationRepository NationRepository { get; set; }
         private ISessionRepository SessionRepository { get; set; }

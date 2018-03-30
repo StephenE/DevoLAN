@@ -114,6 +114,20 @@ namespace Peril.Api.Tests.Repository
             return setupContext;
         }
 
+        static public ControllerMockSetupContext SetupCardOwner(this ControllerMockSetupContext setupContext, Guid regionId)
+        {
+            return SetupCardOwner(setupContext, setupContext.ControllerMock.OwnerId, regionId);
+        }
+
+        static public ControllerMockSetupContext SetupCardOwner(this ControllerMockSetupContext setupContext, String userId, Guid regionId)
+        {
+            using (DummyBatchOperationHandle batchOperation = new DummyBatchOperationHandle())
+            {
+                // setupContext.ControllerMock.NationRepository.SetAvailableReinforcements(batchOperation, setupContext.DummySession.GameId, new Dictionary<String, UInt32>() { { userId, availableReinforcements } });
+            }
+            return setupContext;
+        }
+
         static public ControllerMockSetupContext SetupPlayerCompletedPhase(this ControllerMockSetupContext setupContext)
         {
             return SetupPlayerCompletedPhase(setupContext, setupContext.ControllerMock.OwnerId, setupContext.DummySession.PhaseId);
