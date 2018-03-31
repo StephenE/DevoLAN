@@ -11,7 +11,7 @@ namespace Peril.Api.Repository
     {
         String WorldDefinitionPath { get; }
 
-        Task CreateRegion(Guid sessionId, Guid regionId, Guid continentId, String name, IEnumerable<Guid> connectedRegions);
+        void CreateRegion(IBatchOperationHandle batchOperationHandle, Guid sessionId, Guid regionId, Guid continentId, String name, IEnumerable<Guid> connectedRegions, UInt32 cardValue);
 
         Task<IRegionData> GetRegion(Guid sessionId, Guid regionId);
 

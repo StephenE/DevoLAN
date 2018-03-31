@@ -53,16 +53,18 @@ namespace Peril.Api.Controllers.Api
 
             try
             {
-                XDocument worldDefinition = XDocument.Load(RegionRepository.WorldDefinitionPath);
-                List<Region> regions = worldDefinition.LoadRegions();
-                worldDefinition.LoadRegionConnections(regions);
-
-                List<Task> regionCreationOperations = new List<Task>();
-                foreach(var region in regions)
+                using (IBatchOperationHandle batchOperation = SessionRepository.StartBatchOperation(sessionGuid))
                 {
-                    regionCreationOperations.Add(RegionRepository.CreateRegion(sessionGuid, region.RegionId, region.ContinentId, region.Name, region.ConnectedRegions));
+                    XDocument worldDefinition = XDocument.Load(RegionRepository.WorldDefinitionPath);
+                    List<Region> regions = worldDefinition.LoadRegions();
+                    worldDefinition.LoadRegionConnections(regions);
+
+                    foreach (var region in regions)
+                    {
+                        RegionRepository.CreateRegion(batchOperation, sessionGuid, region.RegionId, region.ContinentId, region.Name, region.ConnectedRegions, 0);
+                    }
+                    await batchOperation.CommitBatch();
                 }
-                await Task.WhenAll(regionCreationOperations);
             }
             catch (HttpResponseException exception)
             {

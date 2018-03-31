@@ -164,6 +164,7 @@ namespace Peril.Api.Tests.Controllers
             // Arrange
             ControllerMock primaryUser = new ControllerMock();
             primaryUser.SetupDummySession(SessionGuid)
+                       .SetupAddPlayer(DummyUserRepository.RegisteredUserIds[1], PlayerColour.Yellow)
                        .SetupDummyWorldAsTree()
                        .SetupCardOwner(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA)
                        .SetupCardOwner(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB)
@@ -178,11 +179,11 @@ namespace Peril.Api.Tests.Controllers
             List<ICard> cards = result.ToList();
             Assert.AreEqual(3, cards.Count());
             Assert.AreEqual(1, cards.Count(card => ControllerMockRegionRepositoryExtensions.DummyWorldRegionA == card.RegionId));
-            Assert.AreEqual(3, cards.First(card => ControllerMockRegionRepositoryExtensions.DummyWorldRegionA == card.RegionId).Value);
+            Assert.AreEqual(3U, cards.First(card => ControllerMockRegionRepositoryExtensions.DummyWorldRegionA == card.RegionId).Value);
             Assert.AreEqual(1, cards.Count(card => ControllerMockRegionRepositoryExtensions.DummyWorldRegionB == card.RegionId));
-            Assert.AreEqual(5, cards.First(card => ControllerMockRegionRepositoryExtensions.DummyWorldRegionB == card.RegionId).Value);
+            Assert.AreEqual(5U, cards.First(card => ControllerMockRegionRepositoryExtensions.DummyWorldRegionB == card.RegionId).Value);
             Assert.AreEqual(1, cards.Count(card => ControllerMockRegionRepositoryExtensions.DummyWorldRegionC == card.RegionId));
-            Assert.AreEqual(7, cards.First(card => ControllerMockRegionRepositoryExtensions.DummyWorldRegionC == card.RegionId).Value);
+            Assert.AreEqual(7U, cards.First(card => ControllerMockRegionRepositoryExtensions.DummyWorldRegionC == card.RegionId).Value);
         }
         #endregion
 

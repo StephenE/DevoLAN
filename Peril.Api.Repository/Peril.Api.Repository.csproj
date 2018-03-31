@@ -62,6 +62,7 @@
     <Compile Include="IWorldRepository.cs" />
     <Compile Include="Model\ApplicationUser.cs" />
     <Compile Include="ICommandQueue.cs" />
+    <Compile Include="Model\ICardData.cs" />
     <Compile Include="Model\ICommandQueueMessage.cs" />
     <Compile Include="Model\INationData.cs" />
     <Compile Include="INationRepository.cs" />

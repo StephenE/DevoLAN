@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNet.Identity;
 using Peril.Api.Models;
 using Peril.Api.Repository;
+using Peril.Api.Repository.Model;
 using Peril.Core;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Http;
 
@@ -35,8 +37,8 @@ namespace Peril.Api.Controllers.Api
         {
             ISession session = await SessionRepository.GetSessionOrThrow(sessionId)
                                                       .IsUserIdJoinedOrThrow(NationRepository, User.Identity.GetUserId());
-
-            throw new NotImplementedException("To do");
+            IEnumerable<ICardData> playerCards = await NationRepository.GetCards(sessionId, User.Identity.GetUserId());
+            return playerCards.Select(card => new Card(card));
         }
 
         // POST /api/Nation/Cards

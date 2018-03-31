@@ -1,4 +1,5 @@
 ﻿using Peril.Api.Repository;
+using Peril.Api.Repository.Model;
 using Peril.Api.Tests.Controllers;
 using System;
 using System.Collections.Generic;
@@ -9,9 +10,10 @@ namespace Peril.Api.Tests.Repository
 {
     class DummyNationRepository : INationRepository
     {
-        public DummyNationRepository(DummySessionRepository sessionRepository)
+        public DummyNationRepository(DummySessionRepository sessionRepository, DummyRegionRepository regionRepository)
         {
             SessionRepository = sessionRepository;
+            RegionRepository = regionRepository;
         }
 
         public Task<INationData> GetNation(Guid sessionId, string userId)
@@ -42,6 +44,44 @@ namespace Peril.Api.Tests.Repository
             else
             {
                 throw new InvalidOperationException("Called GetNations with a non-existent GUID");
+            }
+        }
+
+        public Task<IEnumerable<ICardData>> GetCards(Guid sessionId, String userId)
+        {
+            IEnumerable<DummyCardData> cards = RegionRepository.CardData.Where(card => card.Value.OwnerId == userId).Select(card => card.Value);
+            return Task.FromResult(cards.Cast<ICardData>());
+        }
+
+        public void SetCardOwner(IBatchOperationHandle batchOperationHandle, Guid sessionId, Guid regionId, String userId)
+        {
+            DummySession foundSession = SessionRepository.SessionMap[sessionId];
+            if (foundSession != null)
+            {
+                DummyNationData foundPlayer = foundSession.Players.Find(player => player.UserId == userId);
+                if (foundPlayer != null)
+                {
+                    if (RegionRepository.CardData.ContainsKey(regionId))
+                    {
+                        DummyBatchOperationHandle batchOperation = batchOperationHandle as DummyBatchOperationHandle;
+                        batchOperation.QueuedOperations.Add(() =>
+                        {
+                            RegionRepository.CardData[regionId].OwnerId = userId;
+                        });
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("Called SetCardOwner with a non-existent region id");
+                    }
+                }
+                else
+                {
+                    throw new InvalidOperationException("Called SetCardOwner with a non-existent user id");
+                }
+            }
+            else
+            {
+                throw new InvalidOperationException("Called SetCardOwner with a non-existent session id");
             }
         }
 
@@ -96,6 +136,7 @@ namespace Peril.Api.Tests.Repository
         }
 
         private DummySessionRepository SessionRepository;
+        private DummyRegionRepository RegionRepository;
     }
 
     static class ControllerMockNationRepositoryExtensions
@@ -123,7 +164,7 @@ namespace Peril.Api.Tests.Repository
         {
             using (DummyBatchOperationHandle batchOperation = new DummyBatchOperationHandle())
             {
-                // setupContext.ControllerMock.NationRepository.SetAvailableReinforcements(batchOperation, setupContext.DummySession.GameId, new Dictionary<String, UInt32>() { { userId, availableReinforcements } });
+                setupContext.ControllerMock.NationRepository.SetCardOwner(batchOperation, setupContext.DummySession.GameId, regionId, userId);
             }
             return setupContext;
         }

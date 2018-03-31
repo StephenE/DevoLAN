@@ -21,8 +21,7 @@ namespace Peril.Api.Tests.Controllers
             SessionRepository = new DummySessionRepository();
             UserRepository = new DummyUserRepository();
             WorldRepository = new DummyWorldRepository();
-
-            NationRepository = new DummyNationRepository(SessionRepository);
+            NationRepository = new DummyNationRepository(SessionRepository, RegionRepository);
 
             CreateControllers();
         }

@@ -16,19 +16,26 @@ namespace Peril.Api.Tests.Repository
         public DummyRegionRepository()
         {
             RegionData = new Dictionary<Guid, DummyRegionData>();
+            CardData = new Dictionary<Guid, DummyCardData>();
         }
 
         public String WorldDefinitionPath { get; set; }
 
-        public Task CreateRegion(Guid sessionId, Guid regionId, Guid continentId, String name, IEnumerable<Guid> connectedRegions)
+        public void CreateRegion(IBatchOperationHandle batchOperationHandleInterface, Guid sessionId, Guid regionId, Guid continentId, String name, IEnumerable<Guid> connectedRegions, UInt32 cardValue)
         {
-            RegionData[regionId] = new DummyRegionData(sessionId, regionId, continentId, String.Empty);
-            foreach(Guid connectedRegion in connectedRegions)
+            DummyBatchOperationHandle batchOperationHandle = batchOperationHandleInterface as DummyBatchOperationHandle;
+            batchOperationHandle.QueuedOperations.Add(() =>
             {
-                RegionData[regionId].ConnectedRegionIds.Add(connectedRegion);
-            }
-
-            return Task.FromResult(false);
+                RegionData[regionId] = new DummyRegionData(sessionId, regionId, continentId, String.Empty);
+                foreach (Guid connectedRegion in connectedRegions)
+                {
+                    RegionData[regionId].ConnectedRegionIds.Add(connectedRegion);
+                }
+            });
+            batchOperationHandle.QueuedOperations.Add(() =>
+            {
+                CardData[regionId] = new DummyCardData(regionId, cardValue);
+            });
         }
 
         public Task<IRegionData> GetRegion(Guid sessionId, Guid regionId)
@@ -99,14 +106,16 @@ namespace Peril.Api.Tests.Repository
 
 
         #region - Test Setup Helpers -
-        public DummyRegionData SetupRegion(Guid sessionId, Guid regionId, Guid continentId, String initialOwner)
+        public DummyRegionData SetupRegion(Guid sessionId, Guid regionId, Guid continentId, String initialOwner, UInt32 cardValue)
         {
             RegionData[regionId] = new DummyRegionData(sessionId, regionId, continentId, initialOwner);
+            CardData[regionId] = new DummyCardData(regionId, cardValue);
             return RegionData[regionId];
         }
         #endregion
 
         public Dictionary<Guid, DummyRegionData> RegionData { get; private set; }
+        public Dictionary<Guid, DummyCardData> CardData { get; private set; }
     }
 
     static class ControllerMockRegionRepositoryExtensions
@@ -141,20 +150,25 @@ namespace Peril.Api.Tests.Repository
             worldDefinition.LoadRegionConnections(regions);
             foreach (IRegion region in regions)
             {
-                setupContext.SetupRegion(Guid.NewGuid(), region.ContinentId, setupContext.ControllerMock.OwnerId);
+                setupContext.SetupRegion(Guid.NewGuid(), region.ContinentId, setupContext.ControllerMock.OwnerId, 0);
                 setupContext.DummyRegion.ConnectedRegionIds = region.ConnectedRegions.ToList();
             }
             return setupContext;
         }
 
-        static public ControllerMockSetupContext SetupRegion(this ControllerMockSetupContext setupContext, Guid regionId, Guid continentId)
+        static public ControllerMockSetupContext SetupRegion(this ControllerMockSetupContext setupContext, Guid regionId, Guid continentId, UInt32 cardValue)
         {
-            return SetupRegion(setupContext, regionId, continentId, setupContext.ControllerMock.OwnerId);
+            return SetupRegion(setupContext, regionId, continentId, setupContext.ControllerMock.OwnerId, cardValue);
         }
 
         static public ControllerMockSetupContext SetupRegion(this ControllerMockSetupContext setupContext, Guid regionId, Guid continentId, String initialOwnerId)
         {
-            setupContext.DummyRegion = setupContext.ControllerMock.RegionRepository.SetupRegion(setupContext.DummySession.GameId, regionId, continentId, initialOwnerId);
+            return SetupRegion(setupContext, regionId, continentId, initialOwnerId, ControllerMockRegionRepositoryExtensions.DummyWorldCardValues[regionId]);
+        }
+
+        static public ControllerMockSetupContext SetupRegion(this ControllerMockSetupContext setupContext, Guid regionId, Guid continentId, String initialOwnerId, UInt32 cardValue)
+        {
+            setupContext.DummyRegion = setupContext.ControllerMock.RegionRepository.SetupRegion(setupContext.DummySession.GameId, regionId, continentId, initialOwnerId, cardValue);
             return setupContext;
         }
 
@@ -195,9 +209,9 @@ namespace Peril.Api.Tests.Repository
         static public Guid DummyWorldRegionC { get { return new Guid("24BF6F0E-3395-49FC-B055-FA1F91594F35"); } }
         static public Guid DummyWorldRegionD { get { return new Guid("AA064349-D1D6-4CF1-9B26-F81F2C450B8C"); } }
         static public Guid DummyWorldRegionE { get { return new Guid("C667E285-52B0-4B63-867E-E3D390BBCCEA"); } }
-        static public Dictionary<Guid, int> DummyWorldCardValues { get { return m_DummyWorldCardValues; } }
+        static public Dictionary<Guid, UInt32> DummyWorldCardValues { get { return m_DummyWorldCardValues; } }
 
-        static private Dictionary<Guid, int> m_DummyWorldCardValues = new Dictionary<Guid, int>
+        static private Dictionary<Guid, UInt32> m_DummyWorldCardValues = new Dictionary<Guid, UInt32>
         {
             {DummyWorldRegionA, 3},
             {DummyWorldRegionB, 5},

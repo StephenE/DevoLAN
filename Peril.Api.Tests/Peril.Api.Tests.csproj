@@ -155,6 +155,7 @@
     <Compile Include="IntegrationTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Repository\DummyBatchOperationHandle.cs" />
+    <Compile Include="Repository\DummyCardData.cs" />
     <Compile Include="Repository\DummyCombat.cs" />
     <Compile Include="Repository\DummyCombatArmy.cs" />
     <Compile Include="Repository\DummyCommandQueue.cs" />

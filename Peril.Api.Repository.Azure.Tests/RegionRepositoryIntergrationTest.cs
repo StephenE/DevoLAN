@@ -38,7 +38,10 @@ namespace Peril.Api.Repository.Azure.Tests
             var dataTable = TableClient.SetupSessionDataTable(dummySessionId);
 
             // Act
-            await repository.CreateRegion(dummySessionId, dummyRegionId, dummyContinentId, "DummyRegion", dummyConnections);
+            using (IBatchOperationHandle batchOperation = new BatchOperationHandle(SessionRepository.GetTableForSessionData(TableClient, dummySessionId)))
+            {
+                repository.CreateRegion(batchOperation, dummySessionId, dummyRegionId, dummyContinentId, "DummyRegion", dummyConnections, 0);
+            }
 
             // Assert
             TableOperation operation = TableOperation.Retrieve<RegionTableEntry>(dummySessionId.ToString(), "Region_" + dummyRegionId.ToString());
@@ -68,7 +71,10 @@ namespace Peril.Api.Repository.Azure.Tests
             Guid dummyContinentId = new Guid("DE167712-0CE6-455C-83EA-CB2A6936F1BE");
             List<Guid> dummyConnections = new List<Guid> { new Guid("0533203F-13F2-4863-B528-17F53D279E19"), new Guid("4A9779D0-0727-4AD9-AD66-17AE9AF9BE02") };
             TableClient.SetupSessionDataTable(dummySessionId);
-            await repository.CreateRegion(dummySessionId, dummyRegionId, dummyContinentId, "DummyRegion", dummyConnections);
+            using (IBatchOperationHandle batchOperation = new BatchOperationHandle(SessionRepository.GetTableForSessionData(TableClient, dummySessionId)))
+            {
+                repository.CreateRegion(batchOperation, dummySessionId, dummyRegionId, dummyContinentId, "DummyRegion", dummyConnections, 0);
+            }
 
             // Act
             IRegionData regionData = await repository.GetRegion(dummySessionId, dummyRegionId);
@@ -108,8 +114,11 @@ namespace Peril.Api.Repository.Azure.Tests
             Guid secondDummyRegionId = new Guid("336312D8-F219-4C9B-B3FE-F4B39602E28D");
             Guid dummyContinentId = new Guid("DE167712-0CE6-455C-83EA-CB2A6936F1BE");
             TableClient.SetupSessionDataTable(dummySessionId);
-            await repository.CreateRegion(dummySessionId, dummyRegionId, dummyContinentId, "DummyRegion", new List<Guid>());
-            await repository.CreateRegion(dummySessionId, secondDummyRegionId, dummyContinentId, "DummyRegion2", new List<Guid>());
+            using (IBatchOperationHandle batchOperation = new BatchOperationHandle(SessionRepository.GetTableForSessionData(TableClient, dummySessionId)))
+            {
+                repository.CreateRegion(batchOperation, dummySessionId, dummyRegionId, dummyContinentId, "DummyRegion", new List<Guid>(), 0);
+                repository.CreateRegion(batchOperation, dummySessionId, secondDummyRegionId, dummyContinentId, "DummyRegion2", new List<Guid>(), 0);
+            }
 
             // Act
             IEnumerable<IRegionData> regionData = await repository.GetRegions(dummySessionId);
@@ -133,8 +142,11 @@ namespace Peril.Api.Repository.Azure.Tests
             Guid secondDummyRegionId = new Guid("336312D8-F219-4C9B-B3FE-F4B39602E28D");
             Guid dummyContinentId = new Guid("DE167712-0CE6-455C-83EA-CB2A6936F1BE");
             TableClient.SetupSessionDataTable(dummySessionId);
-            await repository.CreateRegion(dummySessionId, dummyRegionId, dummyContinentId, "DummyRegion", new List<Guid>());
-            await repository.CreateRegion(dummySessionId, secondDummyRegionId, dummyContinentId, "DummyRegion2", new List<Guid>());
+            using (IBatchOperationHandle batchOperation = new BatchOperationHandle(SessionRepository.GetTableForSessionData(TableClient, dummySessionId)))
+            {
+                repository.CreateRegion(batchOperation, dummySessionId, dummyRegionId, dummyContinentId, "DummyRegion", new List<Guid>(), 0);
+                repository.CreateRegion(batchOperation, dummySessionId, secondDummyRegionId, dummyContinentId, "DummyRegion2", new List<Guid>(), 0);
+            }
 
             // Act
             using (IBatchOperationHandle batchOperation = new BatchOperationHandle(SessionRepository.GetTableForSessionData(TableClient, dummySessionId)))

@@ -1,6 +1,7 @@
 ﻿using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
 using Peril.Api.Repository.Azure.Model;
+using Peril.Api.Repository.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -69,6 +70,16 @@ namespace Peril.Api.Repository.Azure
             }
 
             return results;
+        }
+
+        public Task<IEnumerable<ICardData>> GetCards(Guid sessionId, String userId)
+        {
+            return null;
+        }
+
+        public void SetCardOwner(IBatchOperationHandle batchOperation, Guid sessionId, Guid regionId, String userId)
+        {
+
         }
 
         public async Task MarkPlayerCompletedPhase(Guid sessionId, string userId, Guid phaseId)

@@ -20,19 +20,17 @@ namespace Peril.Api.Repository.Azure
 
         public String WorldDefinitionPath { get; private set; }
 
-        public async Task CreateRegion(Guid sessionId, Guid regionId, Guid continentId, String name, IEnumerable<Guid> connectedRegions)
+        public void CreateRegion(IBatchOperationHandle batchOperationHandleInterface, Guid sessionId, Guid regionId, Guid continentId, String name, IEnumerable<Guid> connectedRegions, UInt32 cardValue)
         {
-            // Get the session data table
-            CloudTable sessionDataTable = SessionRepository.GetTableForSessionData(TableClient, sessionId);
+            BatchOperationHandle batchOperationHandle = batchOperationHandleInterface as BatchOperationHandle;
 
             // Create a new table entry
             RegionTableEntry newRegion = new RegionTableEntry(sessionId, regionId, continentId, name);
             newRegion.IsValid();
             newRegion.SetConnectedRegions(connectedRegions);
+            batchOperationHandle.BatchOperation.Insert(newRegion);
 
-            // Kick off the insert operation
-            TableOperation insertOperation = TableOperation.Insert(newRegion);
-            await sessionDataTable.ExecuteAsync(insertOperation);
+            // Create a new card for this region
         }
 
         public async Task<IRegionData> GetRegion(Guid sessionId, Guid regionId)
