@@ -6,6 +6,8 @@ using Peril.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web.Http;
 
@@ -49,7 +51,66 @@ namespace Peril.Api.Controllers.Api
                                                       .IsUserIdJoinedOrThrow(NationRepository, User.Identity.GetUserId())
                                                       .IsPhaseTypeOrThrow(SessionPhase.Reinforcements);
 
-            throw new NotImplementedException("To do");
+            Task<INationData> nationDataTask = NationRepository.GetNationOrThrow(sessionId, User.Identity.GetUserId());
+            Task<IEnumerable<ICardData>> playerCardsTask = NationRepository.GetCards(sessionId, User.Identity.GetUserId());
+            if (cards == null)
+            {
+                throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.BadRequest, ReasonPhrase = "Invalid card(s) specified" });
+            }
+
+            HashSet<Guid> cardRegionIds = new HashSet<Guid>();
+            foreach(Guid cardRegionId in cards)
+            {
+                if(cardRegionIds.Contains(cardRegionId))
+                {
+                    throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.BadRequest, ReasonPhrase = "Duplicate card(s) specified" });
+                }
+                else if(cardRegionIds.Count >= 3)
+                {
+                    throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.BadRequest, ReasonPhrase = "Too many card(s) specified" });
+                }
+                else
+                {
+                    cardRegionIds.Add(cardRegionId);
+                }
+            }
+
+            if (cardRegionIds.Count != 3)
+            {
+                throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.BadRequest, ReasonPhrase = "Too few card(s) specified" });
+            }
+
+            using (IBatchOperationHandle batchOperation = SessionRepository.StartBatchOperation(sessionId))
+            {
+                IEnumerable<ICardData> playerCards = await playerCardsTask;
+                HashSet<UInt32> seenValues = new HashSet<UInt32>();
+                foreach(ICardData card in playerCards)
+                {
+                    if(cardRegionIds.Contains(card.RegionId))
+                    {
+                        NationRepository.SetCardDiscarded(batchOperation, sessionId, card.RegionId, card.CurrentEtag);
+                        seenValues.Add(card.Value);
+                    }
+                }
+
+                UInt32 additionalReinforcements = 0;
+                if(seenValues.Count == 1)
+                {
+                    additionalReinforcements = seenValues.First();
+                }
+                else if (seenValues.Count == 3)
+                {
+                    additionalReinforcements = 9;
+                }
+                else
+                {
+                    await batchOperation.Abort();
+                    throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.BadRequest, ReasonPhrase = "Invalid combination of card(s) specified" });
+                }
+
+                INationData nation = await nationDataTask;
+                NationRepository.SetAvailableReinforcements(batchOperation, sessionId, nation.UserId, nation.CurrentEtag, nation.AvailableReinforcements + additionalReinforcements);
+            }
         }
 
         private INationRepository NationRepository { get; set; }

@@ -13,5 +13,7 @@ namespace Peril.Api.Repository.Model
         String OwnerId { get; }
 
         UInt32 Value { get; }
+
+        String CurrentEtag { get; }
     }
 }

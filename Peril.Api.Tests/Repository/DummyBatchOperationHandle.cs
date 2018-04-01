@@ -40,6 +40,12 @@ namespace Peril.Api.Tests.Repository
             return Task.FromResult(0);
         }
 
+        public Task Abort()
+        {
+            QueuedOperations.Clear();
+            return Task.FromResult(0);
+        }
+
         internal List<QueuedOperation> QueuedOperations { get; private set; }
     }
 }

@@ -74,12 +74,22 @@ namespace Peril.Api.Repository.Azure
 
         public Task<IEnumerable<ICardData>> GetCards(Guid sessionId, String userId)
         {
-            return null;
+            throw new NotImplementedException();
         }
 
-        public void SetCardOwner(IBatchOperationHandle batchOperation, Guid sessionId, Guid regionId, String userId)
+        public void SetCardOwner(IBatchOperationHandle batchOperation, Guid sessionId, Guid regionId, string userId, string currentEtag)
         {
+            throw new NotImplementedException();
+        }
 
+        public void SetCardDiscarded(IBatchOperationHandle batchOperation, Guid sessionId, Guid regionId, string currentEtag)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SetCardUnowned(IBatchOperationHandle batchOperation, Guid sessionId, Guid regionId, string currentEtag)
+        {
+            throw new NotImplementedException();
         }
 
         public async Task MarkPlayerCompletedPhase(Guid sessionId, string userId, Guid phaseId)
@@ -115,40 +125,17 @@ namespace Peril.Api.Repository.Azure
             }
         }
 
-        public void SetAvailableReinforcements(IBatchOperationHandle batchOperationHandleInterface, Guid sessionId, Dictionary<String, UInt32> reinforcements)
+        public void SetAvailableReinforcements(IBatchOperationHandle batchOperationHandleInterface, Guid sessionId, String userId, String currentEtag, UInt32 reinforcements)
         {
             BatchOperationHandle batchOperationHandle = batchOperationHandleInterface as BatchOperationHandle;
 
             // Get the session data table
             CloudTable sessionDataTable = SessionRepository.GetTableForSessionData(TableClient, sessionId);
 
-            // Kick off fetching the nations, and queue a continuation to add the update operations once we have the nations.
-            var pendingOperation = GetNations(sessionId)
-                                   .ContinueWith(nationsTask =>
-            {
-                var nations = nationsTask.Result;
-                // Get NationTableEntry for every player that needs updating
-                var updateOperations = from playerEntry in reinforcements
-                                       join nation in nations.Cast<NationTableEntry>() on playerEntry.Key equals nation.UserId
-                                       select new { Nation = nation, Reinforcements = (Int32)playerEntry.Value };
-
-                // Modify entries as required
-                TableBatchOperation batchOperation = batchOperationHandle.BatchOperation;
-                lock (batchOperationHandle)
-                {
-                    foreach (var operation in updateOperations)
-                    {
-                        NationTableEntry nationEntry = operation.Nation;
-                        nationEntry.IsValid();
-                        nationEntry.AvailableReinforcementsRaw = operation.Reinforcements;
-                        batchOperation.Replace(nationEntry);
-                    }
-                }
-            });
-
-            // We need to do an async operation before we can add the changes to the batch handle
-            // Reserve enough space for the worst case situation (one row for every entry in 'reinforcements') 
-            batchOperationHandle.AddPrerequisite(pendingOperation, reinforcements.Count);
+            // Create a DynamicTableEntity so that we can do a partial update of this table (a merge)
+            DynamicTableEntity nationEntry = NationTableEntry.CreateDynamicTableEntity(sessionId, userId, currentEtag);
+            NationTableEntry.SetAvailableReinforcements(nationEntry, reinforcements);
+            batchOperationHandle.BatchOperation.Merge(nationEntry);
         }
 
         private CloudStorageAccount StorageAccount { get; set; }

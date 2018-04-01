@@ -7,6 +7,18 @@ namespace Peril.Api.Repository.Azure.Model
 {
     public class NationTableEntry : TableEntity, INationData
     {
+        static public DynamicTableEntity CreateDynamicTableEntity(Guid sessionId, String userId, String currentEtag)
+        {
+            DynamicTableEntity tableEntity = new DynamicTableEntity(sessionId.ToString(), "Nation_" + userId.ToString());
+            tableEntity.ETag = currentEtag;
+            return tableEntity;
+        }
+
+        static public void SetAvailableReinforcements(DynamicTableEntity tableEntry, UInt32 newValue)
+        {
+            tableEntry.Properties.Add("AvailableReinforcementsRaw", new EntityProperty((Int32)newValue));
+        }
+
         public NationTableEntry(Guid sessionId, String userId)
         {
             PartitionKey = sessionId.ToString();

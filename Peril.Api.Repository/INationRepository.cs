@@ -13,9 +13,13 @@ namespace Peril.Api.Repository
 
         Task<IEnumerable<ICardData>> GetCards(Guid sessionId, String userId);
 
-        void SetCardOwner(IBatchOperationHandle batchOperation, Guid sessionId, Guid regionId, String userId);
+        void SetCardOwner(IBatchOperationHandle batchOperation, Guid sessionId, Guid regionId, String userId, String currentEtag);
 
-        void SetAvailableReinforcements(IBatchOperationHandle batchOperation, Guid sessionId, Dictionary<String, UInt32> reinforcements);
+        void SetCardDiscarded(IBatchOperationHandle batchOperation, Guid sessionId, Guid regionId, String currentEtag);
+
+        void SetCardUnowned(IBatchOperationHandle batchOperation, Guid sessionId, Guid regionId, String currentEtag);
+
+        void SetAvailableReinforcements(IBatchOperationHandle batchOperation, Guid sessionId, String userId, String currentEtag, UInt32 reinforcements);
 
         Task MarkPlayerCompletedPhase(Guid sessionId, String userId, Guid phaseId);
     }

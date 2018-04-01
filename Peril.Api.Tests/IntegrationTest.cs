@@ -154,8 +154,8 @@ namespace Peril.Api.Tests
             // Ensure primary user has enough troops for the test
             using (IBatchOperationHandle batchOperation = new BatchOperationHandle(primaryUser.AzureSessionRepository.GetTableForSessionData(sessionDetails.GameId)))
             {
-                primaryUser.AzureNationRepository.SetAvailableReinforcements(batchOperation, sessionDetails.GameId, new Dictionary<String, UInt32> { { primaryUser.OwnerId, 1000 } });
-                secondaryUser.AzureNationRepository.SetAvailableReinforcements(batchOperation, sessionDetails.GameId, new Dictionary<String, UInt32> { { secondaryUser.OwnerId, 1000 } });
+                primaryUser.AzureNationRepository.SetAvailableReinforcements(batchOperation, sessionDetails.GameId, primaryUser.OwnerId, "*", 1000);
+                secondaryUser.AzureNationRepository.SetAvailableReinforcements(batchOperation, sessionDetails.GameId, secondaryUser.OwnerId, "*", 1000);
             }
 
             // Deploy initial troops for primary user
@@ -190,7 +190,7 @@ namespace Peril.Api.Tests
             // Ensure primary user has enough troops for the test
             using (IBatchOperationHandle batchOperation = new BatchOperationHandle(primaryUser.AzureSessionRepository.GetTableForSessionData(sessionDetails.GameId)))
             {
-                primaryUser.AzureNationRepository.SetAvailableReinforcements(batchOperation, sessionDetails.GameId, new Dictionary<String, UInt32> { { primaryUser.OwnerId, 2000 } });
+                primaryUser.AzureNationRepository.SetAvailableReinforcements(batchOperation, sessionDetails.GameId, primaryUser.OwnerId, "*", 2000);
             }
 
             // Deploy initial troops for primary user

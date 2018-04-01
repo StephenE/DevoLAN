@@ -70,6 +70,13 @@ namespace Peril.Api.Repository.Azure
             StartNewBatch();
         }
 
+        public async Task Abort()
+        {
+            await Task.WhenAll(PrerequisiteOperation);
+
+            StartNewBatch();
+        }
+
         private CloudTable TargetTable { get; set; }
         private List<Task> PrerequisiteOperation { get; set; }
         private Int32 ReservedBatchCapacity { get; set; }

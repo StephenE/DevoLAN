@@ -151,7 +151,7 @@ namespace Peril.Api.Repository.Azure.Tests
             // Act
             using (IBatchOperationHandle batchOperation = new BatchOperationHandle(sessionRepository.GetTableForSessionData(validGuid)))
             {
-                repository.SetAvailableReinforcements(batchOperation, validGuid, new Dictionary<String, UInt32> { { dummyUserId, 10U } });
+                repository.SetAvailableReinforcements(batchOperation, validGuid, dummyUserId, "*", 10U);
             }
 
             // Assert
@@ -184,7 +184,8 @@ namespace Peril.Api.Repository.Azure.Tests
             // Act
             using (IBatchOperationHandle batchOperation = new BatchOperationHandle(sessionRepository.GetTableForSessionData(validGuid)))
             {
-                repository.SetAvailableReinforcements(batchOperation, validGuid, new Dictionary<String, UInt32> { { dummyUserId, 10U }, { secondDummyUserId, 20U } });
+                repository.SetAvailableReinforcements(batchOperation, validGuid, dummyUserId, "*", 10U);
+                repository.SetAvailableReinforcements(batchOperation, validGuid, secondDummyUserId, "*", 20U);
             }
 
             // Assert

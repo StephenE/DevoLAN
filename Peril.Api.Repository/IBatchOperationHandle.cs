@@ -8,5 +8,7 @@ namespace Peril.Api.Repository
         Int32 RemainingCapacity { get; }
 
         Task CommitBatch();
+
+        Task Abort();
     }
 }

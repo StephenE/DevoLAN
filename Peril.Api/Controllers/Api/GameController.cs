@@ -182,9 +182,9 @@ namespace Peril.Api.Controllers.Api
                             foreach(INationData nation in nations)
                             {
                                 // For the moment, just give all players 20 starting troops
-                                initialReinforcements[nation.UserId] = 20;
+                                NationRepository.SetAvailableReinforcements(batchOperation, session.GameId, nation.UserId, nation.CurrentEtag, 20);
                             }
-                            NationRepository.SetAvailableReinforcements(batchOperation, session.GameId, initialReinforcements);
+
                             nextPhase = SessionPhase.Reinforcements;
                             break;
                         }
@@ -201,10 +201,9 @@ namespace Peril.Api.Controllers.Api
                             Dictionary<String, UInt32> initialReinforcements = new Dictionary<string, uint>();
                             foreach (INationData nation in nations)
                             {
-                                initialReinforcements[nation.UserId] = 0;
+                                NationRepository.SetAvailableReinforcements(batchOperation, session.GameId, nation.UserId, nation.CurrentEtag, 0);
                             }
 
-                            NationRepository.SetAvailableReinforcements(batchOperation, session.GameId, initialReinforcements);
                             nextPhase = SessionPhase.CombatOrders;
                             break;
                         }
@@ -266,7 +265,7 @@ namespace Peril.Api.Controllers.Api
                         case SessionPhase.Victory:
                         {
                             // Award reinforcements
-                            await AwardReinforcements(sessionId, await regionsTask);
+                            await AwardReinforcements(sessionId, await regionsTask, await nationsTask);
                             nextPhase = SessionPhase.Reinforcements;
                             break;
                         }
@@ -803,13 +802,13 @@ namespace Peril.Api.Controllers.Api
             return SessionPhase.Victory;
         }
 
-        private async Task AwardReinforcements(Guid sessionId, IEnumerable<IRegionData> regions)
+        private async Task AwardReinforcements(Guid sessionId, IEnumerable<IRegionData> regions, IEnumerable<INationData> nations)
         {
             var regionByPlayerQuery = from region in regions
                                       group region by region.OwnerId into regionsPerNation
                                       select regionsPerNation;
 
-            Dictionary < String, UInt32> reinforcements = new Dictionary<string, uint>();
+            Dictionary<String, UInt32> reinforcements = new Dictionary<string, uint>();
             foreach (var playerWithRegions in regionByPlayerQuery)
             {
                 // Award player a reinforcement for every 3 regions they own, minimum of at least 3 reinforcements
@@ -832,7 +831,13 @@ namespace Peril.Api.Controllers.Api
 
             using (IBatchOperationHandle batchOperation = SessionRepository.StartBatchOperation(sessionId))
             {
-                NationRepository.SetAvailableReinforcements(batchOperation, sessionId, reinforcements);
+                foreach (INationData nation in nations)
+                {
+                    if (reinforcements.TryGetValue(nation.UserId, out UInt32 reinforcementsForNation))
+                    {
+                        NationRepository.SetAvailableReinforcements(batchOperation, sessionId, nation.UserId, nation.CurrentEtag, reinforcementsForNation);
+                    }
+                }
                 await batchOperation.CommitBatch();
             }
         }

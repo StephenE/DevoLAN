@@ -53,7 +53,7 @@ namespace Peril.Api.Tests.Repository
             return Task.FromResult(cards.Cast<ICardData>());
         }
 
-        public void SetCardOwner(IBatchOperationHandle batchOperationHandle, Guid sessionId, Guid regionId, String userId)
+        public void SetCardOwner(IBatchOperationHandle batchOperationHandle, Guid sessionId, Guid regionId, String userId, String currentEtag)
         {
             DummySession foundSession = SessionRepository.SessionMap[sessionId];
             if (foundSession != null)
@@ -61,18 +61,7 @@ namespace Peril.Api.Tests.Repository
                 DummyNationData foundPlayer = foundSession.Players.Find(player => player.UserId == userId);
                 if (foundPlayer != null)
                 {
-                    if (RegionRepository.CardData.ContainsKey(regionId))
-                    {
-                        DummyBatchOperationHandle batchOperation = batchOperationHandle as DummyBatchOperationHandle;
-                        batchOperation.QueuedOperations.Add(() =>
-                        {
-                            RegionRepository.CardData[regionId].OwnerId = userId;
-                        });
-                    }
-                    else
-                    {
-                        throw new InvalidOperationException("Called SetCardOwner with a non-existent region id");
-                    }
+                    SetCardOwnerInternal(batchOperationHandle, sessionId, regionId, userId, currentEtag);
                 }
                 else
                 {
@@ -83,6 +72,40 @@ namespace Peril.Api.Tests.Repository
             {
                 throw new InvalidOperationException("Called SetCardOwner with a non-existent session id");
             }
+        }
+
+        public void SetCardOwnerInternal(IBatchOperationHandle batchOperationHandle, Guid sessionId, Guid regionId, String userId, String currentEtag)
+        {
+            DummySession foundSession = SessionRepository.SessionMap[sessionId];
+            if (foundSession != null)
+            {
+                if (RegionRepository.CardData.ContainsKey(regionId))
+                {
+                    DummyBatchOperationHandle batchOperation = batchOperationHandle as DummyBatchOperationHandle;
+                    batchOperation.QueuedOperations.Add(() =>
+                    {
+                        RegionRepository.CardData[regionId].OwnerId = userId;
+                    });
+                }
+                else
+                {
+                    throw new InvalidOperationException("Called SetCardOwner with a non-existent region id");
+                }
+            }
+            else
+            {
+                throw new InvalidOperationException("Called SetCardOwner with a non-existent session id");
+            }
+        }
+
+        public void SetCardDiscarded(IBatchOperationHandle batchOperation, Guid sessionId, Guid regionId, string currentEtag)
+        {
+            SetCardOwnerInternal(batchOperation, sessionId, regionId, DummyCardData.UsedCard, currentEtag);
+        }
+
+        public void SetCardUnowned(IBatchOperationHandle batchOperation, Guid sessionId, Guid regionId, String currentEtag)
+        {
+            SetCardOwnerInternal(batchOperation, sessionId, regionId, DummyCardData.UnownedCard, currentEtag);
         }
 
         public Task MarkPlayerCompletedPhase(Guid sessionId, String userId, Guid phaseId)
@@ -107,26 +130,23 @@ namespace Peril.Api.Tests.Repository
             }
         }
 
-        public void SetAvailableReinforcements(IBatchOperationHandle batchOperationHandle, Guid sessionId, Dictionary<String, UInt32> reinforcements)
+        public void SetAvailableReinforcements(IBatchOperationHandle batchOperationHandle, Guid sessionId, string userId, string currentEtag, uint reinforcements)
         {
             DummySession foundSession = SessionRepository.SessionMap[sessionId];
             DummyBatchOperationHandle batchOperation = batchOperationHandle as DummyBatchOperationHandle;
             if (foundSession != null)
             {
-                foreach (var playerEntry in reinforcements)
+                DummyNationData foundPlayer = foundSession.Players.Find(player => player.UserId == userId);
+                if (foundPlayer != null)
                 {
-                    DummyNationData foundPlayer = foundSession.Players.Find(player => player.UserId == playerEntry.Key);
-                    if (foundPlayer != null)
+                    batchOperation.QueuedOperations.Add(() =>
                     {
-                        batchOperation.QueuedOperations.Add(() =>
-                        {
-                            foundPlayer.AvailableReinforcements = playerEntry.Value;
-                        });
-                    }
-                    else
-                    {
-                        throw new InvalidOperationException("Called MarkPlayerCompletedPhase with a non-existent user id");
-                    }
+                        foundPlayer.AvailableReinforcements = reinforcements;
+                    });
+                }
+                else
+                {
+                    throw new InvalidOperationException("Called MarkPlayerCompletedPhase with a non-existent user id");
                 }
             }
             else
@@ -150,7 +170,7 @@ namespace Peril.Api.Tests.Repository
         {
             using (DummyBatchOperationHandle batchOperation = new DummyBatchOperationHandle())
             {
-                setupContext.ControllerMock.NationRepository.SetAvailableReinforcements(batchOperation, setupContext.DummySession.GameId, new Dictionary<String, UInt32>() { { userId, availableReinforcements } });
+                setupContext.ControllerMock.NationRepository.SetAvailableReinforcements(batchOperation, setupContext.DummySession.GameId, userId, String.Empty, availableReinforcements);
             }
             return setupContext;
         }
@@ -164,7 +184,7 @@ namespace Peril.Api.Tests.Repository
         {
             using (DummyBatchOperationHandle batchOperation = new DummyBatchOperationHandle())
             {
-                setupContext.ControllerMock.NationRepository.SetCardOwner(batchOperation, setupContext.DummySession.GameId, regionId, userId);
+                setupContext.ControllerMock.NationRepository.SetCardOwner(batchOperation, setupContext.DummySession.GameId, regionId, userId, String.Empty);
             }
             return setupContext;
         }

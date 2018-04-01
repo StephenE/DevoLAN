@@ -244,6 +244,7 @@ namespace Peril.Api.Tests.Controllers
             // Arrange
             ControllerMock primaryUser = new ControllerMock();
             primaryUser.SetupDummySession(SessionGuid)
+                       .SetupAddPlayer(DummyUserRepository.RegisteredUserIds[1], PlayerColour.Yellow)
                        .SetupDummyWorldAsTree()
                        .SetupCardOwner(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA)
                        .SetupCardOwner(ControllerMockRegionRepositoryExtensions.DummyWorldRegionB)
@@ -452,7 +453,7 @@ namespace Peril.Api.Tests.Controllers
             });
 
             // Assert
-            Assert.AreEqual(3, primaryUser.GetNation(SessionGuid, primaryUser.OwnerId).AvailableReinforcements);
+            Assert.AreEqual(3U, primaryUser.GetNation(SessionGuid, primaryUser.OwnerId).AvailableReinforcements);
         }
 
         [TestMethod]
@@ -477,7 +478,7 @@ namespace Peril.Api.Tests.Controllers
             });
 
             // Assert
-            Assert.AreEqual(9, primaryUser.GetNation(SessionGuid, primaryUser.OwnerId).AvailableReinforcements);
+            Assert.AreEqual(9U, primaryUser.GetNation(SessionGuid, primaryUser.OwnerId).AvailableReinforcements);
         }
         #endregion
 
