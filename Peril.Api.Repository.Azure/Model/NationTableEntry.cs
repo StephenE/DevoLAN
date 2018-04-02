@@ -45,7 +45,7 @@ namespace Peril.Api.Repository.Azure.Model
         public Guid SessionId { get { return Guid.Parse(PartitionKey); } }
         public String UserId { get { return RowKey.Substring(7); } }
         public String CurrentEtag { get { return ETag; } }
-        public uint AvailableReinforcements { get { return (UInt32)AvailableReinforcementsRaw; } }
+        public UInt32 AvailableReinforcements { get { return (UInt32)AvailableReinforcementsRaw; } }
 
         public Guid CompletedPhase { get; set; }
 

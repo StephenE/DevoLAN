@@ -69,6 +69,7 @@
   <ItemGroup>
     <Compile Include="BatchOperationHandle.cs" />
     <Compile Include="CommandQueue.cs" />
+    <Compile Include="Model\CardTableEntry.cs" />
     <Compile Include="Model\CombatArmy.cs" />
     <Compile Include="Model\CombatArmyRoundResult.cs" />
     <Compile Include="Model\CombatResultTableEntry.cs" />

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Peril.Api.Repository.Model
+namespace Peril.Api.Repository
 {
     public interface ICardData
     {

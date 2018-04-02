@@ -1,9 +1,5 @@
-﻿using Peril.Api.Repository.Model;
+﻿using Peril.Api.Repository;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Peril.Api.Tests.Repository
 {

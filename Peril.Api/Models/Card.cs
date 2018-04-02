@@ -1,9 +1,6 @@
-﻿using Peril.Api.Repository.Model;
+﻿using Peril.Api.Repository;
 using Peril.Core;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
 
 namespace Peril.Api.Models
 {
