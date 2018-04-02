@@ -6,7 +6,7 @@ namespace Peril.Api.Tests.Repository
 {
     class DummyRegionData : IRegionData
     {
-        public DummyRegionData(Guid sessionId, Guid regionId, Guid continentId, String initialOwner)
+        public DummyRegionData(Guid sessionId, Guid regionId, Guid continentId, String initialOwner, UInt32 cardValue)
         {
             SessionId = sessionId;
             RegionId = regionId;
@@ -14,6 +14,7 @@ namespace Peril.Api.Tests.Repository
             OwnerId = initialOwner;
             TroopCount = 0;
             TroopsCommittedToPhase = 0;
+            CardValue = cardValue;
             GenerateNewEtag();
         }
 
@@ -28,6 +29,8 @@ namespace Peril.Api.Tests.Repository
         public String OwnerId { get; set; }
 
         public UInt32 TroopCount { get; set; }
+
+        public UInt32 CardValue { get; set; }
 
         public Guid SessionId { get; private set; }
 

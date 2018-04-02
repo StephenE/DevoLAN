@@ -9,7 +9,7 @@ namespace Peril.Api.Repository.Azure.Model
 {
     public class RegionTableEntry : TableEntity, IRegionData
     {
-        public RegionTableEntry(Guid sessionId, Guid regionId, Guid continentId, String name)
+        public RegionTableEntry(Guid sessionId, Guid regionId, Guid continentId, String name, UInt32 cardValue)
         {
             PartitionKey = sessionId.ToString();
             RowKey = "Region_" + regionId.ToString();
@@ -18,6 +18,7 @@ namespace Peril.Api.Repository.Azure.Model
             OwnerId = String.Empty;
             StoredTroopCount = 0;
             StoredTroopsCommittedToPhase = 0;
+            StoredCardValue = (Int32)cardValue;
             m_ConnectedRegionList = new List<Guid>();
         }
 
@@ -58,6 +59,8 @@ namespace Peril.Api.Repository.Azure.Model
 
         public Int32 StoredTroopCount { get; set; }
 
+        public Int32 StoredCardValue { get; set; }
+
         public Int32 StoredTroopsCommittedToPhase { get; set; }
 
         public String ConnectedRegionString
@@ -91,6 +94,8 @@ namespace Peril.Api.Repository.Azure.Model
         public string CurrentEtag { get { return ETag; } }
 
         public UInt32 TroopCount { get { return (UInt32)StoredTroopCount; } }
+
+        public UInt32 CardValue { get { return (UInt32)StoredCardValue; } }
 
         internal void SetConnectedRegions(IEnumerable<Guid> regions)
         {

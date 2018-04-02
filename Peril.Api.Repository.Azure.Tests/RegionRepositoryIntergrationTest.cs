@@ -40,7 +40,7 @@ namespace Peril.Api.Repository.Azure.Tests
             // Act
             using (IBatchOperationHandle batchOperation = new BatchOperationHandle(SessionRepository.GetTableForSessionData(TableClient, dummySessionId)))
             {
-                repository.CreateRegion(batchOperation, dummySessionId, dummyRegionId, dummyContinentId, "DummyRegion", dummyConnections, 0);
+                repository.CreateRegion(batchOperation, dummySessionId, dummyRegionId, dummyContinentId, "DummyRegion", dummyConnections, 3);
             }
 
             // Assert
@@ -54,9 +54,21 @@ namespace Peril.Api.Repository.Azure.Tests
             Assert.AreEqual(dummyContinentId, resultStronglyTyped.ContinentId);
             Assert.AreEqual("DummyRegion", resultStronglyTyped.Name);
             Assert.AreEqual(String.Empty, resultStronglyTyped.OwnerId);
+            Assert.AreEqual(3U, resultStronglyTyped.CardValue);
             Assert.AreEqual(0, resultStronglyTyped.StoredTroopCount);
             Assert.IsTrue(resultStronglyTyped.ETag.Length > 0);
             Assert.IsTrue(resultStronglyTyped.ConnectedRegions.Contains(dummyConnections[0]));
+
+            TableOperation cardOperation = TableOperation.Retrieve<CardTableEntry>(dummySessionId.ToString(), "Card_" + dummyRegionId.ToString());
+            result = await dataTable.ExecuteAsync(cardOperation);
+            Assert.IsNotNull(result.Result);
+            Assert.IsInstanceOfType(result.Result, typeof(CardTableEntry));
+            CardTableEntry cardStronglyTyped = result.Result as CardTableEntry;
+            Assert.AreEqual(dummySessionId, cardStronglyTyped.SessionId);
+            Assert.AreEqual(dummyRegionId, cardStronglyTyped.RegionId);
+            Assert.AreEqual(3U, cardStronglyTyped.Value);
+            Assert.AreEqual(String.Empty, cardStronglyTyped.OwnerId);
+            Assert.AreEqual(CardTableEntry.State.Unowned, cardStronglyTyped.OwnerState);
         }
 
         [TestMethod]

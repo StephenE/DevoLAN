@@ -96,7 +96,7 @@ namespace Peril.Api.Repository.Azure.Tests
             Guid validGuid = new Guid("3CC9F4E8-BDB9-49F4-B128-268F0E5E9C20");
             String dummyUserId = "DummyUserId";
             await sessionRepository.SetupSession(validGuid, dummyUserId);
-            await sessionRepository.SetupAddRegion(validGuid, Guid.NewGuid(), Guid.NewGuid(), "DummyRegion");
+            await sessionRepository.SetupAddRegion(validGuid, Guid.NewGuid(), Guid.NewGuid(), "DummyRegion", 3U);
 
             // Act
             IEnumerable<INationData> sessionPlayers = await repository.GetNations(validGuid);

@@ -97,7 +97,8 @@ namespace Peril.Api.Models
                               {
                                   RegionId = Guid.NewGuid(),
                                   ContinentId = continentId,
-                                  Name = regionXml.Attribute("Name").Value
+                                  Name = regionXml.Attribute("Name").Value,
+                                  CardValue = UInt32.Parse(regionXml.Attribute("CardValue").Value)
                               };
             return regionsList.ToList();
         }

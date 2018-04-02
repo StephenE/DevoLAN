@@ -25,12 +25,16 @@ namespace Peril.Api.Repository.Azure
             BatchOperationHandle batchOperationHandle = batchOperationHandleInterface as BatchOperationHandle;
 
             // Create a new table entry
-            RegionTableEntry newRegion = new RegionTableEntry(sessionId, regionId, continentId, name);
+            RegionTableEntry newRegion = new RegionTableEntry(sessionId, regionId, continentId, name, cardValue);
             newRegion.IsValid();
             newRegion.SetConnectedRegions(connectedRegions);
             batchOperationHandle.BatchOperation.Insert(newRegion);
 
             // Create a new card for this region
+            CardTableEntry newCard = new CardTableEntry(sessionId, regionId);
+            newCard.IsValid();
+            newCard.ValueRaw = (Int32)cardValue;
+            batchOperationHandle.BatchOperation.Insert(newCard);
         }
 
         public async Task<IRegionData> GetRegion(Guid sessionId, Guid regionId)

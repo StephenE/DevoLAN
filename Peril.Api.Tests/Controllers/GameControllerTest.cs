@@ -77,6 +77,9 @@ namespace Peril.Api.Tests.Controllers
                     Assert.IsTrue(primaryUser.RegionRepository.RegionData.ContainsKey(connectedRegion), "Expected to find connected region");
                     Assert.IsTrue(primaryUser.RegionRepository.RegionData[connectedRegion].ConnectedRegions.Contains(regionDataEntry.Key), "Expected connected region to include us as a connection");
                 }
+
+                Assert.IsTrue(primaryUser.RegionRepository.CardData.ContainsKey(regionDataEntry.Key));
+                Assert.AreEqual(3U, primaryUser.RegionRepository.CardData[regionDataEntry.Key].Value);
             }
         }
 

@@ -61,7 +61,7 @@ namespace Peril.Api.Controllers.Api
 
                     foreach (var region in regions)
                     {
-                        RegionRepository.CreateRegion(batchOperation, sessionGuid, region.RegionId, region.ContinentId, region.Name, region.ConnectedRegions, 0);
+                        RegionRepository.CreateRegion(batchOperation, sessionGuid, region.RegionId, region.ContinentId, region.Name, region.ConnectedRegions, region.CardValue);
                     }
                     await batchOperation.CommitBatch();
                 }

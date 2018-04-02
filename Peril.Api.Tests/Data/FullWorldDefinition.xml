@@ -1,64 +1,69 @@
-﻿<?xml version="1.0" encoding="utf-8" ?> 
+﻿<?xml version="1.0" encoding="utf-8" ?>
 <World>
+  <!-- Card Values based upon connections
+      2/3 connections: 3 points
+      4/5 connections: 5 points
+      6+ connections: 7 points
+  -->
   <Continent Name="Europe" Bonus="5">
-    <Region Name="Great Britain" />
-    <Region Name="Iceland" />
-    <Region Name="North Europe" />
-    <Region Name="Scandinavia" />
-    <Region Name="South Europe" />
-    <Region Name="Svalbard" />
-    <Region Name="Ukraine" />
-    <Region Name="Western Europe" />
+    <Region Name="Great Britain" CardValue="5" />
+    <Region Name="Iceland" CardValue="3" />
+    <Region Name="North Europe" CardValue="3" />
+    <Region Name="Scandinavia" CardValue="5" />
+    <Region Name="South Europe" CardValue="7" />
+    <Region Name="Svalbard" CardValue="3" />
+    <Region Name="Ukraine" CardValue="7" />
+    <Region Name="Western Europe" CardValue="5" />
   </Continent>
   <Continent Name="Africa" Bonus="3">
-    <Region Name="Congo" />
-    <Region Name="Eastern Africa" />
-    <Region Name="Egypt" />
-    <Region Name="Madagascar" />
-    <Region Name="North Africa" />
-    <Region Name="South Africa" />
+    <Region Name="Congo" CardValue="3" />
+    <Region Name="Eastern Africa" CardValue="5" />
+    <Region Name="Egypt" CardValue="5" />
+    <Region Name="Madagascar" CardValue="3" />
+    <Region Name="North Africa" CardValue="7" />
+    <Region Name="South Africa" CardValue="5" />
   </Continent>
   <Continent Name="South America" Bonus="2">
-    <Region Name="Argentina" />
-    <Region Name="Brazil" />
-    <Region Name="Falklands" />
-    <Region Name="Peru" />
-    <Region Name="Venezuela" />
+    <Region Name="Argentina" CardValue="5" />
+    <Region Name="Brazil" CardValue="5" />
+    <Region Name="Falklands" CardValue="3" />
+    <Region Name="Peru" CardValue="3" />
+    <Region Name="Venezuela" CardValue="3" />
   </Continent>
   <Continent Name="Australasia" Bonus="3">
-    <Region Name="Eastern Australia" />
-    <Region Name="Indonesia" />
-    <Region Name="New Guinea" />
-    <Region Name="New Zealand" />
-    <Region Name="Philippines" />
-    <Region Name="Western Australia" />
+    <Region Name="Eastern Australia" CardValue="3" />
+    <Region Name="Indonesia" CardValue="5" />
+    <Region Name="New Guinea" CardValue="3" />
+    <Region Name="New Zealand" CardValue="3" />
+    <Region Name="Philippines" CardValue="3" />
+    <Region Name="Western Australia" CardValue="3" />
   </Continent>
   <Continent Name="Asia" Bonus="7">
-    <Region Name="Afghanistan" />
-    <Region Name="China" />
-    <Region Name="India" />
-    <Region Name="Irkutsk" />
-    <Region Name="Japan" />
-    <Region Name="Kamchatka" />
-    <Region Name="Middle East" />
-    <Region Name="Mongolia" />
-    <Region Name="Siam" />
-    <Region Name="Siberia" />
-    <Region Name="Ural" />
-    <Region Name="Yakutsk" />
+    <Region Name="Afghanistan" CardValue="5" />
+    <Region Name="China" CardValue="7" />
+    <Region Name="India" CardValue="5" />
+    <Region Name="Irkutsk" CardValue="5" />
+    <Region Name="Japan" CardValue="5" />
+    <Region Name="Kamchatka" CardValue="5" />
+    <Region Name="Middle East" CardValue="5" />
+    <Region Name="Mongolia" CardValue="5" />
+    <Region Name="Siam" CardValue="3" />
+    <Region Name="Siberia" CardValue="5" />
+    <Region Name="Ural" CardValue="5" />
+    <Region Name="Yakutsk" CardValue="3" />
   </Continent>
   <Continent Name="North America" Bonus="5">
-    <Region Name="Alaska" />
-    <Region Name="Alberta" />
-    <Region Name="Central America" />
-    <Region Name="Eastern United States" />
-    <Region Name="Greenland" />
-    <Region Name="Hawaii" />
-    <Region Name="Northwest Territory" />
-    <Region Name="Oikiqtaluk" />
-    <Region Name="Ontario" />
-    <Region Name="Quebec" />
-    <Region Name="Western United States" />
+    <Region Name="Alaska" CardValue="3" />
+    <Region Name="Alberta" CardValue="5" />
+    <Region Name="Central America" CardValue="3" />
+    <Region Name="Eastern United States" CardValue="5" />
+    <Region Name="Greenland" CardValue="5" />
+    <Region Name="Hawaii" CardValue="3" />
+    <Region Name="Northwest Territory" CardValue="5" />
+    <Region Name="Oikiqtaluk" CardValue="5" />
+    <Region Name="Ontario" CardValue="7" />
+    <Region Name="Quebec" CardValue="5" />
+    <Region Name="Western United States" CardValue="5" />
   </Continent>
   <Connections>
     <Connected Name="Afghanistan" Other="China" />

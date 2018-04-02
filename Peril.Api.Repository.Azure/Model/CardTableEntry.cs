@@ -42,6 +42,7 @@ namespace Peril.Api.Repository.Azure.Model
             PartitionKey = sessionId.ToString();
             RowKey = "Card_" + regionId.ToString();
             OwnerStateRaw = (Int32)State.Unowned;
+            OwnerId = String.Empty;
         }
 
         public CardTableEntry()

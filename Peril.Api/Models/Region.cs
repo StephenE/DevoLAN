@@ -26,19 +26,22 @@ namespace Peril.Api.Models
             ConnectedRegions = data.ConnectedRegions;
             OwnerId = data.OwnerId;
             TroopCount = data.TroopCount;
+            CardValue = data.CardValue;
         }
 
         public Guid RegionId { get; set; }
 
         public Guid ContinentId { get; set; }
 
-        public string Name { get; set; }
+        public String Name { get; set; }
 
         public IEnumerable<Guid> ConnectedRegions { get; set; }
 
-        public string OwnerId { get; set; }
+        public String OwnerId { get; set; }
 
-        public uint TroopCount { get; set; }
+        public UInt32 TroopCount { get; set; }
+
+        public UInt32 CardValue { get; set; }
     }
 
     static public class RegionRepositoryExtensionMethods

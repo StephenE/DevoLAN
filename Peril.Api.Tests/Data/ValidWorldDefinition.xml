@@ -1,14 +1,14 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <World>
   <Continent Name="Asia">
-    <Region Name="Afghanistan" />
-    <Region Name="China" />
-    <Region Name="India" />
-    <Region Name="Middle East" />
-    <Region Name="Ural" />
+    <Region Name="Afghanistan" CardValue="3" />
+    <Region Name="China" CardValue="3"/>
+    <Region Name="India" CardValue="3"/>
+    <Region Name="Middle East" CardValue="3" />
+    <Region Name="Ural" CardValue="3" />
   </Continent>
   <Continent Name="Europe">
-    <Region Name="Ukraine" />
+    <Region Name="Ukraine" CardValue="3" />
   </Continent>
   <Connections>
     <Connected Name="Afghanistan" Other="China" />

@@ -26,7 +26,7 @@ namespace Peril.Api.Tests.Repository
             DummyBatchOperationHandle batchOperationHandle = batchOperationHandleInterface as DummyBatchOperationHandle;
             batchOperationHandle.QueuedOperations.Add(() =>
             {
-                RegionData[regionId] = new DummyRegionData(sessionId, regionId, continentId, String.Empty);
+                RegionData[regionId] = new DummyRegionData(sessionId, regionId, continentId, String.Empty, cardValue);
                 foreach (Guid connectedRegion in connectedRegions)
                 {
                     RegionData[regionId].ConnectedRegionIds.Add(connectedRegion);
@@ -108,7 +108,7 @@ namespace Peril.Api.Tests.Repository
         #region - Test Setup Helpers -
         public DummyRegionData SetupRegion(Guid sessionId, Guid regionId, Guid continentId, String initialOwner, UInt32 cardValue)
         {
-            RegionData[regionId] = new DummyRegionData(sessionId, regionId, continentId, initialOwner);
+            RegionData[regionId] = new DummyRegionData(sessionId, regionId, continentId, initialOwner, cardValue);
             CardData[regionId] = new DummyCardData(regionId, cardValue);
             return RegionData[regionId];
         }

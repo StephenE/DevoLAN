@@ -16,5 +16,7 @@ namespace Peril.Core
         String OwnerId { get; }
 
         UInt32 TroopCount { get; }
+
+        UInt32 CardValue { get; }
     }
 }
