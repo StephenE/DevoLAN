@@ -368,6 +368,66 @@ namespace Peril.Api.Tests.Controllers
                 Assert.AreEqual(HttpStatusCode.Unauthorized, exception.Response.StatusCode);
             }
         }
+
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("GameController")]
+        public async Task TestPostEndPhase_WithTooManyCards()
+        {
+            // Arrange
+            Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
+            ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(validGuid, DummyUserRepository.RegisteredUserIds[1])
+                       .SetupDummyWorldAsTree()
+                       .SetupAddPlayer(primaryUser.OwnerId, PlayerColour.Yellow)
+                       .SetupSessionPhase(SessionPhase.Reinforcements)
+                       .SetupCardOwner(primaryUser.OwnerId, ControllerMockRegionRepositoryExtensions.DummyWorldRegionA)
+                       .SetupCardOwner(primaryUser.OwnerId, ControllerMockRegionRepositoryExtensions.DummyWorldRegionB)
+                       .SetupCardOwner(primaryUser.OwnerId, ControllerMockRegionRepositoryExtensions.DummyWorldRegionC)
+                       .SetupCardOwner(primaryUser.OwnerId, ControllerMockRegionRepositoryExtensions.DummyWorldRegionD)
+                       .SetupCardOwner(primaryUser.OwnerId, ControllerMockRegionRepositoryExtensions.DummyWorldRegionE);
+            ISession sessionDetails = await primaryUser.SessionRepository.GetSession(validGuid);
+
+            // Act
+            Task result = primaryUser.GameController.PostEndPhase(validGuid, sessionDetails.PhaseId);
+
+            // Assert
+            try
+            {
+                await result;
+                Assert.Fail("Expected exception to be thrown");
+            }
+            catch (HttpResponseException exception)
+            {
+                Assert.AreEqual(HttpStatusCode.NotAcceptable, exception.Response.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("GameController")]
+        public async Task TestPostEndPhase()
+        {
+            // Arrange
+            Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
+            ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(validGuid, DummyUserRepository.RegisteredUserIds[1])
+                       .SetupDummyWorldAsTree()
+                       .SetupAddPlayer(primaryUser.OwnerId, PlayerColour.Yellow)
+                       .SetupSessionPhase(SessionPhase.Reinforcements)
+                       .SetupCardOwner(primaryUser.OwnerId, ControllerMockRegionRepositoryExtensions.DummyWorldRegionA)
+                       .SetupCardOwner(primaryUser.OwnerId, ControllerMockRegionRepositoryExtensions.DummyWorldRegionB)
+                       .SetupCardOwner(primaryUser.OwnerId, ControllerMockRegionRepositoryExtensions.DummyWorldRegionC)
+                       .SetupCardOwner(primaryUser.OwnerId, ControllerMockRegionRepositoryExtensions.DummyWorldRegionD);
+            ISession sessionDetails = await primaryUser.SessionRepository.GetSession(validGuid);
+
+            // Act
+            await primaryUser.GameController.PostEndPhase(validGuid, sessionDetails.PhaseId);
+
+            // Assert
+            INationData nation = await primaryUser.NationRepository.GetNation(validGuid, primaryUser.OwnerId);
+            Assert.AreEqual(sessionDetails.PhaseId, nation.CompletedPhase);
+        }
         #endregion
 
         #region - AdvanceNextPhase -

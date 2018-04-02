@@ -128,6 +128,15 @@ namespace Peril.Api.Controllers.Api
                                                       .IsPhaseIdOrThrow(phaseId)
                                                       .IsUserIdJoinedOrThrow(NationRepository, User.Identity.GetUserId());
 
+            if(session.PhaseType == SessionPhase.Reinforcements)
+            {
+                IEnumerable<ICardData> cards = await NationRepository.GetCards(sessionId, User.Identity.GetUserId());
+                if(cards.Count() >= 5)
+                {
+                    throw new HttpResponseException(new HttpResponseMessage { StatusCode = HttpStatusCode.NotAcceptable, ReasonPhrase = "You have too many cards. You may not hold more than 4" });
+                }
+            }
+
             await NationRepository.MarkPlayerCompletedPhase(sessionId, User.Identity.GetUserId(), phaseId);
         }
 
