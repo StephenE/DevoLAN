@@ -140,6 +140,36 @@ namespace Peril.Api.Repository.Azure.Tests
         [TestMethod]
         [TestCategory("Integration")]
         [TestCategory("NationRepository")]
+        public async Task IntegrationTestGetUnownedCards()
+        {
+            // Arrange
+            NationRepository repository = new NationRepository(DevelopmentStorageAccountConnectionString);
+            SessionRepository sessionRepository = new SessionRepository(DevelopmentStorageAccountConnectionString);
+            Guid validGuid = new Guid("03ECAE31-CB33-4537-9E22-FE1A68BFFA08");
+            Guid dummyRegionAGuid = new Guid("FD28529F-011D-42F5-B9B2-0F7AEA80CB8A");
+            Guid dummyRegionBGuid = new Guid("A05EBB51-1BAA-4E4E-B43E-7E30EB89F5C7");
+            Guid dummyRegionCGuid = new Guid("21B47511-8376-44F1-835D-41FF3BD1A860");
+            String dummyUserId = "DummyUserId";
+            await sessionRepository.SetupSession(validGuid, dummyUserId);
+            await sessionRepository.SetupAddCard(validGuid, dummyRegionAGuid, CardTableEntry.State.Owned, dummyUserId, 3);
+            var unownedCard = await sessionRepository.SetupAddCard(validGuid, dummyRegionBGuid, CardTableEntry.State.Unowned, String.Empty, 5);
+            await sessionRepository.SetupAddCard(validGuid, dummyRegionCGuid, CardTableEntry.State.Discarded, dummyUserId, 7);
+
+            // Act
+            IEnumerable<ICardData> unownedCards = await repository.GetUnownedCards(validGuid);
+
+            // Assert
+            Assert.IsNotNull(unownedCards);
+            Assert.AreEqual(1, unownedCards.Count());
+            Assert.AreEqual(String.Empty, unownedCards.First().OwnerId);
+            Assert.AreEqual(dummyRegionBGuid, unownedCards.First().RegionId);
+            Assert.AreEqual(5U, unownedCards.First().Value);
+            Assert.AreEqual(unownedCard.ETag, unownedCards.First().CurrentEtag);
+        }
+
+        [TestMethod]
+        [TestCategory("Integration")]
+        [TestCategory("NationRepository")]
         public async Task IntegrationTestSetCardOwner()
         {
             // Arrange
@@ -199,7 +229,7 @@ namespace Peril.Api.Repository.Azure.Tests
         [TestMethod]
         [TestCategory("Integration")]
         [TestCategory("NationRepository")]
-        public async Task IntegrationTestSetCardUnowned()
+        public async Task IntegrationTestResetDiscardedCards()
         {
             // Arrange
             NationRepository repository = new NationRepository(DevelopmentStorageAccountConnectionString);
@@ -214,7 +244,7 @@ namespace Peril.Api.Repository.Azure.Tests
             // Act
             using (IBatchOperationHandle batchOperation = new BatchOperationHandle(sessionRepository.GetTableForSessionData(validGuid)))
             {
-                repository.SetCardUnowned(batchOperation, validGuid, dummyRegionGuid, ownedCard.CurrentEtag);
+                await repository.ResetDiscardedCards(batchOperation, validGuid);
             }
 
             // Assert

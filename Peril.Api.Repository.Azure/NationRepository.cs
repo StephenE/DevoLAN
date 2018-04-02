@@ -121,6 +121,50 @@ namespace Peril.Api.Repository.Azure
             return results;
         }
 
+        public async Task<IEnumerable<ICardData>> GetUnownedCards(Guid sessionId)
+        {
+            // Get the session data table
+            CloudTable sessionDataTable = SessionRepository.GetTableForSessionData(TableClient, sessionId);
+
+            var rowKeyCondition = TableQuery.CombineFilters(
+                TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.GreaterThanOrEqual, "Card_"),
+                TableOperators.And,
+                TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.LessThan, "Card`")
+            );
+            var ownerStateCondition = TableQuery.CombineFilters(
+                rowKeyCondition,
+                TableOperators.And,
+                TableQuery.GenerateFilterConditionForInt("OwnerStateRaw", QueryComparisons.Equal, (Int32)CardTableEntry.State.Unowned)
+            );
+
+            List<ICardData> results = new List<ICardData>();
+            TableQuery<CardTableEntry> query = new TableQuery<CardTableEntry>()
+                .Where(TableQuery.CombineFilters(
+                    TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, sessionId.ToString()),
+                    TableOperators.And,
+                    ownerStateCondition
+                ));
+
+            // Initialize the continuation token to null to start from the beginning of the table.
+            TableContinuationToken continuationToken = null;
+
+            // Loop until the continuation token comes back as null
+            do
+            {
+                var queryResults = await sessionDataTable.ExecuteQuerySegmentedAsync(query, continuationToken);
+                continuationToken = queryResults.ContinuationToken;
+                results.AddRange(queryResults.Results);
+            }
+            while (continuationToken != null);
+
+            foreach (CardTableEntry entry in results)
+            {
+                entry.IsValid();
+            }
+
+            return results;
+        }
+
         public void SetCardOwner(IBatchOperationHandle batchOperationHandleInterface, Guid sessionId, Guid regionId, string userId, string currentEtag)
         {
             SetCardInternal(batchOperationHandleInterface, sessionId, regionId, CardTableEntry.State.Owned, userId, currentEtag);
@@ -131,9 +175,47 @@ namespace Peril.Api.Repository.Azure
             SetCardInternal(batchOperationHandleInterface, sessionId, regionId, CardTableEntry.State.Discarded, String.Empty, currentEtag);
         }
 
-        public void SetCardUnowned(IBatchOperationHandle batchOperationHandleInterface, Guid sessionId, Guid regionId, string currentEtag)
+        public async Task ResetDiscardedCards(IBatchOperationHandle batchOperationHandleInterface, Guid sessionId)
         {
-            SetCardInternal(batchOperationHandleInterface, sessionId, regionId, CardTableEntry.State.Unowned, String.Empty, currentEtag);
+            // Get the session data table
+            CloudTable sessionDataTable = SessionRepository.GetTableForSessionData(TableClient, sessionId);
+
+            var rowKeyCondition = TableQuery.CombineFilters(
+                TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.GreaterThanOrEqual, "Card_"),
+                TableOperators.And,
+                TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.LessThan, "Card`")
+            );
+            var ownerStateCondition = TableQuery.CombineFilters(
+                rowKeyCondition,
+                TableOperators.And,
+                TableQuery.GenerateFilterConditionForInt("OwnerStateRaw", QueryComparisons.Equal, (Int32)CardTableEntry.State.Discarded)
+            );
+
+            List<ICardData> results = new List<ICardData>();
+            TableQuery<CardTableEntry> query = new TableQuery<CardTableEntry>()
+                .Where(TableQuery.CombineFilters(
+                    TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, sessionId.ToString()),
+                    TableOperators.And,
+                    ownerStateCondition
+                ));
+
+            // Initialize the continuation token to null to start from the beginning of the table.
+            TableContinuationToken continuationToken = null;
+
+            // Loop until the continuation token comes back as null
+            do
+            {
+                var queryResults = await sessionDataTable.ExecuteQuerySegmentedAsync(query, continuationToken);
+                continuationToken = queryResults.ContinuationToken;
+                results.AddRange(queryResults.Results);
+            }
+            while (continuationToken != null);
+
+            foreach (CardTableEntry entry in results)
+            {
+                entry.IsValid();
+                SetCardInternal(batchOperationHandleInterface, sessionId, entry.RegionId, CardTableEntry.State.Unowned, String.Empty, entry.ETag);
+            }
         }
 
         private void SetCardInternal(IBatchOperationHandle batchOperationHandleInterface, Guid sessionId, Guid regionId, CardTableEntry.State newState, String newOwnerId, String currentEtag)

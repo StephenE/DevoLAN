@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Peril.Api.Repository;
 using Peril.Api.Tests.Repository;
 using Peril.Core;
 using System;
@@ -1636,6 +1637,65 @@ namespace Peril.Api.Tests.Controllers
             Assert.AreEqual(SessionPhase.Reinforcements, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
             Assert.AreNotEqual(currentSessionPhaseId, primaryUser.SessionRepository.SessionMap[validGuid].PhaseId);
             Assert.AreEqual(8U, primaryUser.GetNation(validGuid, primaryUser.OwnerId).AvailableReinforcements);
+            Assert.AreEqual(1, (await primaryUser.NationRepository.GetCards(validGuid, primaryUser.OwnerId)).Count());
+        }
+
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("GameController")]
+        public async Task TestAdvanceNextPhase_WithVictoryAndOneFreeCards()
+        {
+            // Arrange
+            Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
+            ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(validGuid)
+                       .SetupDummyWorldAsTree(primaryUser.OwnerId)
+                       .SetupSessionPhase(SessionPhase.Victory);
+            Guid currentSessionPhaseId = primaryUser.SessionRepository.SessionMap[validGuid].PhaseId;
+            foreach (DummyCardData card in primaryUser.RegionRepository.CardData.Values)
+            {
+                if (card.RegionId != ControllerMockRegionRepositoryExtensions.DummyWorldRegionA)
+                {
+                    card.OwnerId = DummyCardData.UsedCard;
+                }
+            }
+
+            // Act
+            await primaryUser.GameController.PostAdvanceNextPhase(validGuid, currentSessionPhaseId, true);
+
+            // Assert
+            Assert.AreEqual(SessionPhase.Reinforcements, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
+            Assert.AreNotEqual(currentSessionPhaseId, primaryUser.SessionRepository.SessionMap[validGuid].PhaseId);
+            Assert.AreEqual(8U, primaryUser.GetNation(validGuid, primaryUser.OwnerId).AvailableReinforcements);
+            Assert.AreEqual(1, (await primaryUser.NationRepository.GetCards(validGuid, primaryUser.OwnerId)).Count());
+            Assert.AreEqual(ControllerMockRegionRepositoryExtensions.DummyWorldRegionA, (await primaryUser.NationRepository.GetCards(validGuid, primaryUser.OwnerId)).First().RegionId); 
+        }
+
+        [TestMethod]
+        [TestCategory("Unit")]
+        [TestCategory("GameController")]
+        public async Task TestAdvanceNextPhase_WithVictoryAndNoFreeCards()
+        {
+            // Arrange
+            Guid validGuid = new Guid("68E4A0DC-BAB8-4C79-A6E9-D0A7494F3B45");
+            ControllerMock primaryUser = new ControllerMock();
+            primaryUser.SetupDummySession(validGuid)
+                       .SetupDummyWorldAsTree(primaryUser.OwnerId)
+                       .SetupSessionPhase(SessionPhase.Victory);
+            Guid currentSessionPhaseId = primaryUser.SessionRepository.SessionMap[validGuid].PhaseId;
+            foreach(DummyCardData card in primaryUser.RegionRepository.CardData.Values)
+            {
+                card.OwnerId = DummyCardData.UsedCard;
+            }
+
+            // Act
+            await primaryUser.GameController.PostAdvanceNextPhase(validGuid, currentSessionPhaseId, true);
+
+            // Assert
+            Assert.AreEqual(SessionPhase.Reinforcements, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
+            Assert.AreNotEqual(currentSessionPhaseId, primaryUser.SessionRepository.SessionMap[validGuid].PhaseId);
+            Assert.AreEqual(8U, primaryUser.GetNation(validGuid, primaryUser.OwnerId).AvailableReinforcements);
+            Assert.AreEqual(1, (await primaryUser.NationRepository.GetCards(validGuid, primaryUser.OwnerId)).Count());
         }
 
         [TestMethod]
@@ -1659,6 +1719,7 @@ namespace Peril.Api.Tests.Controllers
             Assert.AreEqual(SessionPhase.Reinforcements, primaryUser.SessionRepository.SessionMap[validGuid].PhaseType);
             Assert.AreNotEqual(currentSessionPhaseId, primaryUser.SessionRepository.SessionMap[validGuid].PhaseId);
             Assert.AreEqual(46U, primaryUser.GetNation(validGuid, primaryUser.OwnerId).AvailableReinforcements);
+            Assert.AreEqual(1, (await primaryUser.NationRepository.GetCards(validGuid, primaryUser.OwnerId)).Count());
         }
         #endregion
     }

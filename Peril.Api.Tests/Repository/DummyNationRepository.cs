@@ -53,6 +53,12 @@ namespace Peril.Api.Tests.Repository
             return Task.FromResult(cards.Cast<ICardData>());
         }
 
+        public Task<IEnumerable<ICardData>> GetUnownedCards(Guid sessionId)
+        {
+            IEnumerable<DummyCardData> cards = RegionRepository.CardData.Where(card => card.Value.OwnerId == DummyCardData.UnownedCard).Select(card => card.Value);
+            return Task.FromResult(cards.Cast<ICardData>());
+        }
+
         public void SetCardOwner(IBatchOperationHandle batchOperationHandle, Guid sessionId, Guid regionId, String userId, String currentEtag)
         {
             DummySession foundSession = SessionRepository.SessionMap[sessionId];
@@ -103,9 +109,22 @@ namespace Peril.Api.Tests.Repository
             SetCardOwnerInternal(batchOperation, sessionId, regionId, DummyCardData.UsedCard, currentEtag);
         }
 
-        public void SetCardUnowned(IBatchOperationHandle batchOperation, Guid sessionId, Guid regionId, String currentEtag)
+        public Task ResetDiscardedCards(IBatchOperationHandle batchOperationHandle, Guid sessionId)
         {
-            SetCardOwnerInternal(batchOperation, sessionId, regionId, DummyCardData.UnownedCard, currentEtag);
+            DummyBatchOperationHandle batchOperation = batchOperationHandle as DummyBatchOperationHandle;
+            List<ICardData> results = new List<ICardData>();
+            foreach(DummyCardData card in RegionRepository.CardData.Values)
+            {
+                if (card.OwnerId == DummyCardData.UsedCard)
+                {
+                    batchOperation.QueuedOperations.Add(() =>
+                    {
+                        card.OwnerId = DummyCardData.UnownedCard;
+                    });
+                    results.Add(card);
+                }
+            }
+            return Task.FromResult(0);
         }
 
         public Task MarkPlayerCompletedPhase(Guid sessionId, String userId, Guid phaseId)

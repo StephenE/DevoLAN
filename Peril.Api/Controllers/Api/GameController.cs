@@ -264,8 +264,17 @@ namespace Peril.Api.Controllers.Api
                         }
                         case SessionPhase.Victory:
                         {
-                            // Award reinforcements
-                            await AwardReinforcements(sessionId, await regionsTask, await nationsTask);
+                            List<ICardData> unownedCards = (await NationRepository.GetUnownedCards(sessionId)).ToList();
+                            List<INationData> nations = (await nationsTask).ToList();
+                            if (unownedCards.Count() < nations.Count())
+                            {
+                                await NationRepository.ResetDiscardedCards(batchOperation, sessionId);
+                                await batchOperation.CommitBatch();
+                                unownedCards = (await NationRepository.GetUnownedCards(sessionId)).ToList();
+                            }
+
+                            AwardReinforcements(batchOperation, sessionId, await regionsTask, nations);
+                            AwardCards(batchOperation, sessionId, await regionsTask, nations, unownedCards);
                             nextPhase = SessionPhase.Reinforcements;
                             break;
                         }
@@ -802,7 +811,7 @@ namespace Peril.Api.Controllers.Api
             return SessionPhase.Victory;
         }
 
-        private async Task AwardReinforcements(Guid sessionId, IEnumerable<IRegionData> regions, IEnumerable<INationData> nations)
+        private void AwardReinforcements(IBatchOperationHandle batchOperation, Guid sessionId, IEnumerable<IRegionData> regions, IEnumerable<INationData> nations)
         {
             var regionByPlayerQuery = from region in regions
                                       group region by region.OwnerId into regionsPerNation
@@ -829,16 +838,59 @@ namespace Peril.Api.Controllers.Api
                 }
             }
 
-            using (IBatchOperationHandle batchOperation = SessionRepository.StartBatchOperation(sessionId))
+            foreach (INationData nation in nations)
             {
-                foreach (INationData nation in nations)
+                if (reinforcements.TryGetValue(nation.UserId, out UInt32 reinforcementsForNation))
                 {
-                    if (reinforcements.TryGetValue(nation.UserId, out UInt32 reinforcementsForNation))
+                    NationRepository.SetAvailableReinforcements(batchOperation, sessionId, nation.UserId, nation.CurrentEtag, reinforcementsForNation);
+                }
+            }
+        }
+
+        private void AwardCards(IBatchOperationHandle batchOperation, Guid sessionId, IEnumerable<IRegionData> regions, IEnumerable<INationData> nations, IEnumerable<ICardData> availableCards)
+        {
+            List<ICardData> remainingCards = availableCards.ToList();
+            Random random = new Random();
+
+            Dictionary<String, HashSet<Guid>> ownedRegions = new Dictionary<String, HashSet<Guid>>();
+            foreach(IRegionData region in regions)
+            {
+                if(!ownedRegions.ContainsKey(region.OwnerId))
+                {
+                    ownedRegions[region.OwnerId] = new HashSet<Guid> { region.RegionId };
+                }
+                ownedRegions[region.OwnerId].Add(region.RegionId);
+            }
+
+            // Order players so that the person with the most nations gets first draw
+            var nationQuery = from nation in nations
+                              where ownedRegions.ContainsKey(nation.UserId)
+                              orderby ownedRegions[nation.UserId].Count descending
+                              select nation;
+
+            // For each player, build a list of possible cards. If they own a region, add that card multiple times so there is a strong chance of selecting it.
+            foreach(INationData nation in nationQuery)
+            {
+                // This seems wasteful, but I'm in a hurry. What I really want is something like the C++ discrete_distribution class, but I failed to find one in C#
+                List<ICardData> possibleCards = new List<ICardData>();
+                HashSet<Guid> regionsOwnedByPlayer = ownedRegions[nation.UserId];
+                foreach (ICardData card in remainingCards)
+                {
+                    if(regionsOwnedByPlayer.Contains(card.RegionId))
                     {
-                        NationRepository.SetAvailableReinforcements(batchOperation, sessionId, nation.UserId, nation.CurrentEtag, reinforcementsForNation);
+                        possibleCards.AddRange(Enumerable.Repeat(card, 10));
+                    }
+                    else
+                    {
+                        possibleCards.Add(card);
                     }
                 }
-                await batchOperation.CommitBatch();
+
+                int randomCardIndex = random.Next(0, possibleCards.Count - 1);
+                ICardData awardedCard = possibleCards[randomCardIndex];
+
+                remainingCards.Remove(awardedCard);
+                NationRepository.SetCardOwner(batchOperation, sessionId, awardedCard.RegionId, nation.UserId, awardedCard.CurrentEtag);
             }
         }
 
