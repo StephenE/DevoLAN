@@ -590,7 +590,40 @@
         .menuButton:hover{
             background-color: rgba(150, 150, 150, 0.5);
         }
-        
+
+    /* Cards */
+        .cardRow {
+        }
+
+        .cardContainer {
+            display: inline-block;
+            position: relative;
+            text-align: center;
+            color: white;
+            margin: 5px;
+            border-style: inset;
+            border-width: 2px;
+            border-color: white;
+        }
+
+        .cardRegion {
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .cardValue {
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .cardSelected {
+            border-color: forestgreen;
+        }
+
 /* Player Colours */
     .attack-hidden {
         display: none;

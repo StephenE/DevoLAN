@@ -277,6 +277,7 @@
     <Content Include="Content\images\bckMap.jpg" />
     <Content Include="Content\images\bckTile.jpg" />
     <Content Include="Content\images\bckWater.jpg" />
+    <Content Include="Content\images\cardTexture.png" />
     <Content Include="Content\images\error.svg" />
     <Content Include="Content\images\logoPeril.png" />
     <Content Include="Content\images\logoPerilSmall.png" />

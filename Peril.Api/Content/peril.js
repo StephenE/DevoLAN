@@ -98,6 +98,7 @@ var CombatTypeEnum = {
                 setTimeout(function () { hideOverlay(true); loadAudio("music", "planning"); }, 1500);
 
                 addEvent("hudButtonEndTurn", "click", function () { loadAudio("sfx", "button"); endTurn(currentGame.GameId, currentGame.PhaseId); }, false)
+                addEvent("hudCards", "click", function () { loadAudio("sfx", "button"); showCards(); }, false)
                 break;
         }
     }
@@ -960,6 +961,59 @@ var CombatTypeEnum = {
 
         }
 
+        function showCards()
+        {
+            showOverlay("Fetching Cards...", "<img src='Content/images/waiting.svg' />");
+            var data = "?sessionId=" + currentGame.GameId;
+            sendAjax("GET", "/api/Nation/Cards", data, "json", onGetCardsResponse, onGetCardsResponse, true);
+        }
+
+        function onGetCardsResponse()
+        {
+            switch (this.status)
+            {
+                case 200:
+                case 204:
+                    showCardsData(JSON.parse(this.responseText));
+                    break;
+                default:
+                    console.log("Failed to get card data");
+                    messageBox("Get cards failed.", "Error code " + this.status);
+                    break;
+            }
+        }
+
+        function showCardsData(playerCards)
+        {
+            if (playerCards.length <= 0)
+            {
+                messageBox("Cards", "You do not have any cards");
+                return;
+            }
+
+            var data = "<div class=\"\cardRow\">";
+            for (x = 0; x < playerCards.length; x++)
+            {
+                data += "<div class=\"cardContainer\" onclick=\"onCardClicked(this)\">";
+                data += "<img src='Content/images/cardTexture.png'>";
+                data += "<div class=\"cardRegion\">" + worldLookup[playerCards[x].RegionId] + "</div>";
+                data += "<div class=\"cardValue\">" + playerCards[x].Value + "</div>";
+                data += "</div>";
+            }
+            data += "</div><br />";
+            data += "<input type=\"submit\" id=\"buttonClaimCards\" value=\"Claim Reinforcements\">";
+            data += "<input type=\"submit\" id=\"buttonCloseCards\" value=\"Close\">";
+            showOverlay("Cards", data);
+
+            addEvent("buttonClaimCards", "click", function () { hideOverlay(); }, false);
+            addEvent("buttonCloseCards", "click", function () { hideOverlay(); }, false);
+        }
+
+        function onCardClicked(card)
+        {
+            toggleClassOnElement(card, "cardSelected");
+        }
+
         function endTurn(gameId, phaseId)
         {
             // Technically, only the session host can do this. Anyone else will get an error and be ignored - they should EndPhase, but for DevoLAN 31 that doesn't actual do anything!
@@ -1521,7 +1575,12 @@ var CombatTypeEnum = {
         
         function toggleClass(target, clss)
         {
-            getID(target).classList.toggle(clss);
+            toggleClassOnElement(getID(target), clss);
+        }
+
+        function toggleClassOnElement(target, clss)
+        {
+            target.classList.toggle(clss);
         }
 
         function checkClass(target, clss)
