@@ -110,6 +110,7 @@ namespace Peril.Api.Controllers.Api
 
                 INationData nation = await nationDataTask;
                 NationRepository.SetAvailableReinforcements(batchOperation, sessionId, nation.UserId, nation.CurrentEtag, nation.AvailableReinforcements + additionalReinforcements);
+                await batchOperation.CommitBatch();
             }
         }
 

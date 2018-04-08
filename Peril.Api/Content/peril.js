@@ -991,10 +991,10 @@ var CombatTypeEnum = {
                 return;
             }
 
-            var data = "<div class=\"\cardRow\">";
+            var data = "<div id=\"cardRow\" class=\"\cardRow\">";
             for (x = 0; x < playerCards.length; x++)
             {
-                data += "<div class=\"cardContainer\" onclick=\"onCardClicked(this)\">";
+                data += "<div class=\"cardContainer\" onclick=\"onCardClicked(this)\" data-cardId=\"" + playerCards[x].RegionId + "\">";
                 data += "<img src='Content/images/cardTexture.png'>";
                 data += "<div class=\"cardRegion\">" + worldLookup[playerCards[x].RegionId] + "</div>";
                 data += "<div class=\"cardValue\">" + playerCards[x].Value + "</div>";
@@ -1005,13 +1005,53 @@ var CombatTypeEnum = {
             data += "<input type=\"submit\" id=\"buttonCloseCards\" value=\"Close\">";
             showOverlay("Cards", data);
 
-            addEvent("buttonClaimCards", "click", function () { hideOverlay(); }, false);
+            addEvent("buttonClaimCards", "click", function () { claimCards(); }, false);
             addEvent("buttonCloseCards", "click", function () { hideOverlay(); }, false);
         }
 
         function onCardClicked(card)
         {
             toggleClassOnElement(card, "cardSelected");
+        }
+
+        function claimCards()
+        {
+            var cardRowItem = getID("cardRow");
+            var bodyData = "[";
+            for (counter = 0; counter < cardRowItem.children.length; ++counter)
+            {
+                if (checkClassOnElement(cardRowItem.children[counter], "cardSelected"))
+                {
+                    if (bodyData.length > 1)
+                    {
+                        bodyData += ", "
+                    }
+                    bodyData += "\"" + getDataOnElement(cardRowItem.children[counter], "cardId") + "\"";
+                }
+            }
+            bodyData += "]";
+            var data = "?sessionId=" + currentGame.GameId;
+
+            sendAjax("POST", "/api/Nation/Cards", data, "json", onPostCardsResponse, onPostCardsResponse, true, bodyData);
+            showOverlay("Redeeming Cards...", "<img src='Content/images/waiting.svg' />");
+        }
+
+        function onPostCardsResponse()
+        {
+            switch (this.status)
+            {
+                case 200:
+                case 204:
+                    console.log("Redeemed cards");
+                    hideOverlay();
+                    // fetch the reinforcement count again
+                    reinforcementsPhase(currentGame.GameId);
+                    break;
+                default:
+                    console.log("Redeeming cards failed");
+                    messageBox("Redeeming Cards Failed.", "Error code " + this.status);
+                    break;
+            }
         }
 
         function endTurn(gameId, phaseId)
